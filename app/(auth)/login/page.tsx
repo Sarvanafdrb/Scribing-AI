@@ -78,12 +78,6 @@ export default function LoginPage() {
         throw new Error("Invalid response from server");
       }
 
-      // Store in localStorage
-      localStorage.setItem("accessToken", accessToken);
-      if (refreshToken) {
-        localStorage.setItem("refreshToken", refreshToken);
-      }
-
       // Update Zustand store
       setAuth(user, accessToken, refreshToken);
 

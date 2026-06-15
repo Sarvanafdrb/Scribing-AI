@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
+import { useAuthValidation } from "@/hooks/useAuthValidation";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -31,40 +32,59 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isAuthenticated, isLoading, _hasHydrated, logout } =
-    useAuthStore();
+  const { user, token, isLoading, _hasHydrated, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isValidating } = useAuthValidation();
+  const isAuthenticated = !!token;
+  const shouldShowLoading = !_hasHydrated || isLoading || isValidating;
+
+  // Add detailed logging
+  useEffect(() => {
+    console.log("🔐 AdminLayout Debug:", {
+      _hasHydrated,
+      isLoading,
+      isValidating,
+      hasToken: !!token,
+      hasUser: !!user,
+      isAuthenticated,
+      shouldShowLoading,
+      pathname,
+    });
+  }, [
+    _hasHydrated,
+    isLoading,
+    isValidating,
+    token,
+    user,
+    isAuthenticated,
+    shouldShowLoading,
+    pathname,
+  ]);
 
   useEffect(() => {
-    if (!_hasHydrated) return;
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+    if (!_hasHydrated) {
+      console.log("⏳ Waiting for hydration...");
+      return;
     }
-  }, [isAuthenticated, isLoading, _hasHydrated, router]);
-
-  if (!_hasHydrated || isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return null;
-  }
+    if (isValidating) {
+      console.log("⏳ Validating session...");
+      return;
+    }
+    if (!isAuthenticated) {
+      console.log("🔐 No token, redirecting to login");
+      router.replace("/login");
+    } else {
+      console.log("✅ Authenticated, showing dashboard");
+    }
+  }, [isAuthenticated, _hasHydrated, isValidating, router]);
   const handleLogout = () => {
     logout();
-    localStorage.clear();
     router.push("/login");
   };
 
-  if (isLoading) {
+  if (shouldShowLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -75,10 +95,12 @@ export default function AdminLayout({
     );
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated) {
     return null;
   }
-
+  if (!user) {
+    return null;
+  }
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Menu Button */}
@@ -114,12 +136,12 @@ export default function AdminLayout({
           {/* User Info */}
           <div className="p-4 border-b border-gray-200 bg-blue-50">
             <p className="font-medium text-gray-900">
-              {user.firstName} {user.lastName}
+              {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-xs text-gray-500 mt-1">{user.email}</p>
-            {user.organizationName && (
+            <p className="text-xs text-gray-500 mt-1">{user?.email}</p>
+            {user?.organizationName && (
               <p className="text-xs text-blue-600 mt-1">
-                {user.organizationName}
+                {user?.organizationName}
               </p>
             )}
           </div>

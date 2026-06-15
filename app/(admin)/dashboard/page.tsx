@@ -1,7 +1,5 @@
 "use client";
-
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
 import {
   Building2,
@@ -16,28 +14,19 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, isLoading } = useAuthStore();
-  const router = useRouter();
-
+  const { user } = useAuthStore();
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  if (isLoading) {
+    console.log("📊 Dashboard Page - User Data:", user);
+  }, [user]);
+  if (!user) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600">Loading user data...</p>
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   const stats = [

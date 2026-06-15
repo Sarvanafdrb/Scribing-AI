@@ -1,3 +1,4 @@
+// store/auth.store.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User } from "@/types";
@@ -6,7 +7,6 @@ interface AuthState {
   user: User | null;
   token: string | null;
   refreshToken: string | null;
-  isAuthenticated: boolean;
   isLoading: boolean;
   _hasHydrated: boolean;
 
@@ -16,6 +16,7 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   setHasHydrated: (state: boolean) => void;
   logout: () => void;
+  updateToken: (token: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -24,42 +25,36 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       refreshToken: null,
-      isAuthenticated: false,
-      isLoading: false,
+      isLoading: true,
       _hasHydrated: false,
 
       setAuth: (user, token, refreshToken) => {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("accessToken", token);
-          if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-        }
         set({
           user,
           token,
           refreshToken: refreshToken || null,
-          isAuthenticated: true,
           isLoading: false,
         });
       },
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
+      setUser: (user) => set({ user }),
       setToken: (token) => set({ token }),
       setLoading: (isLoading) => set({ isLoading }),
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
+      updateToken: (token) => set({ token }),
+
       logout: () => {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-        }
         set({
           user: null,
           token: null,
           refreshToken: null,
-          isAuthenticated: false,
           isLoading: false,
           _hasHydrated: true,
         });
+        // Clear all storage
+        localStorage.removeItem("auth-storage");
+        sessionStorage.clear();
       },
     }),
     {
@@ -68,7 +63,6 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

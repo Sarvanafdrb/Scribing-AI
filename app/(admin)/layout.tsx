@@ -17,6 +17,8 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAutoLogin } from "@/hooks/useAutoLogin";
+import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 
 const menuItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -39,7 +41,8 @@ export default function AdminLayout({
   const { isValidating } = useAuthValidation();
   const isAuthenticated = !!token;
   const shouldShowLoading = !_hasHydrated || isLoading || isValidating;
-
+  useAutoLogin();
+  useSessionExpiry();
   // Add detailed logging
   useEffect(() => {
     console.log("🔐 AdminLayout Debug:", {

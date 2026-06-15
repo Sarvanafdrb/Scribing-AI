@@ -10,7 +10,11 @@ interface AuthState {
   isLoading: boolean;
   _hasHydrated: boolean;
 
-  setAuth: (user: User, token: string, refreshToken?: string) => void;
+  setAuth: (
+    user: User | null,
+    token: string | null,
+    refreshToken?: string | null,
+  ) => void;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;

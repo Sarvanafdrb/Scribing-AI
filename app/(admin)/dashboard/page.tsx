@@ -1,7 +1,7 @@
 "use client";
-import { useEffect } from "react";
+import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
-import {
+import { useOrganizations } from "@/hooks/organizations/useOrganizations";import {
   Building2,
   Users,
   Shield,
@@ -15,11 +15,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  useEffect(() => {
-    console.log("📊 Dashboard Page - User Data:", user);
-  }, [user]);
-  if (!user) {
-    return (
+  const { total: totalOrganizations, isLoading: orgCountLoading } =
+    useOrganizations({ page: 1, limit: 1 });
+
+  if (!user) {    return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -32,9 +31,8 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "Total Organizations",
-      value: "0",
-      icon: Building2,
-      change: "+0%",
+      value: orgCountLoading ? "..." : String(totalOrganizations),
+      icon: Building2,      change: "+0%",
       color: "bg-blue-500",
     },
     {
@@ -42,21 +40,21 @@ export default function DashboardPage() {
       value: "0",
       icon: Users,
       change: "+0%",
-      color: "bg-green-500",
+      color: "bg-blue-600",
     },
     {
       title: "Active Roles",
       value: "0",
       icon: Shield,
       change: "+0%",
-      color: "bg-purple-500",
+      color: "bg-blue-400",
     },
     {
       title: "Active Sessions",
       value: "0",
       icon: Activity,
       change: "+0%",
-      color: "bg-orange-500",
+      color: "bg-blue-700",
     },
   ];
 
@@ -67,7 +65,7 @@ export default function DashboardPage() {
       description: "Start exploring the platform",
       time: "Just now",
       icon: CheckCircle,
-      iconColor: "text-green-500",
+      iconColor: "text-blue-600",
     },
   ];
 
@@ -165,16 +163,19 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <button className="w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left">
+              <Link
+                href="/organizations/create"
+                className="block w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left"
+              >
                 + Create Organization
-              </button>
-              <button className="w-full bg-green-50 text-green-700 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors text-left">
+              </Link>
+              <button className="w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left">
                 + Add New User
               </button>
-              <button className="w-full bg-purple-50 text-purple-700 px-4 py-2 rounded-lg hover:bg-purple-100 transition-colors text-left">
+              <button className="w-full bg-blue-50/80 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left">
                 + Create Role
               </button>
-              <button className="w-full bg-orange-50 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors text-left">
+              <button className="w-full bg-white border border-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left">
                 Start New Session
               </button>
             </CardContent>

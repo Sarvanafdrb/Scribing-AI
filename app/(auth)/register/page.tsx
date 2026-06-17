@@ -117,9 +117,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card className="shadow-xl">
+    <Card className="shadow-xl border-blue-100">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+        <CardTitle className="text-2xl font-bold text-blue-900">Create Account</CardTitle>
         <CardDescription>
           Register your organization and admin account
         </CardDescription>

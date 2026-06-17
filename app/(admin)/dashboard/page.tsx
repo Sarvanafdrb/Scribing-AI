@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
-import { useOrganizations } from "@/hooks/organizations/useOrganizations";import {
+import { useOrganizations } from "@/hooks/organizations/useOrganizations";
+import { useUsers } from "@/hooks/users/useUsers";import {
   Building2,
   Users,
   Shield,
@@ -17,6 +18,10 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   const { total: totalOrganizations, isLoading: orgCountLoading } =
     useOrganizations({ page: 1, limit: 1 });
+  const { total: totalUsers, isLoading: userCountLoading } = useUsers({
+    page: 1,
+    limit: 1,
+  });
 
   if (!user) {    return (
       <div className="flex items-center justify-center h-96">
@@ -37,7 +42,7 @@ export default function DashboardPage() {
     },
     {
       title: "Total Users",
-      value: "0",
+      value: userCountLoading ? "..." : String(totalUsers),
       icon: Users,
       change: "+0%",
       color: "bg-blue-600",
@@ -169,9 +174,12 @@ export default function DashboardPage() {
               >
                 + Create Organization
               </Link>
-              <button className="w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left">
+              <Link
+                href="/users/create"
+                className="block w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left"
+              >
                 + Add New User
-              </button>
+              </Link>
               <button className="w-full bg-blue-50/80 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left">
                 + Create Role
               </button>

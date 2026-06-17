@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         source: "/organizations/:id/users",
         destination: "/organizations/users/:id",
       },
+      {
+        source: "/users/:id/edit",
+        destination: "/users/edit/:id",
+      },
     ];
   },
   async redirects() {

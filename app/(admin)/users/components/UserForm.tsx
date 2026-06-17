@@ -1,0 +1,302 @@
+"use client";
+
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { CreateUserData, UpdateUserData, User } from "@/types/user.types";
+import { organizationService } from "@/services/organization.service";
+import { roleService } from "@/services/role.service";
+
+const createSchema = z.object({
+  firstName: z.string().trim().min(2, "First name is required"),
+  lastName: z.string().trim().min(2, "Last name is required"),
+  email: z.string().trim().email("Invalid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  organizationId: z.string().min(1, "Organization is required"),
+  roleId: z.string().optional(),
+});
+
+const editSchema = createSchema.omit({ password: true }).extend({
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .optional()
+    .or(z.literal("")),
+});
+
+type CreateFormData = z.infer<typeof createSchema>;
+type EditFormData = z.infer<typeof editSchema>;
+
+interface UserFormProps {
+  initialData?: User;
+  onSubmit: (data: CreateUserData | UpdateUserData) => Promise<void>;
+  isLoading?: boolean;
+  submitLabel?: string;
+}
+
+const getDefaultValues = (data?: User, isEdit = false) => {
+  const orgId =
+    typeof data?.organizationId === "object"
+      ? data.organizationId._id || data.organizationId.id
+      : data?.organizationId || "";
+
+  const roleId =
+    typeof data?.roleId === "object"
+      ? data.roleId._id || data.roleId.id
+      : data?.roleId || "";
+
+  if (isEdit) {
+    return {
+      firstName: data?.firstName || "",
+      lastName: data?.lastName || "",
+      email: data?.email || "",
+      password: "",
+      organizationId: orgId || "",
+      roleId: roleId || "",
+    };
+  }
+
+  return {
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    organizationId: "",
+    roleId: "",
+  };
+};
+
+export function UserForm({
+  initialData,
+  onSubmit,
+  isLoading = false,
+  submitLabel = "Create User",
+}: UserFormProps) {
+  const isEditing = Boolean(initialData?.id || initialData?._id);
+  const schema = isEditing ? editSchema : createSchema;
+
+  const form = useForm<CreateFormData | EditFormData>({
+    resolver: zodResolver(schema),
+    defaultValues: getDefaultValues(initialData, isEditing),
+    mode: "onSubmit",
+  });
+
+  const selectedOrgId = form.watch("organizationId");
+
+  const { data: orgData } = useQuery({
+    queryKey: ["organizations", "all-options"],
+    queryFn: () => organizationService.getAll({ limit: 50, page: 1 }),
+  });
+
+  const {
+    data: roles = [],
+    isLoading: rolesLoading,
+    isFetching: rolesFetching,
+  } = useQuery({
+    queryKey: ["roles", selectedOrgId],
+    queryFn: () => roleService.getAll(selectedOrgId),
+    enabled: !!selectedOrgId,
+  });
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset(getDefaultValues(initialData, true));
+    }
+  }, [initialData, form]);
+
+  useEffect(() => {
+    if (!selectedOrgId || isEditing) return;
+    form.setValue("roleId", "");
+  }, [selectedOrgId, form, isEditing]);
+
+  const handleSubmit = async (data: CreateFormData | EditFormData) => {
+    const payload: Record<string, unknown> = { ...data };
+
+    if (isEditing && !payload.password) {
+      delete payload.password;
+    }
+    if (!payload.roleId) {
+      delete payload.roleId;
+    }
+
+    if (isEditing) {
+      delete payload.organizationId;
+      await onSubmit(payload as unknown as UpdateUserData);
+      return;
+    }
+
+    await onSubmit(payload as unknown as CreateUserData);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="John" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Doe" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email *</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="user@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                {isEditing ? "New Password (optional)" : "Password *"}
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder={isEditing ? "Leave blank to keep current" : "••••••••"}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="organizationId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Organization *</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || undefined}
+                disabled={isEditing}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(orgData?.organizations || []).map((org) => {
+                    const id = org.id || org._id || "";
+                    return (
+                      <SelectItem key={id} value={id}>
+                        {org.name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="roleId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || undefined}
+                disabled={!selectedOrgId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      !selectedOrgId
+                        ? "Select organization first"
+                        : rolesLoading || rolesFetching
+                          ? "Loading roles..."
+                          : roles.length === 0
+                            ? "No roles available"
+                            : "Select role (optional)"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => {
+                    const id = role._id || role.id || "";
+                    return (
+                      <SelectItem key={id} value={id}>
+                        {role.name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+              {selectedOrgId && !rolesLoading && roles.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Default roles will be created automatically. Try reselecting
+                  the organization.
+                </p>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+          {isLoading
+            ? isEditing
+              ? "Updating..."
+              : "Creating..."
+            : submitLabel}
+        </Button>
+      </form>
+    </Form>
+  );
+}

@@ -9,8 +9,9 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated } = useAuthStore();
+  const { token } = useAuthStore();
   const router = useRouter();
+  const isAuthenticated = !!token;
 
   useEffect(() => {
     // If already authenticated, redirect to dashboard

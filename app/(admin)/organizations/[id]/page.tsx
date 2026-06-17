@@ -1,4 +1,3 @@
-// app/(admin)/organizations/[id]/page.tsx
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -348,7 +347,9 @@ export default function OrganizationDetailsPage() {
             <div>
               <label className="text-sm text-muted-foreground">Email</label>
               <p className="font-medium">
-                {organization.adminEmail || organization.email || "Not specified"}
+                {organization.adminEmail ||
+                  organization.email ||
+                  "Not specified"}
               </p>
             </div>
             <div>

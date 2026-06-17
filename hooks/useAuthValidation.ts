@@ -42,12 +42,25 @@ export const useAuthValidation = () => {
         setUser(user);
         console.log("✅ User validated successfully:", user.email);
       } catch (error: any) {
-        console.error("❌ Auth validation failed:", error.message);
+        const status = error?.response?.status;
+        const isNetworkError =
+          error?.code === "ERR_NETWORK" || !error?.response;
 
-        // Check if it's a token error
+        if (isNetworkError) {
+          // API/server temporarily unreachable; keep current session state.
+          console.warn(
+            "⚠️ Auth validation skipped: API not reachable.",
+            error?.message,
+          );
+        } else {
+          console.error("❌ Auth validation failed:", error?.message);
+        }
+
+        // Logout only for confirmed auth failures
         if (
-          error.response?.status === 401 ||
-          error.message === "Invalid token"
+          status === 401 ||
+          status === 403 ||
+          error?.message === "Invalid token"
         ) {
           console.log("🔄 Token invalid, logging out");
           logout();

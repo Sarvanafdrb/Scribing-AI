@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
         source: "/users/:id/edit",
         destination: "/users/edit/:id",
       },
+      {
+        source: "/roles/:id/edit",
+        destination: "/roles/edit/:id",
+      },
     ];
   },
   async redirects() {

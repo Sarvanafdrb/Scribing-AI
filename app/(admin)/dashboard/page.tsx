@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
-import { useUsers } from "@/hooks/users/useUsers";import {
+import { useUsers } from "@/hooks/users/useUsers";
+import {
   Building2,
   Users,
   Shield,
@@ -23,7 +24,8 @@ export default function DashboardPage() {
     limit: 1,
   });
 
-  if (!user) {    return (
+  if (!user) {
+    return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -37,7 +39,8 @@ export default function DashboardPage() {
     {
       title: "Total Organizations",
       value: orgCountLoading ? "..." : String(totalOrganizations),
-      icon: Building2,      change: "+0%",
+      icon: Building2,
+      change: "+0%",
       color: "bg-blue-500",
     },
     {
@@ -180,9 +183,12 @@ export default function DashboardPage() {
               >
                 + Add New User
               </Link>
-              <button className="w-full bg-blue-50/80 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left">
+              <Link
+                href="/roles/create"
+                className="block w-full bg-blue-50/80 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left"
+              >
                 + Create Role
-              </button>
+              </Link>
               <button className="w-full bg-white border border-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left">
                 Start New Session
               </button>

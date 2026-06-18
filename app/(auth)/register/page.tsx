@@ -21,15 +21,36 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const nameRegex = /^[a-zA-Z\s'-]+$/;
+const phoneRegex = /^[0-9]{10,15}$/;
+
 const registerSchema = z
   .object({
-    firstName: z.string().min(2, "First name must be at least 2 characters"),
-    lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
+    firstName: z
+      .string()
+      .trim()
+      .min(2, "First name must be at least 2 characters")
+      .regex(nameRegex, "First name can only contain letters"),
+    lastName: z
+      .string()
+      .trim()
+      .min(2, "Last name must be at least 2 characters")
+      .regex(nameRegex, "Last name can only contain letters"),
+    email: z.string().trim().email("Invalid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
-    organizationName: z.string().min(2, "Organization name is required"),
-    phone: z.string().optional(),
+    organizationName: z
+      .string()
+      .trim()
+      .min(2, "Organization name is required")
+      .regex(/[a-zA-Z]/, "Organization name must contain at least one letter"),
+    phone: z
+      .string()
+      .optional()
+      .refine(
+        (value) => !value || value.trim() === "" || phoneRegex.test(value.trim()),
+        "Phone must be 10 to 15 digits",
+      ),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -132,7 +153,11 @@ export default function RegisterPage() {
               <Input
                 id="firstName"
                 placeholder="John"
-                {...register("firstName")}
+                {...register("firstName", {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.replace(/[^a-zA-Z\s'-]/g, "");
+                  },
+                })}
                 disabled={isLoading}
               />
               {errors.firstName && (
@@ -147,7 +172,11 @@ export default function RegisterPage() {
               <Input
                 id="lastName"
                 placeholder="Doe"
-                {...register("lastName")}
+                {...register("lastName", {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.replace(/[^a-zA-Z\s'-]/g, "");
+                  },
+                })}
                 disabled={isLoading}
               />
               {errors.lastName && (
@@ -191,10 +220,20 @@ export default function RegisterPage() {
             <Label htmlFor="phone">Phone (Optional)</Label>
             <Input
               id="phone"
-              placeholder="9876543210"
-              {...register("phone")}
+              type="tel"
+              inputMode="numeric"
+              maxLength={15}
+              placeholder="9876543210 or 919876543210"
+              {...register("phone", {
+                onChange: (e) => {
+                  e.target.value = e.target.value.replace(/\D/g, "");
+                },
+              })}
               disabled={isLoading}
             />
+            {errors.phone && (
+              <p className="text-sm text-red-500">{errors.phone.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">

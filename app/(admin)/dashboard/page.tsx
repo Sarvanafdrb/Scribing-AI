@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useUsers } from "@/hooks/users/useUsers";
+import { useSessionStats } from "@/hooks/sessions/useSessions";
 import {
   Building2,
   Users,
@@ -23,6 +24,8 @@ export default function DashboardPage() {
     page: 1,
     limit: 1,
   });
+  const { data: sessionStats, isLoading: sessionStatsLoading } =
+    useSessionStats();
 
   if (!user) {
     return (
@@ -59,7 +62,9 @@ export default function DashboardPage() {
     },
     {
       title: "Active Sessions",
-      value: "0",
+      value: sessionStatsLoading
+        ? "..."
+        : String(sessionStats?.activeCount || 0),
       icon: Activity,
       change: "+0%",
       color: "bg-blue-700",
@@ -189,9 +194,12 @@ export default function DashboardPage() {
               >
                 + Create Role
               </Link>
-              <button className="w-full bg-white border border-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left">
-                Start New Session
-              </button>
+              <Link
+                href="/sessions/create"
+                className="block w-full bg-white border border-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left"
+              >
+                + Start New Session
+              </Link>
             </CardContent>
           </Card>
         </div>

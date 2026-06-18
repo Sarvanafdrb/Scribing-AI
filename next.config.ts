@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
         source: "/roles/:id/edit",
         destination: "/roles/edit/:id",
       },
+      {
+        source: "/sessions/:id/edit",
+        destination: "/sessions/edit/:id",
+      },
     ];
   },
   async redirects() {

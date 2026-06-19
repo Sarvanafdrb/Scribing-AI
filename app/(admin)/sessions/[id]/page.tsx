@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/hooks/sessions/useSession";
 import { SessionStatusBadge } from "../components/SessionStatusBadge";
+import { AudioPlayback } from "@/components/recording/AudioPlayback";
 import {
   SessionOrganization,
   SessionUser,
@@ -83,12 +84,20 @@ export default function SessionDetailsPage() {
             Back to Sessions
           </Button>
         </Link>
-        <Link href={`/sessions/${sessionId}/edit`}>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Session
-          </Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/recording?sessionId=${sessionId}`}>
+            <Button className="bg-red-600 hover:bg-red-700">
+              <Mic className="mr-2 h-4 w-4" />
+              Start Recording
+            </Button>
+          </Link>
+          <Link href={`/sessions/${sessionId}/edit`}>
+            <Button variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Session
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card className="border-blue-100">
@@ -180,17 +189,16 @@ export default function SessionDetailsPage() {
             </div>
           </div>
 
-          {session.audioUrl && (
+          {(session.audioUrl || session.status !== "created") && (
             <div>
-              <h3 className="font-semibold mb-2">Audio</h3>
-              <a
-                href={session.audioUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-blue-600 hover:underline text-sm break-all"
-              >
-                {session.audioUrl}
-              </a>
+              <h3 className="font-semibold mb-2">Recording Playback</h3>
+              {session.audioUrl ? (
+                <AudioPlayback sessionId={sessionId} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Recording in progress or not uploaded yet.
+                </p>
+              )}
             </div>
           )}
 

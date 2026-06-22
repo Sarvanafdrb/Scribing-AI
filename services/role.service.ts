@@ -83,4 +83,9 @@ export const roleService = {
     const response = await api.delete(`/roles/${id}`);
     return response.data.data;
   },
+
+  activate: async (id: string): Promise<Role> => {
+    const response = await api.patch(`/roles/${id}/activate`);
+    return response.data.data;
+  },
 };

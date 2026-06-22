@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRoleMutations } from "@/hooks/roles/useRoleMutations";
 import { Role } from "@/types/role.types";
-import { Edit, MoreHorizontal, Trash2 } from "lucide-react";
+import { Edit, MoreHorizontal, Power } from "lucide-react";
 
 interface RoleActionsProps {
   role: Role;
@@ -30,16 +30,21 @@ interface RoleActionsProps {
 
 export function RoleActions({ role, onStatusChange }: RoleActionsProps) {
   const router = useRouter();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const { deactivateRole } = useRoleMutations();
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const { activateRole, deactivateRole } = useRoleMutations();
 
   const roleId = role.id || role._id || "";
+  const isActive = role.isActive !== false;
 
-  const handleDeactivate = async () => {
+  const handleStatusToggle = async () => {
     try {
-      await deactivateRole.mutateAsync(roleId);
+      if (isActive) {
+        await deactivateRole.mutateAsync(roleId);
+      } else {
+        await activateRole.mutateAsync(roleId);
+      }
       onStatusChange?.();
-      setShowDeleteDialog(false);
+      setShowStatusDialog(false);
     } catch {
       // Toast handled in hook
     }
@@ -61,29 +66,34 @@ export function RoleActions({ role, onStatusChange }: RoleActionsProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-red-600 focus:text-red-600"
+            onClick={() => setShowStatusDialog(true)}
+            className={isActive ? "text-red-600 focus:text-red-600" : undefined}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Deactivate
+            <Power className="mr-2 h-4 w-4" />
+            {isActive ? "Deactivate" : "Activate"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Deactivate Role</DialogTitle>
+            <DialogTitle>{isActive ? "Deactivate Role" : "Activate Role"}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to deactivate <strong>{role.name}</strong>?
+              Are you sure you want to {isActive ? "deactivate" : "activate"}{" "}
+              <strong>{role.name}</strong>?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button variant="outline" onClick={() => setShowStatusDialog(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeactivate}>
-              Deactivate
+            <Button
+              variant={isActive ? "destructive" : "default"}
+              className={!isActive ? "bg-blue-600 hover:bg-blue-700" : undefined}
+              onClick={handleStatusToggle}
+            >
+              {isActive ? "Deactivate" : "Activate"}
             </Button>
           </DialogFooter>
         </DialogContent>

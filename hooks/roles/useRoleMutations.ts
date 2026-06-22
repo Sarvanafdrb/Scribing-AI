@@ -43,9 +43,22 @@ export const useRoleMutations = () => {
     },
   });
 
+  const activateRole = useMutation({
+    mutationFn: (id: string) => roleService.activate(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roleKeys.detail(id) });
+      toast.success("Role activated successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to activate role");
+    },
+  });
+
   return {
     createRole,
     updateRole,
     deactivateRole,
+    activateRole,
   };
 };

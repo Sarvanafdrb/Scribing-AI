@@ -32,8 +32,9 @@ const createSchema = z.object({
   organizationId: z.string().min(1, "Organization is required"),
 });
 
-const editSchema = createSchema.partial().extend({
+const editSchema = z.object({
   name: z.string().trim().min(2, "Role name is required"),
+  description: z.string().optional(),
 });
 
 type CreateFormData = z.infer<typeof createSchema>;
@@ -41,6 +42,7 @@ type EditFormData = z.infer<typeof editSchema>;
 
 interface RoleFormProps {
   initialData?: Role;
+  mode?: "create" | "edit";
   onSubmit: (data: CreateRoleData | UpdateRoleData) => Promise<void>;
   isLoading?: boolean;
   submitLabel?: string;
@@ -56,64 +58,129 @@ const resolveOrganizationId = (organizationId?: Role["organizationId"]) => {
   return String(organizationId);
 };
 
-const getDefaultValues = (data?: Role, isEdit = false) => {
-  if (isEdit) {
-    return {
-      name: data?.name || "",
-      description: data?.description || "",
-      organizationId: resolveOrganizationId(data?.organizationId),
-    };
-  }
-
-  return {
-    name: "",
-    description: "",
-    organizationId: "",
-  };
-};
-
 export function RoleForm({
   initialData,
+  mode,
   onSubmit,
   isLoading = false,
   submitLabel = "Create Role",
 }: RoleFormProps) {
-  const isEditing = Boolean(initialData?.id || initialData?._id);
-  const schema = isEditing ? editSchema : createSchema;
-
-  const form = useForm<CreateFormData | EditFormData>({
-    resolver: zodResolver(schema),
-    defaultValues: getDefaultValues(initialData, isEditing),
-  });
+  const isEditing =
+    mode === "edit" ||
+    (mode !== "create" && Boolean(initialData?.id || initialData?._id));
 
   const { data: orgData } = useQuery({
     queryKey: ["organizations", "all-options"],
     queryFn: () => organizationService.getAll({ limit: 50, page: 1 }),
   });
 
+  const organizationId = resolveOrganizationId(initialData?.organizationId);
+  const organizationName =
+    orgData?.organizations?.find(
+      (org) => (org.id || org._id || "") === organizationId,
+    )?.name || "Organization";
+
+  const createForm = useForm<CreateFormData>({
+    resolver: zodResolver(createSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      organizationId: "",
+    },
+  });
+
+  const editForm = useForm<EditFormData>({
+    resolver: zodResolver(editSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      description: initialData?.description || "",
+    },
+  });
+
   useEffect(() => {
-    if (initialData) {
-      form.reset(getDefaultValues(initialData, true));
+    if (isEditing && initialData) {
+      editForm.reset({
+        name: initialData.name || "",
+        description: initialData.description || "",
+      });
     }
-  }, [initialData, form]);
+  }, [initialData, isEditing, editForm]);
 
-  const handleSubmit = async (data: CreateFormData | EditFormData) => {
-    const payload: Record<string, unknown> = { ...data };
-
-    if (isEditing) {
-      delete payload.organizationId;
-      await onSubmit(payload as unknown as UpdateRoleData);
-      return;
-    }
-
-    await onSubmit(payload as unknown as CreateRoleData);
+  const handleCreateSubmit = async (data: CreateFormData) => {
+    await onSubmit({
+      name: data.name.trim(),
+      description: data.description,
+      organizationId: data.organizationId,
+    });
   };
 
+  const handleEditSubmit = async (data: EditFormData) => {
+    await onSubmit({
+      name: data.name.trim(),
+      description: data.description,
+    });
+  };
+
+  if (isEditing) {
+    return (
+      <Form {...editForm}>
+        <form
+          onSubmit={editForm.handleSubmit(handleEditSubmit)}
+          className="space-y-6"
+        >
+          <FormField
+            control={editForm.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role Name *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Admin" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={editForm.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea rows={3} placeholder="Role description" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormItem>
+            <FormLabel>Organization</FormLabel>
+            <Input value={organizationName} disabled readOnly />
+          </FormItem>
+
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            disabled={isLoading}
+          >
+            {isLoading ? "Updating..." : submitLabel}
+          </Button>
+        </form>
+      </Form>
+    );
+  }
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+    <Form {...createForm}>
+      <form
+        onSubmit={createForm.handleSubmit(handleCreateSubmit)}
+        className="space-y-6"
+      >
         <FormField
-          control={form.control}
+          control={createForm.control}
           name="name"
           render={({ field }) => (
             <FormItem>
@@ -127,7 +194,7 @@ export function RoleForm({
         />
 
         <FormField
-          control={form.control}
+          control={createForm.control}
           name="description"
           render={({ field }) => (
             <FormItem>
@@ -141,16 +208,12 @@ export function RoleForm({
         />
 
         <FormField
-          control={form.control}
+          control={createForm.control}
           name="organizationId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Organization *</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || undefined}
-                disabled={isEditing}
-              >
+              <Select onValueChange={field.onChange} value={field.value || undefined}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select organization" />
                 </SelectTrigger>
@@ -170,12 +233,12 @@ export function RoleForm({
           )}
         />
 
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-          {isLoading
-            ? isEditing
-              ? "Updating..."
-              : "Creating..."
-            : submitLabel}
+        <Button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700"
+          disabled={isLoading}
+        >
+          {isLoading ? "Creating..." : submitLabel}
         </Button>
       </form>
     </Form>

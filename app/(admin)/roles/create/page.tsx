@@ -52,6 +52,7 @@ export default function CreateRolePage() {
         </CardHeader>
         <CardContent>
           <RoleForm
+            mode="create"
             onSubmit={handleSubmit}
             isLoading={createRole.isPending}
             submitLabel="Create Role"

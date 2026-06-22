@@ -24,12 +24,16 @@ export default function EditRolePage() {
   const { updateRole } = useRoleMutations();
 
   const handleSubmit = async (data: CreateRoleData | UpdateRoleData) => {
-    await updateRole.mutateAsync({ id: roleId, data: data as UpdateRoleData });
-    const orgId =
-      typeof role?.organizationId === "string" ? role.organizationId : "";
-    router.push(
-      orgId ? `/roles?organizationId=${encodeURIComponent(orgId)}` : "/roles",
-    );
+    try {
+      await updateRole.mutateAsync({ id: roleId, data: data as UpdateRoleData });
+      const orgId =
+        typeof role?.organizationId === "string" ? role.organizationId : "";
+      router.push(
+        orgId ? `/roles?organizationId=${encodeURIComponent(orgId)}` : "/roles",
+      );
+    } catch {
+      // Error toast handled in mutation hook
+    }
   };
 
   if (isLoading) {
@@ -66,6 +70,7 @@ export default function EditRolePage() {
         <CardContent>
           <RoleForm
             key={role.id || role._id}
+            mode="edit"
             initialData={role}
             onSubmit={handleSubmit}
             isLoading={updateRole.isPending}

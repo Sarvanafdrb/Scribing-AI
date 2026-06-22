@@ -44,12 +44,11 @@ export function RoleFilters({
           />
         </div>
 
-        <Select value={organizationId || "all"} onValueChange={(v) => onOrganizationChange(v === "all" ? "" : v)}>
+        <Select value={organizationId} onValueChange={onOrganizationChange}>
           <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Select organization" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All organizations</SelectItem>
             {organizationOptions.map((org) => (
               <SelectItem key={org.id} value={org.id}>
                 {org.name}

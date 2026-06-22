@@ -22,8 +22,20 @@ export const roleService = {
     page?: number;
     limit?: number;
   }) => {
+    if (!params?.organizationId) {
+      return {
+        roles: [],
+        total: 0,
+        page: 1,
+        limit: params?.limit || 10,
+        totalPages: 1,
+        activeCount: 0,
+        inactiveCount: 0,
+      };
+    }
+
     const response = await api.get("/roles", {
-      params: params?.organizationId ? { organizationId: params.organizationId } : undefined,
+      params: { organizationId: params.organizationId },
     });
 
     const allRoles: Role[] = response.data.data || [];

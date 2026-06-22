@@ -25,7 +25,11 @@ export default function EditRolePage() {
 
   const handleSubmit = async (data: CreateRoleData | UpdateRoleData) => {
     await updateRole.mutateAsync({ id: roleId, data: data as UpdateRoleData });
-    router.push("/roles");
+    const orgId =
+      typeof role?.organizationId === "string" ? role.organizationId : "";
+    router.push(
+      orgId ? `/roles?organizationId=${encodeURIComponent(orgId)}` : "/roles",
+    );
   };
 
   if (isLoading) {

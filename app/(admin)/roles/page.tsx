@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,18 +15,25 @@ import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 const PAGE_SIZE = 5;
 
 export default function RolesPage() {
+  const searchParams = useSearchParams();
+  const organizationIdFromUrl = searchParams.get("organizationId") || "";
   const [search, setSearch] = useState("");
-  const [organizationId, setOrganizationId] = useState("");
+  const [organizationId, setOrganizationId] = useState(organizationIdFromUrl);
   const [page, setPage] = useState(1);
 
   const { organizations } = useOrganizations({ page: 1, limit: 100 });
 
   useEffect(() => {
+    if (organizationIdFromUrl) {
+      setOrganizationId(organizationIdFromUrl);
+      return;
+    }
+
     if (!organizationId && organizations.length > 0) {
       const firstOrgId = organizations[0].id || organizations[0]._id || "";
       setOrganizationId(firstOrgId);
     }
-  }, [organizations, organizationId]);
+  }, [organizations, organizationId, organizationIdFromUrl]);
 
   const {
     roles,

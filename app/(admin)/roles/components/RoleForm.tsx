@@ -46,12 +46,22 @@ interface RoleFormProps {
   submitLabel?: string;
 }
 
+const resolveOrganizationId = (organizationId?: Role["organizationId"]) => {
+  if (!organizationId) return "";
+  if (typeof organizationId === "string") return organizationId;
+  if (typeof organizationId === "object") {
+    const value = organizationId as { _id?: string; id?: string };
+    return value._id || value.id || "";
+  }
+  return String(organizationId);
+};
+
 const getDefaultValues = (data?: Role, isEdit = false) => {
   if (isEdit) {
     return {
       name: data?.name || "",
       description: data?.description || "",
-      organizationId: data?.organizationId || "",
+      organizationId: resolveOrganizationId(data?.organizationId),
     };
   }
 

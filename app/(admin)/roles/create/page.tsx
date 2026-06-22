@@ -20,8 +20,11 @@ export default function CreateRolePage() {
   const { createRole } = useRoleMutations();
 
   const handleSubmit = async (data: CreateRoleData | UpdateRoleData) => {
-    await createRole.mutateAsync(data as unknown as CreateRoleData);
-    router.push("/roles");
+    const payload = data as CreateRoleData;
+    await createRole.mutateAsync(payload);
+    router.push(
+      `/roles?organizationId=${encodeURIComponent(payload.organizationId)}`,
+    );
   };
 
   return (

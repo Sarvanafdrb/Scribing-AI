@@ -3,7 +3,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit } from "lucide-react";
+import { AlertCircle, ArrowLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,6 +34,32 @@ export default function EditOrganizationPage() {
 
   if (!organization) {
     return <div>Organization not found</div>;
+  }
+
+  const isActive = organization.isActive !== false;
+
+  if (!isActive) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <AlertCircle className="h-12 w-12 text-muted-foreground" />
+          <div>
+            <h2 className="text-lg font-semibold">
+              Cannot Edit Inactive Organization
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Activate this organization before making changes.
+            </p>
+          </div>
+          <Link href="/organizations">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Organizations
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

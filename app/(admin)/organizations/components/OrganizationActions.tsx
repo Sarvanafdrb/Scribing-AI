@@ -58,7 +58,7 @@ export function OrganizationActions({
   };
 
   // Helper to get status
-  const isActive = organization.isActive ?? false;
+  const isActive = organization.isActive !== false;
 
   const handleStatusToggle = async () => {
     try {
@@ -104,7 +104,10 @@ export function OrganizationActions({
             View Details
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => router.push(`/organizations/${orgId}/edit`)}
+            disabled={!isActive}
+            onClick={() => {
+              if (isActive) router.push(`/organizations/${orgId}/edit`);
+            }}
           >
             <Edit className="mr-2 h-4 w-4" />
             Edit

@@ -67,7 +67,7 @@ export default function OrganizationDetailsPage() {
   };
 
   // Helper to get status
-  const isActive = organization?.isActive ?? false;
+  const isActive = organization?.isActive !== false;
   const status = isActive ? "active" : "inactive";
 
   // Helper to format date safely
@@ -239,12 +239,19 @@ export default function OrganizationDetailsPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/organizations/${orgId}/edit`}>
-            <Button variant="outline">
+          {isActive ? (
+            <Link href={`/organizations/${orgId}/edit`}>
+              <Button variant="outline">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            </Link>
+          ) : (
+            <Button variant="outline" disabled>
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Button>
-          </Link>
+          )}
           <Button
             variant={isActive ? "destructive" : "default"}
             onClick={handleStatusToggle}
@@ -479,12 +486,19 @@ export default function OrganizationDetailsPage() {
             View Members
           </Button>
         </Link>
-        <Link href={`/organizations/${orgId}/edit`}>
-          <Button variant="outline" className="w-full">
+        {isActive ? (
+          <Link href={`/organizations/${orgId}/edit`}>
+            <Button variant="outline" className="w-full">
+              <Edit className="mr-2 h-4 w-4" />
+              Edit Organization
+            </Button>
+          </Link>
+        ) : (
+          <Button variant="outline" className="w-full" disabled>
             <Edit className="mr-2 h-4 w-4" />
             Edit Organization
           </Button>
-        </Link>
+        )}
         <Link href={`/organizations/${orgId}/settings`}>
           <Button variant="outline" className="w-full">
             <Settings className="mr-2 h-4 w-4" />

@@ -1,3 +1,5 @@
+import type { TranscriptData } from "@/types/transcript.types";
+
 export type SessionType = "consultation" | "follow_up" | "diagnostic" | "other";
 
 export type SessionStatus =
@@ -34,6 +36,7 @@ export interface Session {
   status: SessionStatus;
   audioUrl?: string;
   transcript?: string;
+  transcriptData?: TranscriptData;
   duration?: number;
   startedAt?: string;
   completedAt?: string;

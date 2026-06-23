@@ -8,6 +8,7 @@ import {
   Calendar,
   Clock,
   Edit,
+  FileText,
   Mic,
   User,
 } from "lucide-react";
@@ -23,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/hooks/sessions/useSession";
 import { SessionStatusBadge } from "../components/SessionStatusBadge";
 import { AudioPlayback } from "@/components/recording/AudioPlayback";
+import { TranscriptSegmentList } from "@/components/transcript/TranscriptSegmentList";
+import { TranscriptMetadataPanel } from "@/components/transcript/TranscriptMetadataPanel";
 import {
   SessionOrganization,
   SessionUser,
@@ -89,6 +92,12 @@ export default function SessionDetailsPage() {
             <Button className="bg-red-600 hover:bg-red-700">
               <Mic className="mr-2 h-4 w-4" />
               Start Recording
+            </Button>
+          </Link>
+          <Link href={`/transcript?sessionId=${sessionId}`}>
+            <Button variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              View Transcript
             </Button>
           </Link>
           <Link href={`/sessions/${sessionId}/edit`}>
@@ -202,12 +211,35 @@ export default function SessionDetailsPage() {
             </div>
           )}
 
-          {session.transcript && (
-            <div>
-              <h3 className="font-semibold mb-2">Transcript</h3>
-              <div className="rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-wrap">
-                {session.transcript}
+          {(session.transcriptData || session.transcript) && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Transcript</h3>
+                <Link href={`/transcript?sessionId=${sessionId}`}>
+                  <Button variant="outline" size="sm">
+                    Open Transcript Studio
+                  </Button>
+                </Link>
               </div>
+
+              {session.transcriptData ? (
+                <>
+                  <TranscriptMetadataPanel transcript={session.transcriptData} />
+                  <TranscriptSegmentList
+                    segments={session.transcriptData.segments.slice(0, 5)}
+                  />
+                  {session.transcriptData.segments.length > 5 && (
+                    <p className="text-sm text-muted-foreground">
+                      Showing first 5 segments. Open Transcript Studio for the
+                      full view.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-wrap">
+                  {session.transcript}
+                </div>
+              )}
             </div>
           )}
         </CardContent>

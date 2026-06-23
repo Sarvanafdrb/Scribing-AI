@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
 import { Session, SessionStatus } from "@/types/session.types";
-import { Edit, Eye, Mic, MoreHorizontal, Trash2, Activity } from "lucide-react";
+import { Edit, Eye, FileText, Mic, MoreHorizontal, Trash2, Activity } from "lucide-react";
 import { SESSION_STATUS_OPTIONS } from "./SessionStatusBadge";
 
 interface SessionActionsProps {
@@ -73,6 +73,12 @@ export function SessionActions({ session, onStatusChange }: SessionActionsProps)
           >
             <Mic className="mr-2 h-4 w-4" />
             Record
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => router.push(`/transcript?sessionId=${sessionId}`)}
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            View Transcript
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => router.push(`/sessions/${sessionId}`)}>
             <Eye className="mr-2 h-4 w-4" />

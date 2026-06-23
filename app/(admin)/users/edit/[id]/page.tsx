@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit } from "lucide-react";
+import { AlertCircle, ArrowLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,6 +37,30 @@ export default function EditUserPage() {
 
   if (!user) {
     return <div className="p-6">User not found</div>;
+  }
+
+  const isActive = user.isActive !== false;
+
+  if (!isActive) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <AlertCircle className="h-12 w-12 text-muted-foreground" />
+          <div>
+            <h2 className="text-lg font-semibold">Cannot Edit Inactive User</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Activate this user before making changes.
+            </p>
+          </div>
+          <Link href="/users">
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Users
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

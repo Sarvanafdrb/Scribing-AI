@@ -39,7 +39,7 @@ export function UserActions({ user, onStatusChange }: UserActionsProps) {
     return user.email;
   };
 
-  const isActive = user.isActive ?? false;
+  const isActive = user.isActive !== false;
   const userId = getUserId();
 
   const handleStatusToggle = async () => {
@@ -76,7 +76,10 @@ export function UserActions({ user, onStatusChange }: UserActionsProps) {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() => router.push(`/users/${userId}/edit`)}
+            disabled={!isActive}
+            onClick={() => {
+              if (isActive) router.push(`/users/${userId}/edit`);
+            }}
           >
             <Edit className="mr-2 h-4 w-4" />
             Edit

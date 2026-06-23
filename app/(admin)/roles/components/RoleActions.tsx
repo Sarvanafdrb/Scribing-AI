@@ -60,7 +60,12 @@ export function RoleActions({ role, onStatusChange }: RoleActionsProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => router.push(`/roles/${roleId}/edit`)}>
+          <DropdownMenuItem
+            disabled={!isActive}
+            onClick={() => {
+              if (isActive) router.push(`/roles/${roleId}/edit`);
+            }}
+          >
             <Edit className="mr-2 h-4 w-4" />
             Edit
           </DropdownMenuItem>

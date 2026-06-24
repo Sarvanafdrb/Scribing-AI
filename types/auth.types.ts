@@ -28,6 +28,45 @@ export interface AuthUser {
   permissions?: string[];
 }
 
+type AuthUserInput = {
+  id?: string;
+  _id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isSuperAdmin?: boolean;
+  organizationName?: string;
+  organization?: AuthOrganization | null;
+  role?: AuthRole | string | null;
+  roleName?: string;
+  permissions?: string[];
+};
+
+export const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
+  const role: AuthRole | null =
+    user.role && typeof user.role === "object"
+      ? user.role
+      : user.roleName || (typeof user.role === "string" ? user.role : undefined)
+        ? { name: user.roleName || (user.role as string) }
+        : null;
+
+  return {
+    id: user.id || user._id || "",
+    _id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    isSuperAdmin: Boolean(user.isSuperAdmin),
+    permissions: user.permissions || [],
+    organizationName: user.organizationName || user.organization?.name,
+    organization: user.isSuperAdmin ? null : (user.organization ?? null),
+    role,
+    roleName:
+      user.roleName ||
+      (typeof user.role === "string" ? user.role : user.role?.name),
+  };
+};
+
 export const getUserOrganizationId = (user?: AuthUser | null): string => {
   if (!user) return "";
 

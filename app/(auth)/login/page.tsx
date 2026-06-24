@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { authService } from "@/services/auth.service";
+import { normalizeAuthUser } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,17 +87,7 @@ export default function LoginPage() {
         throw new Error("Invalid response from server");
       }
 
-      setAuth(
-        {
-          ...user,
-          isSuperAdmin: Boolean(user.isSuperAdmin),
-          permissions: user.permissions || [],
-          organizationName: user.organizationName || user.organization?.name,
-          organization: user.isSuperAdmin ? null : user.organization,
-        },
-        accessToken,
-        refreshToken,
-      );
+      setAuth(normalizeAuthUser(user), accessToken, refreshToken);
 
       toast.success("Welcome back!", {
         description: `Hello ${user.firstName} ${user.lastName}`,

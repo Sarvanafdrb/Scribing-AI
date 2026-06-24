@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { AuthOrganization, AuthRole, AuthUser } from "@/types/auth.types";
 
 export interface LoginData {
   email: string;
@@ -9,22 +10,9 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   data: {
-    user: {
-      id: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-      isSuperAdmin?: boolean;
-      permissions?: string[];
-      organizationName?: string;
-      organization?: {
-        id?: string;
-        _id?: string;
-        name: string;
-        organizationCode?: string;
-      } | null;
-      role?: string;
-      roleName?: string;
+    user: AuthUser & {
+      organization?: AuthOrganization | null;
+      role?: AuthRole | null;
     };
     accessToken: string;
     refreshToken: string;

@@ -1,21 +1,21 @@
 // store/auth.store.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { User } from "@/types";
+import { AuthUser } from "@/types/auth.types";
 
 interface AuthState {
-  user: User | null;
+  user: AuthUser | null;
   token: string | null;
   refreshToken: string | null;
   isLoading: boolean;
   _hasHydrated: boolean;
 
   setAuth: (
-    user: User | null,
+    user: AuthUser | null,
     token: string | null,
     refreshToken?: string | null,
   ) => void;
-  setUser: (user: User | null) => void;
+  setUser: (user: AuthUser | null) => void;
   setToken: (token: string | null) => void;
   setLoading: (loading: boolean) => void;
   setHasHydrated: (state: boolean) => void;

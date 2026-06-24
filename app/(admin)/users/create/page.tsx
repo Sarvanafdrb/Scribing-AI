@@ -13,11 +13,27 @@ import {
 } from "@/components/ui/card";
 import { UserForm } from "../components/UserForm";
 import { useUserMutations } from "@/hooks/users/useUserMutations";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { CreateUserData, UpdateUserData } from "@/types/user.types";
 
 export default function CreateUserPage() {
   const router = useRouter();
   const { createUser } = useUserMutations();
+  const { canCreateUser } = useAccessControl();
+
+  if (!canCreateUser()) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <h2 className="text-lg font-semibold">Access Denied</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          You do not have permission to create users.
+        </p>
+        <Link href="/users" className="mt-4 inline-block">
+          <Button variant="outline">Back to Users</Button>
+        </Link>
+      </div>
+    );
+  }
 
   const handleSubmit = async (data: CreateUserData | UpdateUserData) => {
     await createUser.mutateAsync(data as unknown as CreateUserData);

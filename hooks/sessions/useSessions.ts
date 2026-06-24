@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
+import { useTenantScope } from "@/hooks/useTenantScope";
 
 interface UseSessionsParams {
   search?: string;
@@ -13,10 +14,13 @@ interface UseSessionsParams {
 }
 
 export const useSessions = (params?: UseSessionsParams) => {
+  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
   const search = params?.search || "";
   const status = params?.status || "";
   const sessionType = params?.sessionType || "";
-  const organizationId = params?.organizationId || "";
+  const organizationId = isSuperAdmin
+    ? params?.organizationId || ""
+    : scopedOrgId;
   const isActive = params?.isActive || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;

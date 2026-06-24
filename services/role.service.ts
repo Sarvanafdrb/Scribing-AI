@@ -88,4 +88,21 @@ export const roleService = {
     const response = await api.patch(`/roles/${id}/activate`);
     return response.data.data;
   },
+
+  getPermissions: async (id: string) => {
+    const response = await api.get(`/roles/${id}/permissions`);
+    return response.data.data || [];
+  },
+
+  assignPermissions: async (id: string, permissionIds: string[]) => {
+    const response = await api.post(`/roles/${id}/permissions`, {
+      permissionIds,
+    });
+    return response.data.data;
+  },
+
+  getStats: async () => {
+    const response = await api.get("/roles/stats");
+    return response.data.data;
+  },
 };

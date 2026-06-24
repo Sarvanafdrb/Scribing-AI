@@ -12,21 +12,60 @@ import {
   Shield,
   Mic,
   Settings,
+  KeyRound,
   LogOut,
   Menu,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { hasPermission } from "@/types/auth.types";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 
 const menuItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/organizations", label: "Organizations", icon: Building2 },
-  { path: "/users", label: "Users", icon: Users },
-  { path: "/roles", label: "Roles", icon: Shield },
-  { path: "/sessions", label: "Sessions", icon: Mic },
-  { path: "/settings", label: "Settings", icon: Settings },
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    permission: "USER_VIEW",
+  },
+  {
+    path: "/organizations",
+    label: "Organizations",
+    icon: Building2,
+    permission: "ORGANIZATION_VIEW",
+  },
+  {
+    path: "/users",
+    label: "Users",
+    icon: Users,
+    permission: "USER_VIEW",
+  },
+  {
+    path: "/roles",
+    label: "Roles",
+    icon: Shield,
+    permission: "ROLE_VIEW",
+  },
+  {
+    path: "/permissions",
+    label: "Permissions",
+    icon: KeyRound,
+    permission: "PERMISSION_VIEW",
+  },
+  {
+    path: "/sessions",
+    label: "Sessions",
+    icon: Mic,
+    permission: "SESSION_VIEW",
+  },
+  {
+    path: "/settings",
+    label: "Settings",
+    icon: Settings,
+    permission: "SETTINGS_VIEW",
+  },
 ];
 
 export default function AdminLayout({
@@ -35,6 +74,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, token, isLoading, _hasHydrated, logout } = useAuthStore();
+  const { isSuperAdmin } = useAccessControl();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -142,16 +182,24 @@ export default function AdminLayout({
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-xs text-gray-500 mt-1">{user?.email}</p>
-            {user?.organizationName && (
-              <p className="text-xs text-blue-600 mt-1">
-                {user?.organizationName}
+            {isSuperAdmin ? (
+              <p className="text-xs text-blue-600 mt-1 font-medium">
+                Super Admin
               </p>
+            ) : (
+              user?.organizationName && (
+                <p className="text-xs text-blue-600 mt-1">
+                  {user.organizationName}
+                </p>
+              )
             )}
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
-            {menuItems.map((item) => {
+            {menuItems
+              .filter((item) => hasPermission(user, item.permission))
+              .map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.path;
               return (

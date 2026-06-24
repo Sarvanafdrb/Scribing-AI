@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -27,10 +27,13 @@ import {
 } from "@/components/ui/form";
 
 import { Organization } from "@/types/organization.types";
+import { useOrganizations } from "@/hooks/organizations/useOrganizations";
+import { useTenantScope } from "@/hooks/useTenantScope";
 
-const formSchema = z.object({
+const baseFormSchema = z.object({
   name: z.string().trim().min(2, "Organization name must be at least 2 characters"),
   organizationType: z.string().min(1, "Organization type is required"),
+  parentOrganizationId: z.string().optional(),
   description: z.string().optional(),
   website: z.string().url("Invalid website URL").optional().or(z.literal("")),
   contactNumber: z.string().trim().min(10, "Enter valid contact number"),
@@ -39,9 +42,10 @@ const formSchema = z.object({
   providerCount: z.string().optional(),
   adminName: z.string().trim().min(2, "Admin name required"),
   adminEmail: z.string().trim().email("Invalid admin email"),
+  adminPassword: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<typeof baseFormSchema>;
 
 const getDefaultValues = (data?: Organization): FormData => ({
   name: data?.name?.trim() || "",
@@ -54,6 +58,13 @@ const getDefaultValues = (data?: Organization): FormData => ({
   providerCount: data?.providerCount || "",
   adminName: data?.adminName?.trim() || "",
   adminEmail: (data?.adminEmail || data?.email || "").trim(),
+  adminPassword: "",
+  parentOrganizationId:
+    (typeof data?.parentOrganizationId === "string"
+      ? data.parentOrganizationId
+      : data?.parentOrganization?.id ||
+        data?.parentOrganization?._id ||
+        "") || "",
 });
 
 interface OrganizationFormProps {
@@ -80,10 +91,29 @@ export function OrganizationForm({
   submitLabel = "Create Organization",
 }: OrganizationFormProps) {
   const [logo, setLogo] = useState<File | null>(null);
-
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const { isSuperAdmin, organizationId: scopedOrgId } = useTenantScope();
+  const { organizations, isLoading: parentOrgsLoading } = useOrganizations({
+    page: 1,
+    limit: 100,
+  });
 
   const isEditing = Boolean(initialData?.id || initialData?._id);
+  const showParentPicker = !isEditing && (isSuperAdmin || organizations.length > 0);
+
+  const formSchema = useMemo(
+    () =>
+      baseFormSchema.superRefine((data, ctx) => {
+        if (!isEditing && (!data.adminPassword || data.adminPassword.length < 6)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Admin password must be at least 6 characters",
+            path: ["adminPassword"],
+          });
+        }
+      }),
+    [isEditing],
+  );
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -102,6 +132,13 @@ export function OrganizationForm({
     }
   }, [initialData]);
 
+  useEffect(() => {
+    if (isEditing || isSuperAdmin) return;
+    if (scopedOrgId && !form.getValues("parentOrganizationId")) {
+      form.setValue("parentOrganizationId", scopedOrgId);
+    }
+  }, [form, isEditing, isSuperAdmin, scopedOrgId]);
+
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
@@ -119,11 +156,19 @@ export function OrganizationForm({
   };
 
   const handleSubmit = async (data: FormData) => {
-    await onSubmit({
+    const payload: Record<string, unknown> = {
       ...data,
-
       logo: logo ?? initialData?.logo ?? null,
-    });
+    };
+
+    if (isEditing) {
+      delete payload.adminPassword;
+      delete payload.parentOrganizationId;
+    } else if (!payload.parentOrganizationId || payload.parentOrganizationId === "__none__") {
+      delete payload.parentOrganizationId;
+    }
+
+    await onSubmit(payload as FormData & { logo?: File | string | null });
   };
 
   return (
@@ -184,6 +229,56 @@ export function OrganizationForm({
             </FormItem>
           )}
         />
+
+        {showParentPicker && (
+          <FormField
+            control={form.control}
+            name="parentOrganizationId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {isSuperAdmin ? "Parent Organization (optional)" : "Parent Organization *"}
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || (isSuperAdmin ? "__none__" : undefined)}
+                  disabled={parentOrgsLoading || (!isSuperAdmin && organizations.length <= 1)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={
+                        parentOrgsLoading
+                          ? "Loading organizations..."
+                          : isSuperAdmin
+                            ? "Top-level organization (no parent)"
+                            : "Select parent organization"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isSuperAdmin && (
+                      <SelectItem value="__none__">Top-level (no parent)</SelectItem>
+                    )}
+                    {organizations.map((org) => {
+                      const id = org.id || org._id || "";
+                      return (
+                        <SelectItem key={id} value={id}>
+                          {org.name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {isSuperAdmin
+                    ? "Leave empty to create a standalone organization, or select a parent to create a branch."
+                    : "Branch organizations are created under your organization hierarchy."}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Type */}
 
@@ -258,6 +353,26 @@ export function OrganizationForm({
               </FormItem>
             )}
           />
+
+          {!isEditing && (
+            <FormField
+              control={form.control}
+              name="adminPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Admin Password *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
 
         {/* Contact */}

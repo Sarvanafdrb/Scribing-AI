@@ -9,10 +9,12 @@ import { UserFilters } from "./components/UserFilters";
 import { UserTable } from "./components/UserTable";
 import { UserSkeleton } from "./components/UserSkeleton";
 import { useUsers } from "@/hooks/users/useUsers";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 const PAGE_SIZE = 5;
 
 export default function UsersPage() {
+  const { canCreateUser, canViewUsers, canManageAllUsers } = useAccessControl();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
@@ -43,21 +45,36 @@ export default function UsersPage() {
     setPage(1);
   };
 
+  if (!canViewUsers()) {
+    return (
+      <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
+        <h1 className="text-xl font-semibold text-slate-900">Access Denied</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          You do not have permission to view users.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Users</h1>
           <p className="text-muted-foreground">
-            Manage system users • {total} total
+            {canManageAllUsers
+              ? `Manage system users • ${total} total`
+              : "View your profile"}
           </p>
         </div>
-        <Link href="/users/create">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" />
-            New User
-          </Button>
-        </Link>
+        {canCreateUser() && (
+          <Link href="/users/create">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              New User
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

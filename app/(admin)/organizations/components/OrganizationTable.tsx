@@ -68,6 +68,7 @@ export function OrganizationTable({
           <TableHeader>
             <TableRow>
               <TableHead className="font-bold">Organization</TableHead>
+              <TableHead className="font-bold">Parent</TableHead>
               <TableHead className="font-bold">Contact</TableHead>
               <TableHead className="font-bold">Plan</TableHead>
               <TableHead className="font-bold">Status</TableHead>
@@ -79,7 +80,7 @@ export function OrganizationTable({
             {organizations.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No organizations found
@@ -111,6 +112,11 @@ export function OrganizationTable({
                           )}
                         </div>
                       </Link>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {org.parentOrganization?.name || "—"}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">

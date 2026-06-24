@@ -1,4 +1,3 @@
-// app/(admin)/organizations/components/OrganizationActions.tsx
 "use client";
 
 import { useState } from "react";
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { useOrganizationMutations } from "@/hooks/organizations/useOrganizationMutations";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { Organization } from "@/types/organization.types";
 import {
   Edit,
@@ -45,24 +45,29 @@ export function OrganizationActions({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { activateOrganization, deactivateOrganization, deleteOrganization } =
     useOrganizationMutations();
+  const {
+    canEditOrganization,
+    canDeleteOrganization,
+    canCreateUser,
+    canViewUsers,
+  } = useAccessControl();
 
-  // Helper to get organization ID
   const getOrgId = (): string => {
     if (organization.id) return organization.id;
-    // @ts-ignore - _id might come from MongoDB
     if (organization._id) return organization._id;
-    // Fallback to organizationCode
     if (organization.organizationCode) return organization.organizationCode;
-    // Last resort: use email
     return organization.email;
   };
 
-  // Helper to get status
   const isActive = organization.isActive !== false;
+  const orgId = getOrgId();
+  const canEdit = canEditOrganization();
+  const canDelete = canDeleteOrganization();
+  const canManageMembers = canCreateUser() && canViewUsers();
+  const hasAnyAction = canEdit || canDelete || canManageMembers;
 
   const handleStatusToggle = async () => {
     try {
-      const orgId = getOrgId();
       if (isActive) {
         await deactivateOrganization.mutateAsync(orgId);
       } else {
@@ -76,7 +81,6 @@ export function OrganizationActions({
 
   const handleDelete = async () => {
     try {
-      const orgId = getOrgId();
       await deleteOrganization.mutateAsync(orgId);
       onStatusChange?.();
       setShowDeleteDialog(false);
@@ -85,7 +89,18 @@ export function OrganizationActions({
     }
   };
 
-  const orgId = getOrgId();
+  if (!hasAnyAction) {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-8 px-2 text-muted-foreground"
+        onClick={() => router.push(`/organizations/${orgId}`)}
+      >
+        View
+      </Button>
+    );
+  }
 
   return (
     <>
@@ -103,43 +118,54 @@ export function OrganizationActions({
             <Users className="mr-2 h-4 w-4" />
             View Details
           </DropdownMenuItem>
-          <DropdownMenuItem
-            disabled={!isActive}
-            onClick={() => {
-              if (isActive) router.push(`/organizations/${orgId}/edit`);
-            }}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push(`/organizations/${orgId}/users`)}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            Manage Users
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push(`/organizations/${orgId}/settings`)}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleStatusToggle}>
-            <Power className="mr-2 h-4 w-4" />
-            {isActive ? "Deactivate" : "Activate"}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-red-600 focus:text-red-600"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
+          {canEdit && (
+            <DropdownMenuItem
+              disabled={!isActive}
+              onClick={() => {
+                if (isActive) router.push(`/organizations/edit/${orgId}`);
+              }}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          )}
+          {canManageMembers && (
+            <DropdownMenuItem
+              onClick={() => router.push(`/organizations/users/${orgId}`)}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Manage Users
+            </DropdownMenuItem>
+          )}
+          {canEdit && (
+            <DropdownMenuItem
+              onClick={() => router.push(`/organizations/settings/${orgId}`)}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
+          )}
+          {canEdit && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleStatusToggle}>
+                <Power className="mr-2 h-4 w-4" />
+                {isActive ? "Deactivate" : "Activate"}
+              </DropdownMenuItem>
+            </>
+          )}
+          {canDelete && (
+            <DropdownMenuItem
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-red-600 focus:text-red-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>

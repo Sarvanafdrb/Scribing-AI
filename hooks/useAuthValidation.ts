@@ -33,11 +33,20 @@ export const useAuthValidation = () => {
         console.log("📡 /auth/me Response:", response);
 
         // Handle different response structures
-        const user = response?.data?.user || response?.user || response?.data;
+        const userData = response?.data?.user || response?.user || response?.data;
 
-        if (!user || !user.id) {
+        if (!userData || !userData.id) {
           throw new Error("Invalid user response structure");
         }
+
+        const user = {
+          ...userData,
+          isSuperAdmin: Boolean(userData.isSuperAdmin),
+          permissions: userData.permissions || [],
+          organizationName:
+            userData.organizationName || userData.organization?.name,
+          organization: userData.isSuperAdmin ? null : userData.organization,
+        };
 
         setUser(user);
         console.log("✅ User validated successfully:", user.email);

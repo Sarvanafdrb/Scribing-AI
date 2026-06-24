@@ -14,8 +14,17 @@ export interface LoginResponse {
       firstName: string;
       lastName: string;
       email: string;
+      isSuperAdmin?: boolean;
+      permissions?: string[];
       organizationName?: string;
+      organization?: {
+        id?: string;
+        _id?: string;
+        name: string;
+        organizationCode?: string;
+      } | null;
       role?: string;
+      roleName?: string;
     };
     accessToken: string;
     refreshToken: string;
@@ -23,8 +32,8 @@ export interface LoginResponse {
 }
 
 export const authService = {
-  login: async (data: LoginData) => {
-    const response = await api.post("/auth/login", data);
+  login: async (data: LoginData): Promise<LoginResponse> => {
+    const response = await api.post<LoginResponse>("/auth/login", data);
     return response.data;
   },
 

@@ -14,12 +14,14 @@ import {
 import { UserForm } from "../../components/UserForm";
 import { useUserMutations } from "@/hooks/users/useUserMutations";
 import { useUser } from "@/hooks/users/useUser";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { CreateUserData, UpdateUserData } from "@/types/user.types";
 
 export default function EditUserPage() {
   const { id } = useParams();
   const router = useRouter();
   const userId = id as string;
+  const { canEditUser } = useAccessControl();
   const { data: user, isLoading } = useUser(userId);
   const { updateUser } = useUserMutations();
 
@@ -37,6 +39,21 @@ export default function EditUserPage() {
 
   if (!user) {
     return <div className="p-6">User not found</div>;
+  }
+
+  if (!canEditUser(userId)) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 text-center">
+        <AlertCircle className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">Access Denied</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          You do not have permission to edit this user.
+        </p>
+        <Link href="/users" className="mt-4 inline-block">
+          <Button variant="outline">Back to Users</Button>
+        </Link>
+      </div>
+    );
   }
 
   const isActive = user.isActive !== false;

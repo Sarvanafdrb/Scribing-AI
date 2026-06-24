@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { roleService } from "@/services/role.service";
 import { roleKeys } from "@/services/role.queries";
+import { useTenantScope } from "@/hooks/useTenantScope";
 
 interface UseRolesParams {
   organizationId?: string;
@@ -10,7 +11,10 @@ interface UseRolesParams {
 }
 
 export const useRoles = (params?: UseRolesParams) => {
-  const organizationId = params?.organizationId || "";
+  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
+  const organizationId = isSuperAdmin
+    ? params?.organizationId || ""
+    : scopedOrgId;
   const search = params?.search || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;
@@ -38,4 +42,12 @@ export const useRoles = (params?: UseRolesParams) => {
     activeCount: query.data?.activeCount || 0,
     inactiveCount: query.data?.inactiveCount || 0,
   };
+};
+
+export const useRoleStats = () => {
+  return useQuery({
+    queryKey: roleKeys.stats(),
+    queryFn: () => roleService.getStats(),
+    staleTime: 60 * 1000,
+  });
 };

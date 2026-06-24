@@ -23,6 +23,13 @@ export interface Organization {
   providerCount?: string;
   adminName?: string;
   adminEmail?: string;
+  parentOrganizationId?: string | null;
+  parentOrganization?: {
+    id?: string;
+    _id?: string;
+    name?: string;
+    organizationCode?: string;
+  } | null;
 }
 
 // export interface CreateOrganizationData {
@@ -61,7 +68,9 @@ export interface CreateOrganizationData {
   providerCount?: string;
   adminName: string;
   adminEmail: string;
+  adminPassword?: string;
   logo?: File | string | null;
+  parentOrganizationId?: string;
 }
 export interface UpdateOrganizationData extends Partial<CreateOrganizationData> {
   status?: "active" | "inactive";

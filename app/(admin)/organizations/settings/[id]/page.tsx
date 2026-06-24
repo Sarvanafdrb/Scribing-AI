@@ -33,12 +33,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 export default function OrganizationSettingsPage() {
   const router = useRouter();
   const { id } = useParams();
   const organizationId = id as string;
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { canEditOrganization, canDeleteOrganization } = useAccessControl();
 
   const {
     data: organization,
@@ -165,6 +167,23 @@ export default function OrganizationSettingsPage() {
   }
 
   const orgId = getOrgId();
+  const canEdit = canEditOrganization();
+  const canDelete = canDeleteOrganization();
+
+  if (!canEdit && !canDelete) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <AlertCircle className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">Access Denied</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          You do not have permission to manage organization settings.
+        </p>
+        <Link href={`/organizations/${orgId}`} className="mt-4 inline-block">
+          <Button variant="outline">Back to Organization</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -179,6 +198,7 @@ export default function OrganizationSettingsPage() {
       </div>
 
       {/* Status Management */}
+      {canEdit && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -223,8 +243,9 @@ export default function OrganizationSettingsPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
-      {/* Danger Zone */}
+      {canDelete && (
       <Card className="border-destructive/20">
         <CardHeader className="bg-destructive/5">
           <CardTitle className="text-destructive flex items-center gap-2">
@@ -258,6 +279,7 @@ export default function OrganizationSettingsPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

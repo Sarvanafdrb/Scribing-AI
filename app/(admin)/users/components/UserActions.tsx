@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useUserMutations } from "@/hooks/users/useUserMutations";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { User } from "@/types/user.types";
 import { Edit, MoreHorizontal, Power, Trash2 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export function UserActions({ user, onStatusChange }: UserActionsProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { activateUser, deactivateUser, deleteUser } = useUserMutations();
+  const { canEditUser, canManageUserStatus, canDeleteUser } = useAccessControl();
 
   const getUserId = (): string => {
     if (user.id) return user.id;
@@ -41,6 +43,13 @@ export function UserActions({ user, onStatusChange }: UserActionsProps) {
 
   const isActive = user.isActive !== false;
   const userId = getUserId();
+  const canEdit = canEditUser(userId);
+  const canToggleStatus = canManageUserStatus(userId);
+  const canDelete = canDeleteUser(userId);
+
+  if (!canEdit && !canToggleStatus && !canDelete) {
+    return null;
+  }
 
   const handleStatusToggle = async () => {
     try {
@@ -75,27 +84,35 @@ export function UserActions({ user, onStatusChange }: UserActionsProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem
-            disabled={!isActive}
-            onClick={() => {
-              if (isActive) router.push(`/users/${userId}/edit`);
-            }}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleStatusToggle}>
-            <Power className="mr-2 h-4 w-4" />
-            {isActive ? "Deactivate" : "Activate"}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-red-600 focus:text-red-600"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Deactivate User
-          </DropdownMenuItem>
+          {canEdit && (
+            <DropdownMenuItem
+              disabled={!isActive}
+              onClick={() => {
+                if (isActive) router.push(`/users/edit/${userId}`);
+              }}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          )}
+          {canToggleStatus && (
+            <>
+              {canEdit && <DropdownMenuSeparator />}
+              <DropdownMenuItem onClick={handleStatusToggle}>
+                <Power className="mr-2 h-4 w-4" />
+                {isActive ? "Deactivate" : "Activate"}
+              </DropdownMenuItem>
+            </>
+          )}
+          {canDelete && (
+            <DropdownMenuItem
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-red-600 focus:text-red-600"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Deactivate User
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

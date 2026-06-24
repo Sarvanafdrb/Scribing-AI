@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -25,6 +25,15 @@ import {
 import { CreateUserData, UpdateUserData, User } from "@/types/user.types";
 import { organizationService } from "@/services/organization.service";
 import { roleService } from "@/services/role.service";
+import { useTenantScope } from "@/hooks/useTenantScope";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { Organization } from "@/types/organization.types";
+
+const getOrganizationOptionId = (org: Organization): string => {
+  const rawId = org.id || org._id;
+  if (!rawId) return "";
+  return typeof rawId === "string" ? rawId : String(rawId);
+};
 
 const createSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
@@ -92,7 +101,14 @@ export function UserForm({
   submitLabel = "Create User",
 }: UserFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?._id);
+  const {
+    organizationId: scopedOrgId,
+    organizationName: scopedOrgName,
+    canManageAllOrganizations,
+  } = useTenantScope();
+  const { canManageAllUsers } = useAccessControl();
   const schema = isEditing ? editSchema : createSchema;
+  const showRoleField = !isEditing || canManageAllUsers;
 
   const form = useForm<CreateFormData | EditFormData>({
     resolver: zodResolver(schema),
@@ -102,10 +118,26 @@ export function UserForm({
 
   const selectedOrgId = form.watch("organizationId");
 
-  const { data: orgData } = useQuery({
-    queryKey: ["organizations", "all-options"],
-    queryFn: () => organizationService.getAll({ limit: 50, page: 1 }),
+  const {
+    data: orgData,
+    isLoading: orgsLoading,
+    isError: orgsError,
+  } = useQuery({
+    queryKey: ["organizations", "user-form-options"],
+    queryFn: () => organizationService.getAll({ limit: 100, page: 1 }),
+    staleTime: 0,
   });
+
+  const organizationOptions = useMemo(() => {
+    return (orgData?.organizations || [])
+      .map((org) => ({
+        ...org,
+        id: getOrganizationOptionId(org),
+      }))
+      .filter((org) => org.id);
+  }, [orgData?.organizations]);
+
+  const showOrganizationPicker = canManageAllOrganizations;
 
   const {
     data: roles = [],
@@ -124,6 +156,12 @@ export function UserForm({
   }, [initialData, form]);
 
   useEffect(() => {
+    if (!isEditing && !showOrganizationPicker && scopedOrgId) {
+      form.setValue("organizationId", scopedOrgId);
+    }
+  }, [form, isEditing, showOrganizationPicker, scopedOrgId]);
+
+  useEffect(() => {
     if (!selectedOrgId || isEditing) return;
     form.setValue("roleId", "");
   }, [selectedOrgId, form, isEditing]);
@@ -140,6 +178,9 @@ export function UserForm({
 
     if (isEditing) {
       delete payload.organizationId;
+      if (!canManageAllUsers) {
+        delete payload.roleId;
+      }
       await onSubmit(payload as unknown as UpdateUserData);
       return;
     }
@@ -219,30 +260,65 @@ export function UserForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Organization *</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || undefined}
-                disabled={isEditing}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select organization" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(orgData?.organizations || []).map((org) => {
-                    const id = org.id || org._id || "";
-                    return (
-                      <SelectItem key={id} value={id}>
+              {!showOrganizationPicker && scopedOrgId ? (
+                <>
+                  <FormControl>
+                    <Input
+                      value={
+                        scopedOrgName ||
+                        organizationOptions.find((org) => org.id === scopedOrgId)
+                          ?.name ||
+                        "Your organization"
+                      }
+                      disabled
+                    />
+                  </FormControl>
+                  <input type="hidden" {...field} />
+                </>
+              ) : (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || undefined}
+                  disabled={isEditing || orgsLoading}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={
+                        orgsLoading
+                          ? "Loading organizations..."
+                          : orgsError
+                            ? "Failed to load organizations"
+                            : "Select organization"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizationOptions.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
                         {org.name}
                       </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {!showOrganizationPicker && scopedOrgId && (
+                <p className="text-xs text-muted-foreground">
+                  Users are created in your organization only.
+                </p>
+              )}
+              {showOrganizationPicker &&
+                !orgsLoading &&
+                organizationOptions.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No organizations found. Create an organization first.
+                </p>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
 
+        {showRoleField && (
         <FormField
           control={form.control}
           name="roleId"
@@ -288,6 +364,7 @@ export function UserForm({
             </FormItem>
           )}
         />
+        )}
 
         <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
           {isLoading

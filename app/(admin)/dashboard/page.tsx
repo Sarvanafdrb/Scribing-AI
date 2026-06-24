@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useUsers } from "@/hooks/users/useUsers";
 import { useSessionStats } from "@/hooks/sessions/useSessions";
+import { useRoleStats } from "@/hooks/roles/useRoles";
 import {
   Building2,
   Users,
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   });
   const { data: sessionStats, isLoading: sessionStatsLoading } =
     useSessionStats();
+  const { data: roleStats, isLoading: roleStatsLoading } = useRoleStats();
 
   if (!user) {
     return (
@@ -55,7 +57,7 @@ export default function DashboardPage() {
     },
     {
       title: "Active Roles",
-      value: "0",
+      value: roleStatsLoading ? "..." : String(roleStats?.activeCount ?? 0),
       icon: Shield,
       change: "+0%",
       color: "bg-blue-400",

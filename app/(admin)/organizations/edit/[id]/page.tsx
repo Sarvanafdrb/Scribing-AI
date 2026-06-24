@@ -16,10 +16,12 @@ import { OrganizationForm } from "../../components/OrganizationForm";
 
 import { useOrganizationMutations } from "@/hooks/organizations/useOrganizationMutations";
 import { useOrganization } from "@/hooks/organizations/useOrganization";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 export default function EditOrganizationPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { canEditOrganization } = useAccessControl();
   const { data: organization, isLoading } = useOrganization(id as string);
   const { updateOrganization } = useOrganizationMutations();
 
@@ -30,6 +32,21 @@ export default function EditOrganizationPage() {
 
   if (isLoading) {
     return <div className="animate-pulse">Loading...</div>;
+  }
+
+  if (!canEditOrganization()) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <AlertCircle className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">Access Denied</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          You do not have permission to edit organizations.
+        </p>
+        <Link href="/organizations" className="mt-4 inline-block">
+          <Button variant="outline">Back to Organizations</Button>
+        </Link>
+      </div>
+    );
   }
 
   if (!organization) {

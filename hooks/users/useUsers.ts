@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { userService } from "@/services/user.service";
 import { userKeys } from "@/services/user.queries";
+import { useTenantScope } from "@/hooks/useTenantScope";
 
 interface UseUsersParams {
   search?: string;
@@ -12,9 +13,12 @@ interface UseUsersParams {
 }
 
 export const useUsers = (params?: UseUsersParams) => {
+  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
   const search = params?.search || "";
   const isActive = params?.isActive || "";
-  const organizationId = params?.organizationId || "";
+  const organizationId = isSuperAdmin
+    ? params?.organizationId || ""
+    : scopedOrgId;
   const roleId = params?.roleId || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;

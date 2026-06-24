@@ -41,12 +41,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 export default function OrganizationDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const organizationId = id as string;
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const {
+    canEditOrganization,
+    canDeleteOrganization,
+    canCreateUser,
+    canViewUsers,
+    canViewOrganizations,
+  } = useAccessControl();
 
   const {
     data: organization,
@@ -210,6 +218,20 @@ export default function OrganizationDetailsPage() {
   }
 
   const orgId = getOrgId();
+  const canEdit = canEditOrganization();
+  const canDelete = canDeleteOrganization();
+  const canManageMembers = canCreateUser() && canViewUsers();
+
+  if (!canViewOrganizations()) {
+    return (
+      <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
+        <h1 className="text-xl font-semibold text-slate-900">Access Denied</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          You do not have permission to view organizations.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -239,44 +261,50 @@ export default function OrganizationDetailsPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {isActive ? (
-            <Link href={`/organizations/${orgId}/edit`}>
-              <Button variant="outline">
+          {canEdit && (
+            isActive ? (
+              <Link href={`/organizations/edit/${orgId}`}>
+                <Button variant="outline">
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" disabled>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Button>
-            </Link>
-          ) : (
-            <Button variant="outline" disabled>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
+            )
+          )}
+          {canEdit && (
+            <Button
+              variant={isActive ? "destructive" : "default"}
+              onClick={handleStatusToggle}
+              disabled={
+                activateOrganization.isPending || deactivateOrganization.isPending
+              }
+            >
+              {(activateOrganization.isPending ||
+                deactivateOrganization.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              <Power className="mr-2 h-4 w-4" />
+              {isActive ? "Deactivate" : "Activate"}
             </Button>
           )}
-          <Button
-            variant={isActive ? "destructive" : "default"}
-            onClick={handleStatusToggle}
-            disabled={
-              activateOrganization.isPending || deactivateOrganization.isPending
-            }
-          >
-            {(activateOrganization.isPending ||
-              deactivateOrganization.isPending) && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            <Power className="mr-2 h-4 w-4" />
-            {isActive ? "Deactivate" : "Activate"}
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setShowDeleteDialog(true)}
-            disabled={deleteOrganization.isPending}
-          >
-            {deleteOrganization.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
+          {canDelete && (
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={deleteOrganization.isPending}
+            >
+              {deleteOrganization.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -480,31 +508,37 @@ export default function OrganizationDetailsPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link href={`/organizations/${orgId}/users`}>
-          <Button variant="outline" className="w-full">
-            <Users className="mr-2 h-4 w-4" />
-            View Members
-          </Button>
-        </Link>
-        {isActive ? (
-          <Link href={`/organizations/${orgId}/edit`}>
+        {canManageMembers && (
+          <Link href={`/organizations/users/${orgId}`}>
             <Button variant="outline" className="w-full">
+              <Users className="mr-2 h-4 w-4" />
+              View Members
+            </Button>
+          </Link>
+        )}
+        {canEdit && (
+          isActive ? (
+            <Link href={`/organizations/edit/${orgId}`}>
+              <Button variant="outline" className="w-full">
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Organization
+              </Button>
+            </Link>
+          ) : (
+            <Button variant="outline" className="w-full" disabled>
               <Edit className="mr-2 h-4 w-4" />
               Edit Organization
             </Button>
-          </Link>
-        ) : (
-          <Button variant="outline" className="w-full" disabled>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Organization
-          </Button>
+          )
         )}
-        <Link href={`/organizations/${orgId}/settings`}>
-          <Button variant="outline" className="w-full">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Button>
-        </Link>
+        {canEdit && (
+          <Link href={`/organizations/settings/${orgId}`}>
+            <Button variant="outline" className="w-full">
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}

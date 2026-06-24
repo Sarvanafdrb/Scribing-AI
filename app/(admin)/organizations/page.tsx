@@ -9,10 +9,12 @@ import { OrganizationFilters } from "./components/OrganizationFilters";
 import { OrganizationTable } from "./components/OrganizationTable";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { OrganizationSkeleton } from "./components/OrganizationSkeleton";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 const PAGE_SIZE = 5;
 
 export default function OrganizationsPage() {
+  const { canCreateOrganization } = useAccessControl();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
@@ -52,12 +54,14 @@ export default function OrganizationsPage() {
             Manage all organizations in the system • {total} total
           </p>
         </div>
-        <Link href="/organizations/create">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Organization
-          </Button>
-        </Link>
+        {canCreateOrganization() && (
+          <Link href="/organizations/create">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Organization
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

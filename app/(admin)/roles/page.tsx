@@ -11,6 +11,7 @@ import { RoleTable } from "./components/RoleTable";
 import { RoleSkeleton } from "./components/RoleSkeleton";
 import { useRoles } from "@/hooks/roles/useRoles";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
+import { useTenantScope } from "@/hooks/useTenantScope";
 
 const PAGE_SIZE = 5;
 
@@ -22,6 +23,7 @@ export default function RolesPage() {
   const [page, setPage] = useState(1);
 
   const { organizations } = useOrganizations({ page: 1, limit: 100 });
+  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
 
   useEffect(() => {
     if (organizationIdFromUrl) {
@@ -29,11 +31,16 @@ export default function RolesPage() {
       return;
     }
 
-    if (!organizationId && organizations.length > 0) {
+    if (!organizationId && scopedOrgId) {
+      setOrganizationId(scopedOrgId);
+      return;
+    }
+
+    if (!organizationId && isSuperAdmin && organizations.length > 0) {
       const firstOrgId = organizations[0].id || organizations[0]._id || "";
       setOrganizationId(firstOrgId);
     }
-  }, [organizations, organizationId, organizationIdFromUrl]);
+  }, [organizations, organizationId, organizationIdFromUrl, scopedOrgId, isSuperAdmin]);
 
   const {
     roles,

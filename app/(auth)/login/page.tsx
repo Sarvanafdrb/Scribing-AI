@@ -9,6 +9,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isAxiosError } from "axios";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -27,6 +29,24 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+
+const getLoginErrorMessage = (error: unknown): string => {
+  if (isAxiosError(error)) {
+    if (!error.response) {
+      return "Cannot reach the API server. Start the backend with: npm run dev (in scribing-ai-api folder).";
+    }
+    return (
+      (error.response.data as { message?: string })?.message ||
+      "Invalid credentials"
+    );
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Invalid credentials";
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,46 +71,42 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
+      const result = await authService.login({
+        email: data.email,
+        password: data.password,
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result.message || "Login failed");
       }
 
-      // Extract data from nested structure
       const { accessToken, refreshToken, user } = result.data;
 
       if (!accessToken || !user) {
         throw new Error("Invalid response from server");
       }
 
-      // Update Zustand store
-      setAuth(user, accessToken, refreshToken);
+      setAuth(
+        {
+          ...user,
+          isSuperAdmin: Boolean(user.isSuperAdmin),
+          permissions: user.permissions || [],
+          organizationName: user.organizationName || user.organization?.name,
+          organization: user.isSuperAdmin ? null : user.organization,
+        },
+        accessToken,
+        refreshToken,
+      );
 
       toast.success("Welcome back!", {
         description: `Hello ${user.firstName} ${user.lastName}`,
       });
 
-      // Redirect to dashboard
       router.push("/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
       toast.error("Login failed", {
-        description: error.message || "Invalid credentials",
+        description: getLoginErrorMessage(error),
       });
     } finally {
       setIsLoading(false);
@@ -161,7 +177,11 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <div className="flex items-center gap-2">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
@@ -177,13 +197,9 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <span className="text-gray-600">Don't have an account? </span>
-          <Link
-            href="/register"
-            className="text-blue-600 hover:text-blue-800 font-medium"
-          >
-            Create an account
-          </Link>
+          <span className="text-gray-600">
+            Organization access is managed by a super admin.
+          </span>
         </div>
       </CardContent>
     </Card>

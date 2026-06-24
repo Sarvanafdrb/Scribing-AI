@@ -140,10 +140,12 @@ export default function OrganizationUsersPage() {
             {organization.name} • {totalMembers} members
           </p>
         </div>
-        <Button className="ml-auto">
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add Member
-        </Button>
+        <Link href={`/users/create?organizationId=${organizationId}`}>
+          <Button className="ml-auto">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}

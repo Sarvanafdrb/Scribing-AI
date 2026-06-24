@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import { CreateUserData, UpdateUserData } from "@/types/user.types";
 
 export default function CreateUserPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const presetOrganizationId = searchParams.get("organizationId") || "";
   const { createUser } = useUserMutations();
   const { canCreateUser } = useAccessControl();
 
@@ -67,6 +69,7 @@ export default function CreateUserPage() {
         </CardHeader>
         <CardContent>
           <UserForm
+            presetOrganizationId={presetOrganizationId}
             onSubmit={handleSubmit}
             isLoading={createUser.isPending}
             submitLabel="Create User"

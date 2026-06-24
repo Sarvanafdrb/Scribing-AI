@@ -57,6 +57,7 @@ type EditFormData = z.infer<typeof editSchema>;
 
 interface UserFormProps {
   initialData?: User;
+  presetOrganizationId?: string;
   onSubmit: (data: CreateUserData | UpdateUserData) => Promise<void>;
   isLoading?: boolean;
   submitLabel?: string;
@@ -96,6 +97,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
 
 export function UserForm({
   initialData,
+  presetOrganizationId,
   onSubmit,
   isLoading = false,
   submitLabel = "Create User",
@@ -160,6 +162,11 @@ export function UserForm({
       form.setValue("organizationId", scopedOrgId);
     }
   }, [form, isEditing, showOrganizationPicker, scopedOrgId]);
+
+  useEffect(() => {
+    if (isEditing || !presetOrganizationId) return;
+    form.setValue("organizationId", presetOrganizationId);
+  }, [form, isEditing, presetOrganizationId]);
 
   useEffect(() => {
     if (!selectedOrgId || isEditing) return;

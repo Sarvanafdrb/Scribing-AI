@@ -1,14 +1,14 @@
 import type { NextConfig } from "next";
 
+const apiProxyTarget =
+  process.env.API_PROXY_TARGET || "http://localhost:5000/api";
+
 const nextConfig: NextConfig = {
   async rewrites() {
-    const apiBase =
-      process.env.API_PROXY_TARGET || "http://localhost:5000/api";
-
     return [
       {
         source: "/api/backend/:path*",
-        destination: `${apiBase}/:path*`,
+        destination: `${apiProxyTarget}/:path*`,
       },
       {
         source: "/organizations/:id/edit",

@@ -6,7 +6,7 @@ const getApiProxyTarget = () =>
     "",
   );
 
-const HOP_BY_HOP_HEADERS = new Set([
+const STRIP_REQUEST_HEADERS = new Set([
   "connection",
   "keep-alive",
   "proxy-authenticate",
@@ -17,6 +17,14 @@ const HOP_BY_HOP_HEADERS = new Set([
   "upgrade",
   "host",
   "content-length",
+  // Avoid upstream compression; fetch() decompresses but we must not
+  // forward content-encoding to the browser with a decompressed body.
+  "accept-encoding",
+]);
+
+const STRIP_RESPONSE_HEADERS = new Set([
+  ...STRIP_REQUEST_HEADERS,
+  "content-encoding",
 ]);
 
 const buildTargetUrl = (request: NextRequest, path: string[]) => {
@@ -34,7 +42,7 @@ const buildForwardHeaders = (request: NextRequest) => {
   const headers = new Headers();
 
   request.headers.forEach((value, key) => {
-    if (HOP_BY_HOP_HEADERS.has(key.toLowerCase())) return;
+    if (STRIP_REQUEST_HEADERS.has(key.toLowerCase())) return;
     headers.set(key, value);
   });
 
@@ -45,7 +53,7 @@ const buildResponseHeaders = (response: Response) => {
   const headers = new Headers();
 
   response.headers.forEach((value, key) => {
-    if (HOP_BY_HOP_HEADERS.has(key.toLowerCase())) return;
+    if (STRIP_RESPONSE_HEADERS.has(key.toLowerCase())) return;
     headers.set(key, value);
   });
 
@@ -67,8 +75,9 @@ async function proxyRequest(request: NextRequest, path: string[]) {
   }
 
   const response = await fetch(url.toString(), init);
+  const body = await response.arrayBuffer();
 
-  return new NextResponse(response.body, {
+  return new NextResponse(body, {
     status: response.status,
     statusText: response.statusText,
     headers: buildResponseHeaders(response),

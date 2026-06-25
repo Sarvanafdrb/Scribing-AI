@@ -47,7 +47,10 @@ const getLoginErrorMessage = (error: unknown): string => {
     return "Invalid credentials";
   }
 
-  if (error instanceof Error && error.message !== "No refresh token available") {
+  if (
+    error instanceof Error &&
+    error.message !== "No refresh token available"
+  ) {
     return error.message;
   }
 
@@ -129,7 +132,7 @@ export default function LoginPage() {
             <Input
               id="email"
               type="email"
-              placeholder="sangeetha@test.com"
+              placeholder="Enter your email"
               {...register("email")}
               disabled={isLoading}
             />
@@ -144,7 +147,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 {...register("password")}
                 disabled={isLoading}
               />

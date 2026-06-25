@@ -233,30 +233,31 @@ export default function OrganizationUsersPage() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-blue-100 text-blue-600">
-                              {user.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                              {user.firstName?.charAt(0)?.toUpperCase() || "U"}
                             </AvatarFallback>
                           </Avatar>
                           <span className="font-medium">
-                            {user.user?.name || "Unknown"}
+                            {`${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                              "Unknown"}
                           </span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Mail className="h-4 w-4 text-muted-foreground" />
-                          {user.user?.email || "No email"}
+                          {user.email || "No email"}
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-blue-50">
-                          {user.role || "Member"}
+                          {user.roleId?.name || "Member"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4" />
-                          {user.joinedAt
-                            ? new Date(user.joinedAt).toLocaleDateString()
+                          {user.createdAt
+                            ? new Date(user.createdAt).toLocaleDateString()
                             : "N/A"}
                         </div>
                       </TableCell>

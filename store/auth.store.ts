@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AuthUser } from "@/types/auth.types";
+import { useWorkspaceStore } from "@/store/workspace.store";
 
 interface AuthState {
   user: AuthUser | null;
@@ -56,8 +57,9 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           _hasHydrated: true,
         });
-        // Clear all storage
+        useWorkspaceStore.getState().clearWorkspace();
         localStorage.removeItem("auth-storage");
+        localStorage.removeItem("workspace-storage");
         sessionStorage.clear();
       },
     }),

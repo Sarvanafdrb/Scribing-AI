@@ -22,6 +22,8 @@ import { useAccessControl } from "@/hooks/useAccessControl";
 import { hasPermission } from "@/types/auth.types";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
+import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
+import { AppHeader } from "@/components/shared/AppHeader";
 
 const menuItems = [
   {
@@ -79,8 +81,11 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isValidating } = useAuthValidation();
+  const { shouldShowLoading: workspaceGuardLoading, shouldBlock } =
+    useWorkspaceGuard();
   const isAuthenticated = !!token;
-  const shouldShowLoading = !_hasHydrated || isLoading || isValidating;
+  const shouldShowLoading =
+    !_hasHydrated || isLoading || isValidating || workspaceGuardLoading;
   useAutoLogin();
   useSessionExpiry();
   // Add detailed logging
@@ -138,7 +143,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || shouldBlock) {
     return null;
   }
   if (!user) {
@@ -235,6 +240,9 @@ export default function AdminLayout({
 
       {/* Main Content */}
       <main className="lg:ml-64 min-h-screen">
+        {pathname !== "/access-not-assigned" && (
+          <AppHeader subtitle="Admin Panel" />
+        )}
         <div className="p-6">{children}</div>
       </main>
     </div>

@@ -34,6 +34,7 @@ import {
   SESSION_STATUS_OPTIONS,
   SESSION_TYPE_OPTIONS,
 } from "./SessionStatusBadge";
+import { useTenantScope } from "@/hooks/useTenantScope";
 
 const createSchema = z.object({
   title: z.string().trim().min(2, "Title is required"),
@@ -86,6 +87,7 @@ export function SessionForm({
   submitLabel = "Create Session",
 }: SessionFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?._id);
+  const { organizationId: scopedOrgId } = useTenantScope();
 
   const form = useForm<CreateFormData | EditFormData>({
     resolver: zodResolver(isEditing ? editSchema : createSchema),
@@ -113,7 +115,7 @@ export function SessionForm({
     : "";
 
   const { data: orgData } = useQuery({
-    queryKey: ["organizations", "session-form-options"],
+    queryKey: ["organizations", "session-form-options", scopedOrgId],
     queryFn: () => organizationService.getAll({ limit: 50, page: 1 }),
   });
 
@@ -154,13 +156,25 @@ export function SessionForm({
   }, [initialData, form, isEditing]);
 
   useEffect(() => {
+    if (!isEditing && scopedOrgId) {
+      form.setValue("organizationId", scopedOrgId);
+    }
+  }, [form, isEditing, scopedOrgId]);
+
+  useEffect(() => {
     if (!isEditing) {
       form.setValue("userId", "");
     }
   }, [selectedOrgId, form, isEditing]);
 
   const handleSubmit = async (data: CreateFormData | EditFormData) => {
-    await onSubmit(data as CreateSessionData | UpdateSessionData);
+    const payload = { ...data } as CreateSessionData | UpdateSessionData;
+
+    if (!isEditing && scopedOrgId) {
+      (payload as CreateSessionData).organizationId = scopedOrgId;
+    }
+
+    await onSubmit(payload);
   };
 
   const organizations = orgData?.organizations || [];

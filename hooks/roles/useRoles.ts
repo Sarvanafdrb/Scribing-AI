@@ -11,10 +11,8 @@ interface UseRolesParams {
 }
 
 export const useRoles = (params?: UseRolesParams) => {
-  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
-  const organizationId = isSuperAdmin
-    ? params?.organizationId || ""
-    : scopedOrgId;
+  const { organizationId: scopedOrgId } = useTenantScope();
+  const organizationId = scopedOrgId || params?.organizationId || "";
   const search = params?.search || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;
@@ -45,8 +43,10 @@ export const useRoles = (params?: UseRolesParams) => {
 };
 
 export const useRoleStats = () => {
+  const { organizationId } = useTenantScope();
+
   return useQuery({
-    queryKey: roleKeys.stats(),
+    queryKey: roleKeys.stats(organizationId),
     queryFn: () => roleService.getStats(),
     staleTime: 60 * 1000,
   });

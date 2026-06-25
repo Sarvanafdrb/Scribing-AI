@@ -13,12 +13,10 @@ interface UseUsersParams {
 }
 
 export const useUsers = (params?: UseUsersParams) => {
-  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
+  const { organizationId: scopedOrgId } = useTenantScope();
   const search = params?.search || "";
   const isActive = params?.isActive || "";
-  const organizationId = isSuperAdmin
-    ? params?.organizationId || ""
-    : scopedOrgId;
+  const organizationId = scopedOrgId || params?.organizationId || "";
   const roleId = params?.roleId || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;

@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
+
+const PUBLIC_AUTH_PATHS = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+];
 
 export default function AuthLayout({
   children,
@@ -10,15 +17,17 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   const { token } = useAuthStore();
+  const pathname = usePathname();
   const router = useRouter();
   const isAuthenticated = !!token;
+  const isPublicAuthPage = PUBLIC_AUTH_PATHS.some((path) =>
+    pathname.startsWith(path),
+  );
 
   useEffect(() => {
-    // If already authenticated, redirect to dashboard
-    if (isAuthenticated) {
-      router.push("/dashboard");
-    }
-  }, [isAuthenticated, router]);
+    if (!isAuthenticated || !isPublicAuthPage) return;
+    router.push("/dashboard");
+  }, [isAuthenticated, isPublicAuthPage, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-50 to-blue-100">

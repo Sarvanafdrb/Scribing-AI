@@ -10,6 +10,10 @@ import { toast } from "sonner";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
+import {
+  resolvePostLoginWorkspace,
+  useWorkspaceSelection,
+} from "@/hooks/useWorkspaceSelection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +66,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
+  const { selectWorkspace } = useWorkspaceSelection();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,9 +125,13 @@ export default function RegisterPage() {
         duration: 4000,
       });
 
-      // Small delay so user can see toast
+      const { redirectTo, workspace } = await resolvePostLoginWorkspace();
+      if (workspace) {
+        selectWorkspace(workspace);
+      }
+
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(redirectTo);
       }, 1500);
     } catch (error: any) {
       console.error("Registration Error:", error);

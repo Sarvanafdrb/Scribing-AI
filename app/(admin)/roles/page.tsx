@@ -31,6 +31,11 @@ export default function RolesPage() {
       return;
     }
 
+    if (!organizationIdFromUrl && scopedOrgId && scopedOrgId !== organizationId) {
+      setOrganizationId(scopedOrgId);
+      return;
+    }
+
     if (!organizationId && scopedOrgId) {
       setOrganizationId(scopedOrgId);
       return;

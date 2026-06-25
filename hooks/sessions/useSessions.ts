@@ -14,13 +14,11 @@ interface UseSessionsParams {
 }
 
 export const useSessions = (params?: UseSessionsParams) => {
-  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
+  const { organizationId: scopedOrgId } = useTenantScope();
   const search = params?.search || "";
   const status = params?.status || "";
   const sessionType = params?.sessionType || "";
-  const organizationId = isSuperAdmin
-    ? params?.organizationId || ""
-    : scopedOrgId;
+  const organizationId = scopedOrgId || params?.organizationId || "";
   const isActive = params?.isActive || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;
@@ -68,8 +66,10 @@ export const useSessions = (params?: UseSessionsParams) => {
 };
 
 export const useSessionStats = () => {
+  const { organizationId } = useTenantScope();
+
   return useQuery({
-    queryKey: sessionKeys.stats(),
+    queryKey: sessionKeys.stats(organizationId),
     queryFn: () => sessionService.getStats(),
     staleTime: 60 * 1000,
   });

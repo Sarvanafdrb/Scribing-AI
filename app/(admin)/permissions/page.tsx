@@ -63,12 +63,10 @@ export default function PermissionsPage() {
     checkPermission(PERMISSION_EDIT);
 
   useEffect(() => {
-    if (organizationId) return;
-
     const defaultOrgId =
       scopedOrgId || (isSuperAdmin ? firstOrganizationId : "");
 
-    if (defaultOrgId) {
+    if (defaultOrgId && defaultOrgId !== organizationId) {
       setOrganizationId(defaultOrgId);
     }
   }, [organizationId, scopedOrgId, isSuperAdmin, firstOrganizationId]);

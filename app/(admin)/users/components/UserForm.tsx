@@ -125,7 +125,7 @@ export function UserForm({
     isLoading: orgsLoading,
     isError: orgsError,
   } = useQuery({
-    queryKey: ["organizations", "user-form-options"],
+    queryKey: ["organizations", "user-form-options", scopedOrgId],
     queryFn: () => organizationService.getAll({ limit: 100, page: 1 }),
     staleTime: 0,
   });
@@ -175,6 +175,10 @@ export function UserForm({
 
   const handleSubmit = async (data: CreateFormData | EditFormData) => {
     const payload: Record<string, unknown> = { ...data };
+
+    if (!isEditing && !showOrganizationPicker && scopedOrgId) {
+      payload.organizationId = scopedOrgId;
+    }
 
     if (isEditing && !payload.password) {
       delete payload.password;

@@ -9,6 +9,10 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import {
+  resolvePostLoginWorkspace,
+  useWorkspaceSelection,
+} from "@/hooks/useWorkspaceSelection";
 import { authService } from "@/services/auth.service";
 import { normalizeAuthUser } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
@@ -36,13 +40,14 @@ const getLoginErrorMessage = (error: unknown): string => {
     if (!error.response) {
       return "Cannot reach the API server. Start the backend with: npm run dev (in scribing-ai-api folder).";
     }
-    return (
-      (error.response.data as { message?: string })?.message ||
-      "Invalid credentials"
-    );
+
+    const message = (error.response.data as { message?: string })?.message;
+    if (message) return message;
+
+    return "Invalid credentials";
   }
 
-  if (error instanceof Error) {
+  if (error instanceof Error && error.message !== "No refresh token available") {
     return error.message;
   }
 
@@ -52,6 +57,7 @@ const getLoginErrorMessage = (error: unknown): string => {
 export default function LoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
+  const { selectWorkspace } = useWorkspaceSelection();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -93,7 +99,11 @@ export default function LoginPage() {
         description: `Hello ${user.firstName} ${user.lastName}`,
       });
 
-      router.push("/dashboard");
+      const { redirectTo, workspace } = await resolvePostLoginWorkspace();
+      if (workspace) {
+        selectWorkspace(workspace);
+      }
+      router.push(redirectTo);
     } catch (error: unknown) {
       console.error("Login error:", error);
       toast.error("Login failed", {

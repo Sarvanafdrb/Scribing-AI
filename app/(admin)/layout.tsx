@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   X,
+  HeartPulse,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -43,6 +44,12 @@ const menuItems = [
     label: "Users",
     icon: Users,
     permission: "USER_VIEW",
+  },
+  {
+    path: "/patients",
+    label: "Patients",
+    icon: HeartPulse,
+    permission: "PATIENT_VIEW",
   },
   {
     path: "/roles",
@@ -206,7 +213,9 @@ export default function AdminLayout({
               .filter((item) => hasPermission(user, item.permission))
               .map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.path;
+              const isActive =
+                pathname === item.path ||
+                pathname.startsWith(`${item.path}/`);
               return (
                 <Link
                   key={item.path}

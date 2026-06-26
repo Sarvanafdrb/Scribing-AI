@@ -14,6 +14,8 @@ import {
 import { SessionForm } from "../components/SessionForm";
 import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
 import { CreateSessionData, UpdateSessionData } from "@/types/session.types";
+import { healthcareGlass, healthcareSolid } from "@/lib/healthcare-ui";
+import { cn } from "@/lib/utils";
 
 export default function CreateSessionPage() {
   const router = useRouter();
@@ -25,26 +27,27 @@ export default function CreateSessionPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <Link href="/sessions">
-          <Button variant="ghost" className="pl-0">
+          <Button variant="ghost" className={cn("rounded-xl pl-0", healthcareGlass.button)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Sessions
           </Button>
         </Link>
       </div>
 
-      <Card className="border-blue-100">
+      <Card className={healthcareSolid.formCard}>
         <CardHeader>
           <div className="flex items-center gap-4">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Mic className="h-6 w-6 text-primary" />
+            <div className="rounded-xl bg-blue-50 p-3">
+              <Mic className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <CardTitle>Create Session</CardTitle>
+              <CardTitle>Schedule Session</CardTitle>
               <CardDescription>
-                Start a new scribing session for a user
+                Select patient, doctor, and session type. Session code and title
+                are generated automatically.
               </CardDescription>
             </div>
           </div>

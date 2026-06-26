@@ -14,6 +14,7 @@ export const sessionService = {
     status?: string;
     sessionType?: string;
     organizationId?: string;
+    patientId?: string;
     userId?: string;
     isActive?: string;
     page?: number;
@@ -34,6 +35,7 @@ export const sessionService = {
       statusCounts: (statusCounts || {
         created: 0,
         recording: 0,
+        uploading: 0,
         processing: 0,
         completed: 0,
         failed: 0,

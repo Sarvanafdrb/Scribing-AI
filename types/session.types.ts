@@ -1,10 +1,12 @@
 import type { TranscriptData } from "@/types/transcript.types";
+import type { Patient } from "@/types/patient.types";
 
 export type SessionType = "consultation" | "follow_up" | "diagnostic" | "other";
 
 export type SessionStatus =
   | "created"
   | "recording"
+  | "uploading"
   | "processing"
   | "completed"
   | "failed";
@@ -29,6 +31,7 @@ export interface Session {
   id?: string;
   sessionCode: string;
   organizationId: string | SessionOrganization;
+  patientId: string | Patient;
   userId: string | SessionUser;
   title: string;
   description?: string;
@@ -46,11 +49,12 @@ export interface Session {
 }
 
 export interface CreateSessionData {
-  title: string;
+  title?: string;
   description?: string;
   organizationId: string;
+  patientId: string;
   userId: string;
-  sessionType?: SessionType;
+  sessionType: SessionType;
 }
 
 export interface UpdateSessionData {
@@ -67,6 +71,7 @@ export interface UpdateSessionData {
 export interface SessionStatusCounts {
   created: number;
   recording: number;
+  uploading: number;
   processing: number;
   completed: number;
   failed: number;

@@ -58,6 +58,7 @@ export const useSessions = (params?: UseSessionsParams) => {
     statusCounts: query.data?.statusCounts || {
       created: 0,
       recording: 0,
+      uploading: 0,
       processing: 0,
       completed: 0,
       failed: 0,

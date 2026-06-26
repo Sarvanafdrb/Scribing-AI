@@ -14,8 +14,8 @@ function RecordingPageContent() {
 
   if (!sessionId) {
     return (
-      <Card className="max-w-lg mx-auto mt-10">
-        <CardContent className="py-10 text-center space-y-4">
+      <Card className="mx-auto mt-10 max-w-lg">
+        <CardContent className="space-y-4 py-10 text-center">
           <p className="text-muted-foreground">
             Select a session to start recording.
           </p>

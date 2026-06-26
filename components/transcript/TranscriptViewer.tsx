@@ -130,6 +130,21 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
     await refetch();
   };
 
+  const handleRetry = async () => {
+    await generateTranscript.mutateAsync();
+    await refetch();
+  };
+
+  const isFailed =
+    session.status === "failed" ||
+    transcript?.metadata.status === "failed";
+  const canAutoGenerate =
+    session.audioUrl &&
+    !isProcessing &&
+    !transcript?.segments?.length &&
+    !transcript?.fullText &&
+    session.status !== "completed";
+
   const handleTranslate = async () => {
     await translateTranscript.mutateAsync(targetLanguage);
     setShowTranslation(true);
@@ -188,22 +203,43 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={handleGenerate}
-                    disabled={
-                      !session.audioUrl ||
-                      generateTranscript.isPending ||
-                      isProcessing
-                    }
-                  >
-                    {generateTranscript.isPending || isProcessing ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="mr-2 h-4 w-4" />
-                    )}
-                    {isProcessing ? "Processing..." : "Generate Transcript"}
-                  </Button>
+                  {isFailed && (
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={handleRetry}
+                      disabled={
+                        !session.audioUrl ||
+                        generateTranscript.isPending ||
+                        isProcessing
+                      }
+                    >
+                      {generateTranscript.isPending || isProcessing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                      )}
+                      Retry Transcript
+                    </Button>
+                  )}
+                  {!isFailed && (
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={handleGenerate}
+                      disabled={
+                        !session.audioUrl ||
+                        generateTranscript.isPending ||
+                        isProcessing ||
+                        session.status === "completed"
+                      }
+                    >
+                      {generateTranscript.isPending || isProcessing ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="mr-2 h-4 w-4" />
+                      )}
+                      {isProcessing ? "Processing..." : "Generate Transcript"}
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => refetch()}
@@ -217,20 +253,36 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
               {isProcessing && (
                 <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Audio is being processed and transcribed...
+                  {session.status === "uploading"
+                    ? "Uploading audio..."
+                    : "Generating transcript..."}
                 </div>
               )}
 
-              {!session.audioUrl && (
+              {canAutoGenerate && !isProcessing && (
                 <p className="text-sm text-muted-foreground">
-                  No recording found. Record audio first before generating a
-                  transcript.
+                  Transcript generation will start automatically after recording
+                  stops. You can also generate manually using the button above.
                 </p>
+              )}
+
+              {!session.audioUrl && (
+                <div className="space-y-3 rounded-lg border border-dashed p-4 text-sm">
+                  <p className="text-muted-foreground">
+                    No recording found for this session.
+                  </p>
+                  <Link href={`/recording?sessionId=${sessionId}`}>
+                    <Button variant="outline" size="sm">
+                      Go to Recording
+                    </Button>
+                  </Link>
+                </div>
               )}
 
               {transcript?.metadata.status === "failed" && (
                 <p className="text-sm text-destructive">
-                  Transcription failed: {transcript.metadata.error}
+                  Transcription failed:{" "}
+                  {transcript.metadata.error || "Unknown error"}
                 </p>
               )}
 

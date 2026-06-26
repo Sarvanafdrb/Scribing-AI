@@ -15,6 +15,10 @@ const statusConfig: Record<
     label: "Recording",
     className: "bg-red-100 text-red-700 hover:bg-red-200",
   },
+  uploading: {
+    label: "Uploading",
+    className: "bg-blue-100 text-blue-700 hover:bg-blue-200",
+  },
   processing: {
     label: "Processing",
     className: "bg-amber-100 text-amber-700 hover:bg-amber-200",
@@ -39,6 +43,7 @@ export const SESSION_STATUS_OPTIONS: { value: SessionStatus; label: string }[] =
   [
     { value: "created", label: "Created" },
     { value: "recording", label: "Recording" },
+    { value: "uploading", label: "Uploading" },
     { value: "processing", label: "Processing" },
     { value: "completed", label: "Completed" },
     { value: "failed", label: "Failed" },

@@ -17,6 +17,10 @@ import {
   USER_VIEW,
   ORGANIZATION_VIEW,
   ORGANIZATION_CREATE,
+  PATIENT_VIEW,
+  PATIENT_CREATE,
+  PATIENT_EDIT,
+  PATIENT_DELETE,
 } from "@/constants/permissions";
 
 const getCurrentUserId = (user?: AuthUser | null): string =>
@@ -84,5 +88,19 @@ export const useAccessControl = () => {
         hasPermission(user, "user:delete", token)
       );
     },
+    canViewPatients: () =>
+      hasPermission(user, PATIENT_VIEW, token) ||
+      hasPermission(user, "patient:read", token),
+    canCreatePatient: () =>
+      hasPermission(user, PATIENT_CREATE, token) ||
+      hasPermission(user, "patient:create", token),
+    canEditPatient: () =>
+      hasPermission(user, PATIENT_EDIT, token) ||
+      hasPermission(user, "patient:update", token),
+    canManagePatientStatus: () =>
+      hasPermission(user, PATIENT_EDIT, token) ||
+      hasPermission(user, PATIENT_DELETE, token) ||
+      hasPermission(user, "patient:update", token) ||
+      hasPermission(user, "patient:delete", token),
   };
 };

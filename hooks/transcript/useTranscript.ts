@@ -13,14 +13,19 @@ export const useTranscript = (sessionId: string) => {
     refetchInterval: (query) => {
       const status = query.state.data?.metadata.status;
       const sessionStatus = sessionQuery.data?.status;
-      if (status === "processing" || sessionStatus === "processing") {
-        return 3000;
+      if (
+        status === "processing" ||
+        sessionStatus === "processing" ||
+        sessionStatus === "uploading"
+      ) {
+        return 2000;
       }
       return false;
     },
   });
 
   const isProcessing =
+    sessionQuery.data?.status === "uploading" ||
     sessionQuery.data?.status === "processing" ||
     transcriptQuery.data?.metadata.status === "processing";
 

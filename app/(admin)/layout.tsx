@@ -17,6 +17,9 @@ import {
   Menu,
   X,
   HeartPulse,
+  AudioLines,
+  ScrollText,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -67,6 +70,24 @@ const menuItems = [
     path: "/sessions",
     label: "Sessions",
     icon: Mic,
+    permission: "SESSION_VIEW",
+  },
+  {
+    path: "/recording",
+    label: "Recording",
+    icon: AudioLines,
+    permission: "SESSION_VIEW",
+  },
+  {
+    path: "/transcript",
+    label: "Transcript",
+    icon: ScrollText,
+    permission: "SESSION_VIEW",
+  },
+  {
+    path: "/notes",
+    label: "Notes",
+    icon: FileText,
     permission: "SESSION_VIEW",
   },
   {

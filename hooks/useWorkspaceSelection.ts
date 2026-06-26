@@ -9,6 +9,7 @@ import { organizationKeys } from "@/services/organization.queries";
 import { userKeys } from "@/services/user.queries";
 import { roleKeys } from "@/services/role.queries";
 import { sessionKeys } from "@/services/session.queries";
+import { patientKeys } from "@/services/patient.queries";
 import { transcriptKeys } from "@/services/transcript.queries";
 import { workspaceKeys } from "@/services/workspace.queries";
 import { workspaceService } from "@/services/workspace.service";
@@ -22,6 +23,7 @@ export const invalidateWorkspaceData = (
   queryClient.invalidateQueries({ queryKey: userKeys.all });
   queryClient.invalidateQueries({ queryKey: roleKeys.all });
   queryClient.invalidateQueries({ queryKey: sessionKeys.all });
+  queryClient.invalidateQueries({ queryKey: patientKeys.all });
   queryClient.invalidateQueries({ queryKey: transcriptKeys.all });
 };
 

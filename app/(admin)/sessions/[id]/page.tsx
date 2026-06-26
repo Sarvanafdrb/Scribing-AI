@@ -4,22 +4,15 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Building2,
   Calendar,
   Clock,
   Edit,
   FileText,
   Mic,
-  User,
+  Stethoscope,
+  UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/hooks/sessions/useSession";
 import { SessionStatusBadge } from "../components/SessionStatusBadge";
@@ -30,6 +23,17 @@ import {
   SessionOrganization,
   SessionUser,
 } from "@/types/session.types";
+import type { Patient } from "@/types/patient.types";
+import {
+  getPatientAge,
+  getPatientFullName,
+} from "@/utils/patient.utils";
+import {
+  healthcareGlass,
+  healthcarePrimaryButton,
+  healthcareSolid,
+} from "@/lib/healthcare-ui";
+import { cn } from "@/lib/utils";
 
 const formatDateTime = (value?: string) => {
   if (!value) return "—";
@@ -44,6 +48,22 @@ const formatDuration = (seconds?: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins}m ${secs}s`;
+};
+
+const formatGender = (gender?: string) => {
+  if (!gender) return "—";
+  return gender.charAt(0).toUpperCase() + gender.slice(1);
+};
+
+const recordingStatusLabel = (status: string, hasAudio: boolean) => {
+  if (status === "recording") return "Recording in progress";
+  if (status === "uploading") return "Uploading audio";
+  if (status === "processing") return "Generating transcript";
+  if (status === "completed" && hasAudio) return "Transcript ready";
+  if (hasAudio) return "Recording available";
+  if (status === "completed") return "Completed without audio";
+  if (status === "failed") return "Transcription failed";
+  return "Not started";
 };
 
 export default function SessionDetailsPage() {
@@ -63,187 +83,244 @@ export default function SessionDetailsPage() {
     typeof session.organizationId === "object"
       ? (session.organizationId as SessionOrganization)
       : null;
-  const user =
+  const doctor =
     typeof session.userId === "object"
       ? (session.userId as SessionUser)
       : null;
-
-  const statusSteps = [
-    "created",
-    "recording",
-    "processing",
-    "completed",
-  ] as const;
-  const currentIndex = statusSteps.indexOf(
-    session.status as (typeof statusSteps)[number],
-  );
+  const patient =
+    typeof session.patientId === "object"
+      ? (session.patientId as Patient)
+      : null;
+  const patientAge = getPatientAge(patient);
+  const hasAudio = Boolean(session.audioUrl);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/sessions">
-          <Button variant="ghost" className="pl-0">
+          <Button variant="ghost" className={cn("rounded-xl pl-0", healthcareGlass.button)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Sessions
           </Button>
         </Link>
         <div className="flex flex-wrap gap-2">
           <Link href={`/recording?sessionId=${sessionId}`}>
-            <Button className="bg-red-600 hover:bg-red-700">
+            <Button className="rounded-xl bg-red-600 hover:bg-red-700">
               <Mic className="mr-2 h-4 w-4" />
               Start Recording
             </Button>
           </Link>
           <Link href={`/transcript?sessionId=${sessionId}`}>
-            <Button variant="outline">
+            <Button variant="outline" className={cn("rounded-xl", healthcareGlass.button)}>
               <FileText className="mr-2 h-4 w-4" />
-              View Transcript
+              Transcript
             </Button>
           </Link>
           <Link href={`/sessions/${sessionId}/edit`}>
-            <Button variant="outline">
+            <Button variant="outline" className={cn("rounded-xl", healthcareGlass.button)}>
               <Edit className="mr-2 h-4 w-4" />
-              Edit Session
+              Edit
             </Button>
           </Link>
         </div>
       </div>
 
-      <Card className="border-blue-100">
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Mic className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl">{session.title}</CardTitle>
-                <CardDescription>{session.sessionCode}</CardDescription>
-              </div>
-            </div>
-            <SessionStatusBadge status={session.status} />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {session.description && (
-            <p className="text-muted-foreground">{session.description}</p>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <span>{org?.name || "—"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span>
-                {user
-                  ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
-                  : "—"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Badge variant="outline">
-                {formatSessionType(session.sessionType)}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>{formatDuration(session.duration)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>Created: {formatDateTime(session.createdAt)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>Started: {formatDateTime(session.startedAt)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>Completed: {formatDateTime(session.completedAt)}</span>
-            </div>
-          </div>
-
+      <div className={cn("p-6", healthcareSolid.section)}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="font-semibold mb-3">Status Tracking</h3>
-            <div className="flex flex-wrap gap-2">
-              {statusSteps.map((step, index) => {
-                const isComplete =
-                  session.status === "failed"
-                    ? step === "created"
-                    : currentIndex >= index;
-                const isCurrent = session.status === step;
-
-                return (
-                  <Badge
-                    key={step}
-                    className={
-                      session.status === "failed" && step !== "created"
-                        ? "bg-gray-100 text-gray-400"
-                        : isCurrent
-                          ? "bg-blue-600 text-white"
-                          : isComplete
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-500"
-                    }
-                  >
-                    {formatSessionType(step)}
-                  </Badge>
-                );
-              })}
-              {session.status === "failed" && (
-                <Badge className="bg-red-600 text-white">Failed</Badge>
-              )}
-            </div>
+            <p className="font-mono text-sm text-blue-600">{session.sessionCode}</p>
+            <h1 className="mt-1 text-2xl font-semibold text-slate-900">
+              {formatSessionType(session.sessionType)} Session
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {formatDateTime(session.createdAt)}
+            </p>
           </div>
+          <SessionStatusBadge status={session.status} />
+        </div>
+      </div>
 
-          {(session.audioUrl || session.status !== "created") && (
-            <div>
-              <h3 className="font-semibold mb-2">Recording Playback</h3>
-              {session.audioUrl ? (
-                <AudioPlayback sessionId={sessionId} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Recording in progress or not uploaded yet.
-                </p>
-              )}
-            </div>
-          )}
-
-          {(session.transcriptData || session.transcript) && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Transcript</h3>
-                <Link href={`/transcript?sessionId=${sessionId}`}>
-                  <Button variant="outline" size="sm">
-                    Open Transcript Studio
-                  </Button>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className={healthcareSolid.section}>
+          <div className="mb-4 flex items-center gap-2">
+            <UserRound className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold">Patient Information</h2>
+          </div>
+          {patient ? (
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Name</dt>
+                <dd className="font-medium">{getPatientFullName(patient)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Patient Code</dt>
+                <dd className="font-mono">{patient.patientCode}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Age</dt>
+                <dd>{patientAge !== null ? `${patientAge} years` : "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Gender</dt>
+                <dd>{formatGender(patient.gender)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Phone</dt>
+                <dd>{patient.phoneNumber}</dd>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href={`/patients/${patient.id || patient._id}`}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  View patient record →
                 </Link>
               </div>
-
-              {session.transcriptData ? (
-                <>
-                  <TranscriptMetadataPanel transcript={session.transcriptData} />
-                  <TranscriptSegmentList
-                    segments={session.transcriptData.segments.slice(0, 5)}
-                  />
-                  {session.transcriptData.segments.length > 5 && (
-                    <p className="text-sm text-muted-foreground">
-                      Showing first 5 segments. Open Transcript Studio for the
-                      full view.
-                    </p>
-                  )}
-                </>
-              ) : (
-                <div className="rounded-lg border bg-muted/30 p-4 text-sm whitespace-pre-wrap">
-                  {session.transcript}
-                </div>
-              )}
-            </div>
+            </dl>
+          ) : (
+            <p className="text-sm text-muted-foreground">No patient linked</p>
           )}
-        </CardContent>
-      </Card>
+        </section>
+
+        <section className={healthcareSolid.section}>
+          <div className="mb-4 flex items-center gap-2">
+            <Stethoscope className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold">Doctor Information</h2>
+          </div>
+          {doctor ? (
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Name</dt>
+                <dd className="font-medium">
+                  {doctor.firstName} {doctor.lastName}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Email</dt>
+                <dd className="text-right">{doctor.email || "—"}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="text-sm text-muted-foreground">No doctor assigned</p>
+          )}
+        </section>
+
+        <section className={cn(healthcareSolid.section, "lg:col-span-2")}>
+          <div className="mb-4 flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold">Session Information</h2>
+          </div>
+          <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+            <div className="flex justify-between gap-4 sm:flex-col sm:gap-1">
+              <dt className="text-muted-foreground">Organization</dt>
+              <dd>{org?.name || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:flex-col sm:gap-1">
+              <dt className="text-muted-foreground">Session Type</dt>
+              <dd>
+                <Badge variant="outline" className="rounded-lg">
+                  {formatSessionType(session.sessionType)}
+                </Badge>
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:flex-col sm:gap-1">
+              <dt className="text-muted-foreground">Started</dt>
+              <dd>{formatDateTime(session.startedAt)}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:flex-col sm:gap-1">
+              <dt className="text-muted-foreground">Completed</dt>
+              <dd>{formatDateTime(session.completedAt)}</dd>
+            </div>
+            <div className="flex justify-between gap-4 sm:flex-col sm:gap-1">
+              <dt className="text-muted-foreground">Duration</dt>
+              <dd className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                {formatDuration(session.duration)}
+              </dd>
+            </div>
+            {session.description && (
+              <div className="sm:col-span-2">
+                <dt className="mb-1 text-muted-foreground">Notes</dt>
+                <dd className="rounded-lg border bg-slate-50 p-3 text-sm">
+                  {session.description}
+                </dd>
+              </div>
+            )}
+          </dl>
+        </section>
+
+        <section className={cn(healthcareSolid.section, "lg:col-span-2")}>
+          <div className="mb-4 flex items-center gap-2">
+            <Mic className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold">Recording Status</h2>
+          </div>
+          <p className="mb-3 text-sm font-medium text-slate-800">
+            {recordingStatusLabel(session.status, hasAudio)}
+          </p>
+          {hasAudio ? (
+            <AudioPlayback sessionId={sessionId} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {session.status === "created"
+                ? "No recording has been started for this session."
+                : "Recording is not yet available for playback."}
+            </p>
+          )}
+        </section>
+
+        <section className={cn(healthcareSolid.section, "lg:col-span-2")}>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              <h2 className="text-lg font-semibold">Transcript</h2>
+            </div>
+            <Link href={`/transcript?sessionId=${sessionId}`}>
+              <Button variant="outline" size="sm" className={cn("rounded-xl", healthcareGlass.button)}>
+                Open Transcript Studio
+              </Button>
+            </Link>
+          </div>
+
+          {session.transcriptData || session.transcript ? (
+            session.transcriptData ? (
+              <div className="space-y-4">
+                <TranscriptMetadataPanel transcript={session.transcriptData} />
+                <TranscriptSegmentList
+                  segments={session.transcriptData.segments.slice(0, 5)}
+                />
+                {session.transcriptData.segments.length > 5 && (
+                  <p className="text-sm text-muted-foreground">
+                    Showing first 5 segments. Open Transcript Studio for the
+                    full view.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-slate-50 p-4 text-sm whitespace-pre-wrap">
+                {session.transcript}
+              </div>
+            )
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No transcript available yet. Start a recording to generate one.
+            </p>
+          )}
+        </section>
+
+        <section className={cn(healthcareSolid.section, "lg:col-span-2")}>
+          <div className="mb-2 flex items-center gap-2">
+            <FileText className="h-5 w-5 text-slate-400" />
+            <h2 className="text-lg font-semibold text-slate-700">SOAP Notes</h2>
+            <Badge variant="outline" className="rounded-lg text-xs">
+              Coming soon
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            AI-generated SOAP notes will appear here after transcription and
+            clinical note generation are enabled.
+          </p>
+        </section>
+      </div>
     </div>
   );
 }

@@ -13,15 +13,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SessionActions } from "./SessionActions";
 import { SessionStatusBadge } from "./SessionStatusBadge";
-import { Session, SessionOrganization, SessionUser } from "@/types/session.types";
+import { Session, SessionUser } from "@/types/session.types";
+import type { Patient } from "@/types/patient.types";
+import { getPatientFullName } from "@/utils/patient.utils";
 import {
-  Building2,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Clock,
+  Stethoscope,
   User,
 } from "lucide-react";
+import { healthcareSolid } from "@/lib/healthcare-ui";
+import { cn } from "@/lib/utils";
 
 interface SessionTableProps {
   sessions: Session[];
@@ -36,29 +39,26 @@ interface SessionTableProps {
 const getSessionId = (session: Session) =>
   session.id || session._id || session.sessionCode;
 
-const getOrgName = (organizationId: string | SessionOrganization) => {
-  if (typeof organizationId === "object" && organizationId?.name) {
-    return organizationId.name;
-  }
-  return "—";
-};
-
-const getUserName = (userId: string | SessionUser) => {
+const getDoctorName = (userId: string | SessionUser) => {
   if (typeof userId === "object" && userId?.firstName) {
     return `${userId.firstName} ${userId.lastName || ""}`.trim();
   }
   return "—";
 };
 
+const getPatientDisplay = (patientId: string | Patient | undefined) => {
+  if (!patientId || typeof patientId === "string") {
+    return { name: "—", code: "—" };
+  }
+
+  return {
+    name: getPatientFullName(patientId),
+    code: patientId.patientCode || "—",
+  };
+};
+
 const formatSessionType = (type: string) =>
   type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
-const formatDuration = (seconds?: number) => {
-  if (!seconds) return "—";
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}m ${secs}s`;
-};
 
 export function SessionTable({
   sessions,
@@ -79,18 +79,18 @@ export function SessionTable({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className={cn("overflow-hidden", healthcareSolid.card)}>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold">Session</TableHead>
-              <TableHead className="font-bold">Organization</TableHead>
-              <TableHead className="font-bold">User</TableHead>
-              <TableHead className="font-bold">Type</TableHead>
-              <TableHead className="font-bold">Status</TableHead>
-              <TableHead className="font-bold">Duration</TableHead>
-              <TableHead className="font-bold">Created</TableHead>
-              <TableHead className="text-right font-bold">Actions</TableHead>
+              <TableHead className="font-semibold">Session Code</TableHead>
+              <TableHead className="font-semibold">Patient Name</TableHead>
+              <TableHead className="font-semibold">Patient Code</TableHead>
+              <TableHead className="font-semibold">Doctor</TableHead>
+              <TableHead className="font-semibold">Session Type</TableHead>
+              <TableHead className="font-semibold">Status</TableHead>
+              <TableHead className="font-semibold">Created Date</TableHead>
+              <TableHead className="text-right font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -98,7 +98,7 @@ export function SessionTable({
               <TableRow>
                 <TableCell
                   colSpan={8}
-                  className="py-8 text-center text-muted-foreground"
+                  className="py-10 text-center text-muted-foreground"
                 >
                   No sessions found
                 </TableCell>
@@ -107,51 +107,49 @@ export function SessionTable({
               sessions.map((session) => {
                 const sessionId = getSessionId(session);
                 const isActive = session.isActive !== false;
+                const patient = getPatientDisplay(session.patientId);
 
                 return (
                   <TableRow key={sessionId}>
                     <TableCell>
-                      <div>
-                        <Link
-                          href={`/sessions/${sessionId}`}
-                          className="font-medium text-blue-600 hover:underline"
-                        >
-                          {session.title}
-                        </Link>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {session.sessionCode}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Building2 className="h-3 w-3 text-muted-foreground" />
-                        <span className="truncate max-w-[140px]">
-                          {getOrgName(session.organizationId)}
-                        </span>
-                      </div>
+                      <Link
+                        href={`/sessions/${sessionId}`}
+                        className="font-mono text-sm font-medium text-blue-600 hover:underline"
+                      >
+                        {session.sessionCode}
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
                         <User className="h-3 w-3 text-muted-foreground" />
-                        <span className="truncate max-w-[140px]">
-                          {getUserName(session.userId)}
+                        <span className="max-w-[140px] truncate">
+                          {patient.name}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                      <span className="font-mono text-sm text-muted-foreground">
+                        {patient.code}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Stethoscope className="h-3 w-3 text-muted-foreground" />
+                        <span className="max-w-[140px] truncate">
+                          {getDoctorName(session.userId)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className="rounded-lg bg-blue-50 text-blue-700"
+                      >
                         {formatSessionType(session.sessionType)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <SessionStatusBadge status={session.status} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        {formatDuration(session.duration)}
-                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
@@ -181,7 +179,7 @@ export function SessionTable({
       </div>
 
       {total > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-sm text-muted-foreground">
             Showing {start}–{end} of {total} sessions
           </p>
@@ -189,23 +187,25 @@ export function SessionTable({
             <Button
               variant="outline"
               size="sm"
+              className="rounded-xl"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
+              <ChevronLeft className="mr-1 h-4 w-4" />
               Previous
             </Button>
-            <span className="text-sm font-medium px-2">
+            <span className="px-2 text-sm font-medium">
               Page {page} of {totalPages}
             </span>
             <Button
               variant="outline"
               size="sm"
+              className="rounded-xl"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
             >
               Next
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>

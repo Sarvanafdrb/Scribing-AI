@@ -20,7 +20,11 @@ import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { Permission } from "@/types/permission.types";
-import { ROLE_EDIT, PERMISSION_VIEW, PERMISSION_EDIT } from "@/constants/permissions";
+import {
+  ROLE_EDIT,
+  PERMISSION_VIEW,
+  PERMISSION_EDIT,
+} from "@/constants/permissions";
 import { hasPermission } from "@/types/auth.types";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -43,7 +47,10 @@ export default function PermissionsPage() {
   const [organizationId, setOrganizationId] = useState("");
   const [roleSearch, setRoleSearch] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
-  const [selectedPermissionIds, setSelectedPermissionIds] = useState<Set<string>>(
+  const [selectedPermissionIds, setSelectedPermissionIds] = useState<
+    Set<string>
+  >(new Set());
+  const [initialPermissionIds, setInitialPermissionIds] = useState<Set<string>>(
     new Set(),
   );
 
@@ -55,7 +62,8 @@ export default function PermissionsPage() {
   const firstOrganizationId =
     organizations[0]?.id || organizations[0]?._id || "";
 
-  const canView = checkPermission(PERMISSION_VIEW) || checkPermission("permission:read");
+  const canView =
+    checkPermission(PERMISSION_VIEW) || checkPermission("permission:read");
   const canEdit =
     canManageAllOrganizations ||
     checkPermission(ROLE_EDIT) ||
@@ -83,22 +91,36 @@ export default function PermissionsPage() {
     enabled: !!organizationId && canView,
   });
 
-  const { data: rolePermissions, isLoading: rolePermissionsLoading } =
-    useQuery({
+  const { data: rolePermissions, isLoading: rolePermissionsLoading } = useQuery(
+    {
       queryKey: ["roles", selectedRoleId, "permissions"],
       queryFn: () => roleService.getPermissions(selectedRoleId),
       enabled: !!selectedRoleId,
-    });
+    },
+  );
 
+  // useEffect(() => {
+  //   if (!selectedRoleId) {
+  //     setSelectedPermissionIds((current) =>
+  //       current.size === 0 ? current : new Set(),
+  //     );
+  //     return;
+  //   }
+
+  //   if (!rolePermissions) return;
+
+  //   const ids = new Set(
+  //     (rolePermissions as Permission[]).map((permission) =>
+  //       getPermissionId(permission),
+  //     ),
+  //   );
+
+  //   setSelectedPermissionIds((current) =>
+  //     setsEqual(current, ids) ? current : ids,
+  //   );
+  // }, [rolePermissions, selectedRoleId]);
   useEffect(() => {
-    if (!selectedRoleId) {
-      setSelectedPermissionIds((current) =>
-        current.size === 0 ? current : new Set(),
-      );
-      return;
-    }
-
-    if (!rolePermissions) return;
+    if (!selectedRoleId || !rolePermissions) return;
 
     const ids = new Set(
       (rolePermissions as Permission[]).map((permission) =>
@@ -106,11 +128,9 @@ export default function PermissionsPage() {
       ),
     );
 
-    setSelectedPermissionIds((current) =>
-      setsEqual(current, ids) ? current : ids,
-    );
+    setSelectedPermissionIds(ids);
+    setInitialPermissionIds(new Set(ids));
   }, [rolePermissions, selectedRoleId]);
-
   const roleList = roles ?? [];
 
   const selectedRole = useMemo(
@@ -124,6 +144,8 @@ export default function PermissionsPage() {
     mutationFn: (permissionIds: string[]) =>
       roleService.assignPermissions(selectedRoleId, permissionIds),
     onSuccess: () => {
+      setInitialPermissionIds(new Set(selectedPermissionIds));
+
       queryClient.invalidateQueries({
         queryKey: ["roles", selectedRoleId, "permissions"],
       });
@@ -160,7 +182,15 @@ export default function PermissionsPage() {
       return next;
     });
   };
+  const hasChanges = useMemo(() => {
+    if (selectedPermissionIds.size !== initialPermissionIds.size) {
+      return true;
+    }
 
+    return [...selectedPermissionIds].some(
+      (id) => !initialPermissionIds.has(id),
+    );
+  }, [selectedPermissionIds, initialPermissionIds]);
   const toggleAll = (checked: boolean) => {
     if (checked) {
       setSelectedPermissionIds(
@@ -199,8 +229,8 @@ export default function PermissionsPage() {
             <h1 className="text-3xl font-bold text-slate-900">Permissions</h1>
           </div>
           <p className="mt-1 text-muted-foreground">
-            Assign module permissions to roles. Users inherit permissions through
-            their assigned role.
+            Assign module permissions to roles. Users inherit permissions
+            through their assigned role.
           </p>
         </div>
       </div>
@@ -262,6 +292,7 @@ export default function PermissionsPage() {
             canEdit={canEdit}
             isSaving={saveMutation.isPending}
             isLoading={matrixLoading || rolePermissionsLoading}
+            hasChanges={hasChanges}
           />
         </div>
       </div>

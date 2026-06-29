@@ -28,6 +28,7 @@ interface PermissionMatrixProps {
   canEdit: boolean;
   isSaving?: boolean;
   isLoading?: boolean;
+  hasChanges: boolean;
 }
 
 const getPermissionId = (permission: Permission) =>
@@ -44,6 +45,7 @@ export function PermissionMatrix({
   canEdit,
   isSaving,
   isLoading,
+  hasChanges,
 }: PermissionMatrixProps) {
   const permissionsByModule = PERMISSION_MODULES.map((module) => ({
     module,
@@ -55,9 +57,7 @@ export function PermissionMatrix({
     }),
   }));
 
-  const allPermissionIds = permissions
-    .map(getPermissionId)
-    .filter(Boolean);
+  const allPermissionIds = permissions.map(getPermissionId).filter(Boolean);
   const allSelected =
     allPermissionIds.length > 0 &&
     allPermissionIds.every((id) => selectedPermissionIds.has(id));
@@ -113,7 +113,7 @@ export function PermissionMatrix({
           </label>
           <Button
             onClick={onSave}
-            disabled={!canEdit || isSaving || isLoading}
+            disabled={!canEdit || isSaving || isLoading || !hasChanges}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Save className="mr-2 h-4 w-4" />
@@ -145,7 +145,9 @@ export function PermissionMatrix({
                   {module.label}
                 </TableCell>
                 {items.map(({ action, permission }) => {
-                  const permissionId = permission ? getPermissionId(permission) : "";
+                  const permissionId = permission
+                    ? getPermissionId(permission)
+                    : "";
                   const checked = permissionId
                     ? selectedPermissionIds.has(permissionId)
                     : false;
@@ -175,7 +177,9 @@ export function PermissionMatrix({
                     className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                     checked={isModuleFullySelected(module.id)}
                     disabled={!canEdit || isLoading}
-                    onChange={(e) => onToggleModule(module.id, e.target.checked)}
+                    onChange={(e) =>
+                      onToggleModule(module.id, e.target.checked)
+                    }
                     aria-label={`Select all ${module.label} permissions`}
                   />
                 </TableCell>

@@ -1,5 +1,6 @@
 import { api } from "@/services/api";
 import { CreateRoleData, Role, UpdateRoleData } from "@/types/role.types";
+import { RolePermissionsResponse } from "@/types/permission.types";
 
 export const roleService = {
   getAll: async (organizationId: string): Promise<Role[]> => {
@@ -82,12 +83,15 @@ export const roleService = {
     return response.data.data;
   },
 
-  getPermissions: async (id: string) => {
+  getPermissions: async (id: string): Promise<RolePermissionsResponse> => {
     const response = await api.get(`/roles/${id}/permissions`);
-    return response.data.data || [];
+    return response.data.data;
   },
 
-  assignPermissions: async (id: string, permissionIds: string[]) => {
+  assignPermissions: async (
+    id: string,
+    permissionIds: string[],
+  ): Promise<RolePermissionsResponse> => {
     const response = await api.post(`/roles/${id}/permissions`, {
       permissionIds,
     });

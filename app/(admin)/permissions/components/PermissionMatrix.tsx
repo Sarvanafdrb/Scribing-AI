@@ -17,10 +17,13 @@ import {
 import { Permission } from "@/types/permission.types";
 import { cn } from "@/lib/utils";
 import { Save, ShieldCheck } from "lucide-react";
+import { PermissionAuditInfo } from "./PermissionAuditInfo";
 
 interface PermissionMatrixProps {
   selectedRoleName?: string;
   isRoleActive?: boolean;
+  permissionsUpdatedBy?: string | null;
+  permissionsUpdatedAt?: string | Date | null;
   permissions: Permission[];
   selectedPermissionIds: Set<string>;
   onTogglePermission: (permissionId: string, checked: boolean) => void;
@@ -30,6 +33,7 @@ interface PermissionMatrixProps {
   canEdit: boolean;
   isSaving?: boolean;
   isLoading?: boolean;
+  isAuditLoading?: boolean;
   hasChanges: boolean;
 }
 
@@ -39,6 +43,8 @@ const getPermissionId = (permission: Permission) =>
 export function PermissionMatrix({
   selectedRoleName,
   isRoleActive = true,
+  permissionsUpdatedBy,
+  permissionsUpdatedAt,
   permissions,
   selectedPermissionIds,
   onTogglePermission,
@@ -48,6 +54,7 @@ export function PermissionMatrix({
   canEdit,
   isSaving,
   isLoading,
+  isAuditLoading,
   hasChanges,
 }: PermissionMatrixProps) {
   const canModifyPermissions = canEdit && isRoleActive;
@@ -135,6 +142,14 @@ export function PermissionMatrix({
           </Button>
         </div>
       </div>
+
+      {!isAuditLoading && (
+        <PermissionAuditInfo
+          roleName={selectedRoleName}
+          updatedBy={permissionsUpdatedBy}
+          updatedAt={permissionsUpdatedAt}
+        />
+      )}
 
       {!isRoleActive && (
         <div

@@ -13,3 +13,10 @@ export interface PermissionMatrixResponse {
   grouped: Record<string, Permission[]>;
   total: number;
 }
+
+export interface RolePermissionsResponse {
+  permissions: Permission[];
+  roleName: string;
+  updatedBy: string | null;
+  updatedAt: string | null;
+}

@@ -126,7 +126,7 @@ export default function PermissionsPage() {
     if (!selectedRoleId || !rolePermissions) return;
 
     const ids = new Set(
-      (rolePermissions as Permission[]).map((permission) =>
+      rolePermissions.permissions.map((permission) =>
         getPermissionId(permission),
       ),
     );
@@ -146,12 +146,13 @@ export default function PermissionsPage() {
   const saveMutation = useMutation({
     mutationFn: (permissionIds: string[]) =>
       roleService.assignPermissions(selectedRoleId, permissionIds),
-    onSuccess: () => {
+    onSuccess: (data) => {
       setInitialPermissionIds(new Set(selectedPermissionIds));
 
-      queryClient.invalidateQueries({
-        queryKey: roleKeys.rolePermissions(selectedRoleId),
-      });
+      queryClient.setQueryData(
+        roleKeys.rolePermissions(selectedRoleId),
+        data,
+      );
       toast.success("Permissions saved successfully");
     },
     onError: (error: any) => {
@@ -314,6 +315,8 @@ export default function PermissionsPage() {
           <PermissionMatrix
             selectedRoleName={selectedRole?.name}
             isRoleActive={isSelectedRoleActive}
+            permissionsUpdatedBy={rolePermissions?.updatedBy}
+            permissionsUpdatedAt={rolePermissions?.updatedAt}
             permissions={allPermissions}
             selectedPermissionIds={selectedPermissionIds}
             onTogglePermission={togglePermission}
@@ -323,6 +326,7 @@ export default function PermissionsPage() {
             canEdit={canEdit}
             isSaving={saveMutation.isPending}
             isLoading={matrixLoading || rolePermissionsLoading}
+            isAuditLoading={rolePermissionsLoading}
             hasChanges={isDirty}
           />
         </div>

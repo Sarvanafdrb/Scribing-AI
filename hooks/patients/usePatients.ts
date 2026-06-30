@@ -10,15 +10,18 @@ export const usePatients = (params?: {
   limit?: number;
 }) => {
   const { organizationId } = useTenantScope();
+  const search = (params?.search || "").trim().replace(/\s+/g, " ");
 
   const query = useQuery({
     queryKey: patientKeys.list({
       ...params,
+      search,
       organizationId: organizationId || "all",
     }),
     queryFn: () =>
       patientService.getAll({
         ...params,
+        search: search || undefined,
         organizationId: organizationId || undefined,
         isActive: params?.isActive,
       }),

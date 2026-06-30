@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SessionStatusBadge } from "@/app/(admin)/sessions/components/SessionStatusBadge";
-import { AudioPlayback } from "@/components/recording/AudioPlayback";
+import { TranscriptAudioSection } from "@/components/transcript/TranscriptAudioSection";
 import { TranscriptMetadataPanel } from "@/components/transcript/TranscriptMetadataPanel";
 import { TranscriptSegmentList } from "@/components/transcript/TranscriptSegmentList";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
@@ -138,8 +138,9 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
   const isFailed =
     session.status === "failed" ||
     transcript?.metadata.status === "failed";
+  const hasRecording = Boolean(session.audioPlaybackUrl || session.audioUrl);
   const canAutoGenerate =
-    session.audioUrl &&
+    hasRecording &&
     !isProcessing &&
     !transcript?.segments?.length &&
     !transcript?.fullText &&
@@ -170,6 +171,8 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_0.8fr]">
         <div className="space-y-6">
+          <TranscriptAudioSection session={session} sessionId={sessionId} />
+
           <Card className="border-blue-100">
             <CardHeader>
               <CardTitle>Transcript</CardTitle>
@@ -208,7 +211,7 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
                       className="bg-blue-600 hover:bg-blue-700"
                       onClick={handleRetry}
                       disabled={
-                        !session.audioUrl ||
+                        !hasRecording ||
                         generateTranscript.isPending ||
                         isProcessing
                       }
@@ -226,7 +229,7 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
                       className="bg-blue-600 hover:bg-blue-700"
                       onClick={handleGenerate}
                       disabled={
-                        !session.audioUrl ||
+                        !hasRecording ||
                         generateTranscript.isPending ||
                         isProcessing ||
                         session.status === "completed"
@@ -264,19 +267,6 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
                   Transcript generation will start automatically after recording
                   stops. You can also generate manually using the button above.
                 </p>
-              )}
-
-              {!session.audioUrl && (
-                <div className="space-y-3 rounded-lg border border-dashed p-4 text-sm">
-                  <p className="text-muted-foreground">
-                    No recording found for this session.
-                  </p>
-                  <Link href={`/recording?sessionId=${sessionId}`}>
-                    <Button variant="outline" size="sm">
-                      Go to Recording
-                    </Button>
-                  </Link>
-                </div>
               )}
 
               {transcript?.metadata.status === "failed" && (
@@ -375,21 +365,6 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
                 )}
                 Translate Transcript
               </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Audio Playback</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {session.audioUrl ? (
-                <AudioPlayback sessionId={sessionId} />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No recording available.
-                </p>
-              )}
             </CardContent>
           </Card>
         </div>

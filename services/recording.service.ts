@@ -6,6 +6,33 @@ import {
 } from "@/types/recording.types";
 import { Session } from "@/types/session.types";
 
+export const getUploadsBaseUrl = (): string => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+  if (apiUrl.startsWith("http://") || apiUrl.startsWith("https://")) {
+    return apiUrl.replace(/\/api\/?$/, "");
+  }
+
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  return (
+    process.env.NEXT_PUBLIC_UPLOADS_BASE_URL || "http://localhost:5000"
+  ).replace(/\/$/, "");
+};
+
+export const resolveAudioUrl = (audioUrl: string): string => {
+  if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
+    return audioUrl;
+  }
+
+  const base = getUploadsBaseUrl();
+  const normalizedPath = audioUrl.startsWith("/") ? audioUrl : `/${audioUrl}`;
+
+  return `${base}${normalizedPath}`;
+};
+
 export const recordingService = {
   start: async (sessionId: string): Promise<Session> => {
     const response = await api.post(`/sessions/${sessionId}/recording/start`);
@@ -66,16 +93,4 @@ export const recordingService = {
     );
     return response.data.data;
   },
-};
-
-export const resolveAudioUrl = (audioUrl: string): string => {
-  if (audioUrl.startsWith("http://") || audioUrl.startsWith("https://")) {
-    return audioUrl;
-  }
-
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, "") ||
-    "http://localhost:5000";
-
-  return `${apiBase}${audioUrl.startsWith("/") ? audioUrl : `/${audioUrl}`}`;
 };

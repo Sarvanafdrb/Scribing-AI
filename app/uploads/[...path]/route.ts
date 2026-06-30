@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const getApiProxyTarget = () =>
-  (process.env.API_PROXY_TARGET || "http://localhost:5000/api").replace(
-    /\/$/,
-    "",
-  );
+const getUploadsProxyTarget = () =>
+  (process.env.API_PROXY_TARGET || "http://localhost:5000/api")
+    .replace(/\/api\/?$/, "")
+    .replace(/\/$/, "");
 
 const STRIP_REQUEST_HEADERS = new Set([
   "connection",
@@ -17,8 +16,6 @@ const STRIP_REQUEST_HEADERS = new Set([
   "upgrade",
   "host",
   "content-length",
-  // Avoid upstream compression; fetch() decompresses but we must not
-  // forward content-encoding to the browser with a decompressed body.
   "accept-encoding",
 ]);
 
@@ -29,7 +26,7 @@ const STRIP_RESPONSE_HEADERS = new Set([
 
 const buildTargetUrl = (request: NextRequest, path: string[]) => {
   const targetPath = path.join("/");
-  const url = new URL(`${getApiProxyTarget()}/${targetPath}`);
+  const url = new URL(`${getUploadsProxyTarget()}/uploads/${targetPath}`);
 
   request.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.append(key, value);
@@ -64,18 +61,13 @@ async function proxyRequest(request: NextRequest, path: string[]) {
   const url = buildTargetUrl(request, path);
   const headers = buildForwardHeaders(request);
 
-  const init: RequestInit = {
-    method: request.method,
-    headers,
-    redirect: "manual",
-  };
-
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.arrayBuffer();
-  }
-
   try {
-    const response = await fetch(url.toString(), init);
+    const response = await fetch(url.toString(), {
+      method: request.method,
+      headers,
+      redirect: "manual",
+    });
+
     const body = await response.arrayBuffer();
 
     return new NextResponse(body, {
@@ -84,27 +76,12 @@ async function proxyRequest(request: NextRequest, path: string[]) {
       headers: buildResponseHeaders(response),
     });
   } catch (error) {
-    const target = getApiProxyTarget();
-    const isConnectionRefused =
-      error instanceof TypeError ||
-      (error instanceof Error &&
-        "cause" in error &&
-        typeof error.cause === "object" &&
-        error.cause !== null &&
-        "code" in error.cause &&
-        error.cause.code === "ECONNREFUSED");
+    console.error(`Uploads proxy failed for ${url.toString()}:`, error);
 
-    console.error(`API proxy failed for ${url.toString()}:`, error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: isConnectionRefused
-          ? `Cannot reach the API server at ${target}. Start the backend with "npm run dev" in the scribing-ai-api folder.`
-          : "The API server is temporarily unavailable. Please try again.",
-      },
-      { status: 503 },
-    );
+    return new NextResponse("Recording file unavailable", {
+      status: 503,
+      headers: { "Content-Type": "text/plain" },
+    });
   }
 }
 
@@ -118,8 +95,4 @@ async function handle(request: NextRequest, context: RouteContext) {
 }
 
 export const GET = handle;
-export const POST = handle;
-export const PUT = handle;
-export const PATCH = handle;
-export const DELETE = handle;
-export const OPTIONS = handle;
+export const HEAD = handle;

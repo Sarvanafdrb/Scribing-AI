@@ -41,6 +41,11 @@ export function AudioPlayback({
           setSrc(resolveAudioUrl(audioUrl));
         }
       } catch (err: any) {
+        if (audioUrl && active) {
+          setSrc(resolveAudioUrl(audioUrl));
+          return;
+        }
+
         if (active) {
           setError(err?.response?.data?.message || "Failed to load audio");
         }
@@ -82,7 +87,13 @@ export function AudioPlayback({
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">{title}</p>
-      <audio controls className="w-full" src={src}>
+      <audio
+        controls
+        className="w-full"
+        src={src}
+        preload="metadata"
+        onError={() => setError("No recording available.")}
+      >
         Your browser does not support audio playback.
       </audio>
     </div>

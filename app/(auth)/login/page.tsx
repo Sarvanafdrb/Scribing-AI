@@ -39,8 +39,15 @@ const getLoginErrorMessage = (error: unknown): string => {
       return "Cannot reach the API server. Start the backend with: npm run dev (in scribing-ai-api folder).";
     }
 
+    const status = error.response.status;
     const message = (error.response.data as { message?: string })?.message;
+
+    if (status === 503 && message) return message;
     if (message) return message;
+
+    if (status === 503) {
+      return "Cannot reach the API server. Start the backend with: npm run dev (in scribing-ai-api folder).";
+    }
 
     return "Invalid credentials";
   }

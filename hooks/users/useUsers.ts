@@ -14,7 +14,7 @@ interface UseUsersParams {
 
 export const useUsers = (params?: UseUsersParams) => {
   const { organizationId: scopedOrgId } = useTenantScope();
-  const search = params?.search || "";
+  const search = (params?.search || "").trim().replace(/\s+/g, " ");
   const isActive = params?.isActive || "";
   const organizationId = scopedOrgId || params?.organizationId || "";
   const roleId = params?.roleId || "";

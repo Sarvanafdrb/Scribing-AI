@@ -10,7 +10,7 @@ export const useRoleMutations = () => {
   const createRole = useMutation({
     mutationFn: (data: CreateRoleData) => roleService.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roleKeys.all });
       toast.success("Role created successfully");
     },
     onError: (error: any) => {
@@ -22,7 +22,7 @@ export const useRoleMutations = () => {
     mutationFn: ({ id, data }: { id: string; data: UpdateRoleData }) =>
       roleService.update(id, data),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roleKeys.all });
       queryClient.invalidateQueries({ queryKey: roleKeys.detail(variables.id) });
       toast.success("Role updated successfully");
     },
@@ -34,7 +34,7 @@ export const useRoleMutations = () => {
   const deactivateRole = useMutation({
     mutationFn: (id: string) => roleService.deactivate(id),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roleKeys.all });
       queryClient.removeQueries({ queryKey: roleKeys.detail(id) });
       toast.success("Role deactivated successfully");
     },
@@ -46,7 +46,7 @@ export const useRoleMutations = () => {
   const activateRole = useMutation({
     mutationFn: (id: string) => roleService.activate(id),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: roleKeys.all });
       queryClient.invalidateQueries({ queryKey: roleKeys.detail(id) });
       toast.success("Role activated successfully");
     },

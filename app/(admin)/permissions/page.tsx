@@ -16,6 +16,7 @@ import { RoleListPanel } from "./components/RoleListPanel";
 import { PermissionMatrix } from "./components/PermissionMatrix";
 import { permissionService } from "@/services/permission.service";
 import { roleService } from "@/services/role.service";
+import { roleKeys } from "@/services/role.queries";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -86,14 +87,17 @@ export default function PermissionsPage() {
   });
 
   const { data: roles, isLoading: rolesLoading } = useQuery({
-    queryKey: ["roles", "permissions-page", organizationId],
+    queryKey: roleKeys.permissionsPage(organizationId),
     queryFn: () => roleService.getAll(organizationId),
     enabled: !!organizationId && canView,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const { data: rolePermissions, isLoading: rolePermissionsLoading } = useQuery(
     {
-      queryKey: ["roles", selectedRoleId, "permissions"],
+      queryKey: roleKeys.rolePermissions(selectedRoleId),
       queryFn: () => roleService.getPermissions(selectedRoleId),
       enabled: !!selectedRoleId,
     },
@@ -147,7 +151,7 @@ export default function PermissionsPage() {
       setInitialPermissionIds(new Set(selectedPermissionIds));
 
       queryClient.invalidateQueries({
-        queryKey: ["roles", selectedRoleId, "permissions"],
+        queryKey: roleKeys.rolePermissions(selectedRoleId),
       });
       toast.success("Permissions saved successfully");
     },
@@ -206,8 +210,16 @@ export default function PermissionsPage() {
       toast.error("Select a role first");
       return;
     }
+    if (selectedRole?.isActive === false) {
+      toast.error("Activate the role before modifying its permissions");
+      return;
+    }
     saveMutation.mutate(Array.from(selectedPermissionIds));
   };
+
+  const isSelectedRoleActive = selectedRole
+    ? selectedRole.isActive !== false
+    : true;
 
   if (!canView && !hasPermission(user, PERMISSION_VIEW, token)) {
     return (
@@ -283,6 +295,7 @@ export default function PermissionsPage() {
         <div className="lg:col-span-8">
           <PermissionMatrix
             selectedRoleName={selectedRole?.name}
+            isRoleActive={isSelectedRoleActive}
             permissions={allPermissions}
             selectedPermissionIds={selectedPermissionIds}
             onTogglePermission={togglePermission}

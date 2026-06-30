@@ -1,15 +1,8 @@
 import { api } from "@/services/api";
 import { CreateRoleData, Role, UpdateRoleData } from "@/types/role.types";
 
-export interface RoleOption {
-  _id: string;
-  id?: string;
-  name: string;
-  description?: string;
-}
-
 export const roleService = {
-  getAll: async (organizationId: string): Promise<RoleOption[]> => {
+  getAll: async (organizationId: string): Promise<Role[]> => {
     const response = await api.get("/roles", {
       params: { organizationId },
     });

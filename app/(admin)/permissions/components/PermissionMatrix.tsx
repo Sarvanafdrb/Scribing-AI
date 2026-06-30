@@ -15,10 +15,12 @@ import {
   PERMISSION_MODULES,
 } from "@/constants/permissions";
 import { Permission } from "@/types/permission.types";
+import { cn } from "@/lib/utils";
 import { Save, ShieldCheck } from "lucide-react";
 
 interface PermissionMatrixProps {
   selectedRoleName?: string;
+  isRoleActive?: boolean;
   permissions: Permission[];
   selectedPermissionIds: Set<string>;
   onTogglePermission: (permissionId: string, checked: boolean) => void;
@@ -36,6 +38,7 @@ const getPermissionId = (permission: Permission) =>
 
 export function PermissionMatrix({
   selectedRoleName,
+  isRoleActive = true,
   permissions,
   selectedPermissionIds,
   onTogglePermission,
@@ -47,6 +50,7 @@ export function PermissionMatrix({
   isLoading,
   hasChanges,
 }: PermissionMatrixProps) {
+  const canModifyPermissions = canEdit && isRoleActive;
   const permissionsByModule = PERMISSION_MODULES.map((module) => ({
     module,
     items: PERMISSION_ACTIONS.map((action) => {
@@ -93,27 +97,37 @@ export function PermissionMatrix({
       <div className="flex flex-col gap-3 border-b bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-semibold text-slate-900">Permission Matrix</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             Configure access for{" "}
             <Badge variant="outline" className="capitalize">
               {selectedRoleName}
             </Badge>
+            {!isRoleActive && (
+              <Badge
+                variant="outline"
+                className="border-slate-200 bg-slate-100 text-slate-600"
+              >
+                Inactive
+              </Badge>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
               checked={allSelected}
-              disabled={!canEdit || isLoading}
+              disabled={!canModifyPermissions || isLoading}
               onChange={(e) => onToggleAll(e.target.checked)}
             />
             Select All
           </label>
           <Button
             onClick={onSave}
-            disabled={!canEdit || isSaving || isLoading || !hasChanges}
+            disabled={
+              !canModifyPermissions || isSaving || isLoading || !hasChanges
+            }
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Save className="mr-2 h-4 w-4" />
@@ -122,7 +136,22 @@ export function PermissionMatrix({
         </div>
       </div>
 
-      <div className="overflow-auto">
+      {!isRoleActive && (
+        <div
+          role="status"
+          className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+          🔒 This role is inactive. Activate the role to modify its permissions.
+        </div>
+      )}
+
+      <div
+        className={cn(
+          "overflow-auto transition-opacity",
+          !isRoleActive && "opacity-65",
+        )}
+        aria-readonly={!isRoleActive || undefined}
+      >
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-100/80 hover:bg-slate-100/80">
@@ -159,7 +188,7 @@ export function PermissionMatrix({
                           type="checkbox"
                           className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                           checked={checked}
-                          disabled={!canEdit || isLoading}
+                          disabled={!canModifyPermissions || isLoading}
                           onChange={(e) =>
                             onTogglePermission(permissionId, e.target.checked)
                           }
@@ -176,7 +205,7 @@ export function PermissionMatrix({
                     type="checkbox"
                     className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
                     checked={isModuleFullySelected(module.id)}
-                    disabled={!canEdit || isLoading}
+                    disabled={!canModifyPermissions || isLoading}
                     onChange={(e) =>
                       onToggleModule(module.id, e.target.checked)
                     }

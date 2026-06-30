@@ -28,12 +28,11 @@ import {
 } from "@/constants/permissions";
 import { hasPermission } from "@/types/auth.types";
 import { useAuthStore } from "@/store/auth.store";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { UnsavedChangesDialog } from "@/components/shared/UnsavedChangesDialog";
 
 const getPermissionId = (permission: Permission) =>
   permission.id || permission._id || "";
-
-const setsEqual = (a: Set<string>, b: Set<string>) =>
-  a.size === b.size && [...a].every((id) => b.has(id));
 
 export default function PermissionsPage() {
   const queryClient = useQueryClient();
@@ -186,7 +185,7 @@ export default function PermissionsPage() {
       return next;
     });
   };
-  const hasChanges = useMemo(() => {
+  const isDirty = useMemo(() => {
     if (selectedPermissionIds.size !== initialPermissionIds.size) {
       return true;
     }
@@ -195,6 +194,28 @@ export default function PermissionsPage() {
       (id) => !initialPermissionIds.has(id),
     );
   }, [selectedPermissionIds, initialPermissionIds]);
+
+  const {
+    dialogOpen,
+    confirmAction,
+    handleStay,
+    handleDiscard,
+    handleDialogOpenChange,
+  } = useUnsavedChangesGuard(isDirty);
+
+  const handleSelectRole = (roleId: string) => {
+    if (roleId === selectedRoleId) return;
+    confirmAction(() => setSelectedRoleId(roleId));
+  };
+
+  const handleOrganizationChange = (value: string) => {
+    if (value === organizationId) return;
+    confirmAction(() => {
+      setOrganizationId(value);
+      setSelectedRoleId("");
+    });
+  };
+
   const toggleAll = (checked: boolean) => {
     if (checked) {
       setSelectedPermissionIds(
@@ -256,10 +277,7 @@ export default function PermissionsPage() {
               </label>
               <Select
                 value={organizationId || undefined}
-                onValueChange={(value) => {
-                  setOrganizationId(value);
-                  setSelectedRoleId("");
-                }}
+                onValueChange={handleOrganizationChange}
                 disabled={orgsLoading}
               >
                 <SelectTrigger>
@@ -286,7 +304,7 @@ export default function PermissionsPage() {
           <RoleListPanel
             roles={roleList}
             selectedRoleId={selectedRoleId}
-            onSelectRole={setSelectedRoleId}
+            onSelectRole={handleSelectRole}
             search={roleSearch}
             onSearchChange={setRoleSearch}
             isLoading={rolesLoading || !organizationId}
@@ -305,10 +323,17 @@ export default function PermissionsPage() {
             canEdit={canEdit}
             isSaving={saveMutation.isPending}
             isLoading={matrixLoading || rolePermissionsLoading}
-            hasChanges={hasChanges}
+            hasChanges={isDirty}
           />
         </div>
       </div>
+
+      <UnsavedChangesDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogOpenChange}
+        onStay={handleStay}
+        onDiscard={handleDiscard}
+      />
     </div>
   );
 }

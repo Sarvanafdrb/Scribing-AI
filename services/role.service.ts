@@ -1,6 +1,7 @@
 import { api } from "@/services/api";
 import { CreateRoleData, Role, UpdateRoleData } from "@/types/role.types";
 import { RolePermissionsResponse } from "@/types/permission.types";
+import { matchesNormalizedSearch } from "@/utils/search.utils";
 
 export const roleService = {
   getAll: async (organizationId: string): Promise<Role[]> => {
@@ -33,12 +34,12 @@ export const roleService = {
     });
 
     const allRoles: Role[] = response.data.data || [];
-    const search = params?.search?.trim().toLowerCase();
+    const search = params?.search || "";
     const filtered = search
       ? allRoles.filter(
           (r) =>
-            r.name?.toLowerCase().includes(search) ||
-            r.description?.toLowerCase().includes(search),
+            matchesNormalizedSearch(r.name, search) ||
+            matchesNormalizedSearch(r.description, search),
         )
       : allRoles;
 

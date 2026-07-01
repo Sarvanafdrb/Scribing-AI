@@ -32,9 +32,13 @@ import { TranscriptSegment } from "@/types/transcript.types";
 
 interface TranscriptViewerProps {
   sessionId: string;
+  embedded?: boolean;
 }
 
-export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
+export function TranscriptViewer({
+  sessionId,
+  embedded = false,
+}: TranscriptViewerProps) {
   const { session, transcript, isLoading, isProcessing, refetch } =
     useTranscript(sessionId);
   const { generateTranscript, updateTranscript, translateTranscript } =
@@ -155,19 +159,21 @@ export function TranscriptViewer({ sessionId }: TranscriptViewerProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link href={`/sessions/${sessionId}`}>
-            <Button variant="ghost" className="mb-2 pl-0">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Session
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold">{session.title}</h1>
-          <p className="text-muted-foreground">{session.sessionCode}</p>
+      {!embedded && (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Link href={`/sessions/${sessionId}`}>
+              <Button variant="ghost" className="mb-2 pl-0">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Session
+              </Button>
+            </Link>
+            <h1 className="text-3xl font-bold">{session.title}</h1>
+            <p className="text-muted-foreground">{session.sessionCode}</p>
+          </div>
+          <SessionStatusBadge status={session.status} />
         </div>
-        <SessionStatusBadge status={session.status} />
-      </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_0.8fr]">
         <div className="space-y-6">

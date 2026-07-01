@@ -28,6 +28,7 @@ import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
 import { transcriptKeys } from "@/services/transcript.queries";
 import { SessionStatus } from "@/types/session.types";
+import { cn } from "@/lib/utils";
 import {
   ArrowLeft,
   ChevronDown,
@@ -41,6 +42,7 @@ type WorkflowPhase = "ready" | "recording" | "postStop";
 
 interface RecordingStudioProps {
   sessionId: string;
+  embedded?: boolean;
 }
 
 const resolveInitialWorkflow = (
@@ -59,7 +61,7 @@ const resolveDisplayStatus = (
   return sessionStatus;
 };
 
-export function RecordingStudio({ sessionId }: RecordingStudioProps) {
+export function RecordingStudio({ sessionId, embedded = false }: RecordingStudioProps) {
   const queryClient = useQueryClient();
   const { data: session, isLoading, refetch } = useSession(sessionId);
   const { transcript, refetch: refetchTranscript } = useTranscript(sessionId);
@@ -246,20 +248,22 @@ export function RecordingStudio({ sessionId }: RecordingStudioProps) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link href={`/sessions/${sessionId}`}>
-            <Button variant="ghost" className="mb-2 pl-0">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Session
-            </Button>
-          </Link>
-          <h1 className="text-2xl font-bold sm:text-3xl">{session.title}</h1>
-          <p className="text-sm text-muted-foreground">{session.sessionCode}</p>
+    <div className={cn("space-y-6", !embedded && "mx-auto max-w-3xl")}>
+      {!embedded && (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Link href={`/sessions/${sessionId}`}>
+              <Button variant="ghost" className="mb-2 pl-0">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Session
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold sm:text-3xl">{session.title}</h1>
+            <p className="text-sm text-muted-foreground">{session.sessionCode}</p>
+          </div>
+          <SessionStatusBadge status={displayStatus} />
         </div>
-        <SessionStatusBadge status={displayStatus} />
-      </div>
+      )}
 
       <Card className="border-blue-100 shadow-sm">
         <CardHeader className="pb-4">
@@ -343,7 +347,7 @@ export function RecordingStudio({ sessionId }: RecordingStudioProps) {
                 {transcript?.fullText || session.transcript}
               </p>
             )}
-            <Link href={`/transcript?sessionId=${sessionId}`}>
+            <Link href={`/sessions/${sessionId}/transcript`}>
               <Button className="w-full bg-blue-600 hover:bg-blue-700">
                 View Full Transcript
               </Button>

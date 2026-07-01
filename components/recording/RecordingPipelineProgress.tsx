@@ -21,6 +21,7 @@ interface RecordingPipelineProgressProps {
 }
 
 type PipelineStep = "stopped" | "uploading" | "processing" | "completed";
+type StepState = "done" | "active" | "error" | "pending";
 
 const STEPS: { key: PipelineStep; label: string }[] = [
   { key: "stopped", label: "Recording Saved" },
@@ -29,10 +30,35 @@ const STEPS: { key: PipelineStep; label: string }[] = [
   { key: "completed", label: "Transcript Ready" },
 ];
 
+const isTranscriptComplete = (
+  session: Session,
+  transcript?: TranscriptData | null,
+): boolean => {
+  const metadataStatus =
+    transcript?.metadata.status || session.transcriptData?.metadata?.status;
+
+  if (metadataStatus === "completed") {
+    return true;
+  }
+
+  if (metadataStatus === "processing" || metadataStatus === "pending") {
+    return false;
+  }
+
+  return Boolean(
+    session.status === "completed" &&
+      (session.transcript?.trim() ||
+        transcript?.fullText?.trim() ||
+        session.transcriptData?.fullText?.trim()),
+  );
+};
+
 const getActiveStep = (
   status: Session["status"],
   isUploading = false,
+  transcriptComplete = false,
 ): PipelineStep => {
+  if (transcriptComplete) return "completed";
   if (isUploading || status === "uploading") return "uploading";
   if (status === "processing") return "processing";
   if (status === "completed") return "completed";
@@ -45,7 +71,8 @@ const getStepState = (
   activeStep: PipelineStep,
   sessionStatus: Session["status"],
   isUploading = false,
-) => {
+  transcriptComplete = false,
+): StepState => {
   const stepOrder: PipelineStep[] = [
     "stopped",
     "uploading",
@@ -54,6 +81,10 @@ const getStepState = (
   ];
   const stepIndex = stepOrder.indexOf(step);
   const activeIndex = stepOrder.indexOf(activeStep);
+
+  if (transcriptComplete) {
+    return "done";
+  }
 
   if (sessionStatus === "failed") {
     if (stepIndex < stepOrder.indexOf("processing")) return "done";
@@ -74,7 +105,12 @@ export function RecordingPipelineProgress({
   isRetrying = false,
   onRetry,
 }: RecordingPipelineProgressProps) {
-  const activeStep = getActiveStep(session.status, isUploading);
+  const transcriptComplete = isTranscriptComplete(session, transcript);
+  const activeStep = getActiveStep(
+    session.status,
+    isUploading,
+    transcriptComplete,
+  );
   const isFailed = session.status === "failed";
   const errorMessage =
     transcript?.metadata.error ||
@@ -82,7 +118,7 @@ export function RecordingPipelineProgress({
     "Transcription failed. Please try again.";
 
   return (
-    <div className="rounded-lg border bg-muted/20 p-4 space-y-4">
+    <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
       <div className="space-y-3">
         {STEPS.map((step) => {
           const state = getStepState(
@@ -90,6 +126,7 @@ export function RecordingPipelineProgress({
             activeStep,
             session.status,
             isUploading,
+            transcriptComplete,
           );
 
           return (
@@ -109,7 +146,10 @@ export function RecordingPipelineProgress({
               <span
                 className={cn(
                   state === "active" && "font-medium text-blue-700",
-                  state === "done" && "text-muted-foreground",
+                  state === "done" &&
+                    (step.key === "completed"
+                      ? "font-medium text-green-700"
+                      : "text-muted-foreground"),
                   state === "error" && "font-medium text-destructive",
                   state === "pending" && "text-muted-foreground/70",
                 )}

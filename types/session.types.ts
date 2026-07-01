@@ -1,5 +1,6 @@
 import type { TranscriptData } from "@/types/transcript.types";
 import type { Patient } from "@/types/patient.types";
+import type { AiNotes } from "@/types/ai-notes.types";
 
 export type SessionType = "consultation" | "follow_up" | "diagnostic" | "other";
 
@@ -41,6 +42,7 @@ export interface Session {
   audioPlaybackUrl?: string | null;
   transcript?: string;
   transcriptData?: TranscriptData;
+  aiNotes?: AiNotes;
   duration?: number;
   startedAt?: string;
   completedAt?: string;

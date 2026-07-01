@@ -1,10 +1,19 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
 export default function NotesPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/sessions");
+  }, [router]);
+
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="text-2xl font-bold">Clinical Notes</h1>
-      <p className="text-muted-foreground">
-        Open a session from the Sessions list to view or edit notes.
-      </p>
+    <div className="flex justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
     </div>
   );
 }

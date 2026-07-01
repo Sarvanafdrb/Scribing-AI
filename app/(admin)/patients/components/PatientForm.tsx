@@ -164,10 +164,10 @@ export function PatientForm({
   });
 
   useEffect(() => {
-    if (!isEditing && scopedOrgId) {
+    if (!isEditing && scopedOrgId && !canManageAllOrganizations) {
       form.setValue("organizationId", scopedOrgId);
     }
-  }, [form, isEditing, scopedOrgId]);
+  }, [form, isEditing, scopedOrgId, canManageAllOrganizations]);
 
   const organizations = orgData?.organizations || [];
 
@@ -207,7 +207,9 @@ export function PatientForm({
 
     await onSubmit({
       ...basePayload,
-      organizationId: scopedOrgId || data.organizationId,
+      organizationId: canManageAllOrganizations
+        ? data.organizationId
+        : scopedOrgId || data.organizationId,
     } as CreatePatientData);
   };
 

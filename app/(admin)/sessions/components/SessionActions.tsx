@@ -69,13 +69,13 @@ export function SessionActions({ session, onStatusChange }: SessionActionsProps)
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() => router.push(`/recording?sessionId=${sessionId}`)}
+            onClick={() => router.push(`/sessions/${sessionId}/recording`)}
           >
             <Mic className="mr-2 h-4 w-4" />
             Record
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => router.push(`/transcript?sessionId=${sessionId}`)}
+            onClick={() => router.push(`/sessions/${sessionId}/transcript`)}
           >
             <FileText className="mr-2 h-4 w-4" />
             View Transcript

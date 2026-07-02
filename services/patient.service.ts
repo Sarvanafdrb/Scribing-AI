@@ -20,7 +20,7 @@ export const patientService = {
       patients: (data || []) as Patient[],
       total: pagination?.total || 0,
       page: pagination?.page || 1,
-      limit: pagination?.limit || 10,
+      limit: pagination?.limit || 5,
       totalPages: pagination?.totalPages || 1,
       activeCount: response.data.activeCount || 0,
       inactiveCount: response.data.inactiveCount || 0,

@@ -32,7 +32,7 @@ export const usePatients = (params?: {
     patients: query.data?.patients || [],
     total: query.data?.total || 0,
     page: query.data?.page || 1,
-    limit: query.data?.limit || 10,
+    limit: query.data?.limit || 5,
     totalPages: query.data?.totalPages || 1,
     activeCount: query.data?.activeCount || 0,
     inactiveCount: query.data?.inactiveCount || 0,

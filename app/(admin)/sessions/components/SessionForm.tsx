@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,14 +29,18 @@ import {
   UpdateSessionData,
 } from "@/types/session.types";
 import { organizationService } from "@/services/organization.service";
-import { patientService } from "@/services/patient.service";
 import { userService } from "@/services/user.service";
 import { roleService } from "@/services/role.service";
-import { formatPatientOptionLabel } from "@/utils/patient.utils";
+import { PatientCombobox } from "./PatientCombobox";
+import { DoctorCombobox } from "./DoctorCombobox";
 import {
   SESSION_STATUS_OPTIONS,
   SESSION_TYPE_OPTIONS,
 } from "./SessionStatusBadge";
+import {
+  ComboboxOption,
+  SearchableCombobox,
+} from "@/components/ui/searchable-combobox";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { healthcarePrimaryButton } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
@@ -126,18 +129,6 @@ export function SessionForm({
     enabled: canManageAllOrganizations && !isEditing,
   });
 
-  const { data: patientsData } = useQuery({
-    queryKey: ["patients", "session-form-options", selectedOrgId],
-    queryFn: () =>
-      patientService.getAll({
-        organizationId: selectedOrgId,
-        limit: 100,
-        page: 1,
-        isActive: "true",
-      }),
-    enabled: Boolean(selectedOrgId) && !isEditing,
-  });
-
   const { data: rolesData } = useQuery({
     queryKey: ["roles", "session-form-doctor", selectedOrgId],
     queryFn: () => roleService.getAll(selectedOrgId),
@@ -216,8 +207,23 @@ export function SessionForm({
   };
 
   const organizations = orgData?.organizations || [];
-  const patients = patientsData?.patients || [];
   const doctors = doctorsData?.users || [];
+
+  const organizationOptions: ComboboxOption[] = organizations.map((org) => ({
+    value: org.id || org._id || "",
+    label: org.name,
+    searchText: [org.name, org.organizationCode, org.email]
+      .filter(Boolean)
+      .join(" "),
+  }));
+
+  const sessionTypeOptions: ComboboxOption[] = SESSION_TYPE_OPTIONS.map(
+    (option) => ({
+      value: option.value,
+      label: option.label,
+      searchText: `${option.label} ${option.value.replace(/_/g, " ")}`,
+    }),
+  );
 
   if (!isEditing) {
     return (
@@ -230,23 +236,16 @@ export function SessionForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Organization</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select organization" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {organizations.map((org) => {
-                        const orgId = org.id || org._id || "";
-                        return (
-                          <SelectItem key={orgId} value={orgId}>
-                            {org.name}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchableCombobox
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={organizationOptions}
+                      placeholder="Select organization"
+                      searchPlaceholder="Search organizations..."
+                      emptyMessage="No results found"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -259,42 +258,15 @@ export function SessionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Patient *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  disabled={!selectedOrgId}
-                >
-                  <FormControl>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Select patient" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {patients.length === 0 ? (
-                      <SelectItem value="__empty" disabled>
-                        No active patients found
-                      </SelectItem>
-                    ) : (
-                      patients.map((patient) => {
-                        const patientId = patient.id || patient._id || "";
-                        return (
-                          <SelectItem key={patientId} value={patientId}>
-                            {formatPatientOptionLabel(patient)}
-                          </SelectItem>
-                        );
-                      })
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <PatientCombobox
+                    organizationId={selectedOrgId}
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={!selectedOrgId}
+                  />
+                </FormControl>
                 <FormMessage />
-                {patients.length === 0 && selectedOrgId && (
-                  <p className="text-xs text-muted-foreground">
-                    <Link href="/patients/create" className="text-blue-600 hover:underline">
-                      Add a patient
-                    </Link>{" "}
-                    before scheduling a session.
-                  </p>
-                )}
               </FormItem>
             )}
           />
@@ -305,41 +277,24 @@ export function SessionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Doctor *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                  disabled={!selectedOrgId}
-                >
-                  <FormControl>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Select doctor" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {doctors.length === 0 ? (
-                      <SelectItem value="__empty" disabled>
-                        No active doctors found
-                      </SelectItem>
-                    ) : (
-                      doctors.map((user) => {
-                        const userId = user.id || user._id || "";
-                        return (
-                          <SelectItem key={userId} value={userId}>
-                            {user.firstName} {user.lastName}
-                          </SelectItem>
-                        );
-                      })
-                    )}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <DoctorCombobox
+                    doctors={doctors}
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={!selectedOrgId}
+                    emptyHint={
+                      selectedOrgId ? (
+                        <p className="text-xs text-muted-foreground">
+                          {doctorRoleId
+                            ? "No active users with the Doctor role."
+                            : "Doctor role not configured for this organization."}
+                        </p>
+                      ) : undefined
+                    }
+                  />
+                </FormControl>
                 <FormMessage />
-                {doctors.length === 0 && selectedOrgId && (
-                  <p className="text-xs text-muted-foreground">
-                    {doctorRoleId
-                      ? "No active users with the Doctor role."
-                      : "Doctor role not configured for this organization."}
-                  </p>
-                )}
               </FormItem>
             )}
           />
@@ -350,20 +305,16 @@ export function SessionForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Session Type *</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {SESSION_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <SearchableCombobox
+                    value={field.value}
+                    onChange={field.onChange}
+                    options={sessionTypeOptions}
+                    placeholder="Select type"
+                    searchPlaceholder="Search session types..."
+                    emptyMessage="No results found"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

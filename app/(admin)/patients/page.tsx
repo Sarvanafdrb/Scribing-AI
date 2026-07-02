@@ -18,7 +18,7 @@ import {
 } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 export default function PatientsPage() {
   const { canCreatePatient, canViewPatients } = useAccessControl();

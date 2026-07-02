@@ -210,7 +210,7 @@ export function UserForm({
               <FormItem>
                 <FormLabel>First Name *</FormLabel>
                 <FormControl>
-                  <Input placeholder="John" {...field} />
+                  <Input placeholder="Enter first name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -223,7 +223,7 @@ export function UserForm({
               <FormItem>
                 <FormLabel>Last Name *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Doe" {...field} />
+                  <Input placeholder="Enter last name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -238,7 +238,11 @@ export function UserForm({
             <FormItem>
               <FormLabel>Email *</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="user@example.com" {...field} />
+                <Input
+                  type="email"
+                  placeholder="Enter email address"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -256,7 +260,9 @@ export function UserForm({
               <FormControl>
                 <Input
                   type="password"
-                  placeholder={isEditing ? "Leave blank to keep current" : "••••••••"}
+                  placeholder={
+                    isEditing ? "Leave blank to keep current" : "Enter Password"
+                  }
                   {...field}
                 />
               </FormControl>
@@ -277,8 +283,9 @@ export function UserForm({
                     <Input
                       value={
                         scopedOrgName ||
-                        organizationOptions.find((org) => org.id === scopedOrgId)
-                          ?.name ||
+                        organizationOptions.find(
+                          (org) => org.id === scopedOrgId,
+                        )?.name ||
                         "Your organization"
                       }
                       disabled
@@ -320,64 +327,68 @@ export function UserForm({
               {showOrganizationPicker &&
                 !orgsLoading &&
                 organizationOptions.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  No organizations found. Create an organization first.
-                </p>
-              )}
+                  <p className="text-xs text-muted-foreground">
+                    No organizations found. Create an organization first.
+                  </p>
+                )}
               <FormMessage />
             </FormItem>
           )}
         />
 
         {showRoleField && (
-        <FormField
-          control={form.control}
-          name="roleId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || undefined}
-                disabled={!selectedOrgId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={
-                      !selectedOrgId
-                        ? "Select organization first"
-                        : rolesLoading || rolesFetching
-                          ? "Loading roles..."
-                          : roles.length === 0
-                            ? "No roles available"
-                            : "Select role (optional)"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => {
-                    const id = role._id || role.id || "";
-                    return (
-                      <SelectItem key={id} value={id}>
-                        {role.name}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {selectedOrgId && !rolesLoading && roles.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Default roles will be created automatically. Try reselecting
-                  the organization.
-                </p>
-              )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="roleId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || undefined}
+                  disabled={!selectedOrgId}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue
+                      placeholder={
+                        !selectedOrgId
+                          ? "Select organization first"
+                          : rolesLoading || rolesFetching
+                            ? "Loading roles..."
+                            : roles.length === 0
+                              ? "No roles available"
+                              : "Select role (optional)"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => {
+                      const id = role._id || role.id || "";
+                      return (
+                        <SelectItem key={id} value={id}>
+                          {role.name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {selectedOrgId && !rolesLoading && roles.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Default roles will be created automatically. Try reselecting
+                    the organization.
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         )}
 
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700"
+          disabled={isLoading}
+        >
           {isLoading
             ? isEditing
               ? "Updating..."

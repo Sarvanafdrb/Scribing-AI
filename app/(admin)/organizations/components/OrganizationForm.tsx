@@ -31,7 +31,10 @@ import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useTenantScope } from "@/hooks/useTenantScope";
 
 const baseFormSchema = z.object({
-  name: z.string().trim().min(2, "Organization name must be at least 2 characters"),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Organization name must be at least 2 characters"),
   organizationType: z.string().min(1, "Organization type is required"),
   parentOrganizationId: z.string().optional(),
   description: z.string().optional(),
@@ -62,9 +65,8 @@ const getDefaultValues = (data?: Organization): FormData => ({
   parentOrganizationId:
     (typeof data?.parentOrganizationId === "string"
       ? data.parentOrganizationId
-      : data?.parentOrganization?.id ||
-        data?.parentOrganization?._id ||
-        "") || "",
+      : data?.parentOrganization?.id || data?.parentOrganization?._id || "") ||
+    "",
 });
 
 interface OrganizationFormProps {
@@ -99,12 +101,16 @@ export function OrganizationForm({
   });
 
   const isEditing = Boolean(initialData?.id || initialData?._id);
-  const showParentPicker = !isEditing && (isSuperAdmin || organizations.length > 0);
+  const showParentPicker =
+    !isEditing && (isSuperAdmin || organizations.length > 0);
 
   const formSchema = useMemo(
     () =>
       baseFormSchema.superRefine((data, ctx) => {
-        if (!isEditing && (!data.adminPassword || data.adminPassword.length < 6)) {
+        if (
+          !isEditing &&
+          (!data.adminPassword || data.adminPassword.length < 6)
+        ) {
           ctx.addIssue({
             code: "custom",
             message: "Admin password must be at least 6 characters",
@@ -164,7 +170,10 @@ export function OrganizationForm({
     if (isEditing) {
       delete payload.adminPassword;
       delete payload.parentOrganizationId;
-    } else if (!payload.parentOrganizationId || payload.parentOrganizationId === "__none__") {
+    } else if (
+      !payload.parentOrganizationId ||
+      payload.parentOrganizationId === "__none__"
+    ) {
       delete payload.parentOrganizationId;
     }
 
@@ -237,12 +246,17 @@ export function OrganizationForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  {isSuperAdmin ? "Parent Organization (optional)" : "Parent Organization *"}
+                  {isSuperAdmin
+                    ? "Parent Organization (optional)"
+                    : "Parent Organization *"}
                 </FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   value={field.value || (isSuperAdmin ? "__none__" : undefined)}
-                  disabled={parentOrgsLoading || (!isSuperAdmin && organizations.length <= 1)}
+                  disabled={
+                    parentOrgsLoading ||
+                    (!isSuperAdmin && organizations.length <= 1)
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue
@@ -257,7 +271,9 @@ export function OrganizationForm({
                   </SelectTrigger>
                   <SelectContent>
                     {isSuperAdmin && (
-                      <SelectItem value="__none__">Top-level (no parent)</SelectItem>
+                      <SelectItem value="__none__">
+                        Top-level (no parent)
+                      </SelectItem>
                     )}
                     {organizations.map((org) => {
                       const id = org.id || org._id || "";
@@ -330,7 +346,10 @@ export function OrganizationForm({
                 <FormLabel>Admin Name *</FormLabel>
 
                 <FormControl>
-                  <Input placeholder="Dr. Kumar" {...field} />
+                  <Input
+                    placeholder="Enter your Organization Admin Name"
+                    {...field}
+                  />
                 </FormControl>
 
                 <FormMessage />
@@ -346,7 +365,7 @@ export function OrganizationForm({
                 <FormLabel>Admin Email *</FormLabel>
 
                 <FormControl>
-                  <Input placeholder="admin@hospital.com" {...field} />
+                  <Input placeholder="Enter your Admin Email" {...field} />
                 </FormControl>
 
                 <FormMessage />
@@ -364,7 +383,7 @@ export function OrganizationForm({
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Enter your Password"
                       {...field}
                     />
                   </FormControl>
@@ -385,7 +404,7 @@ export function OrganizationForm({
               <FormLabel>Contact Number *</FormLabel>
 
               <FormControl>
-                <Input placeholder="+91 9876543210" {...field} />
+                <Input placeholder="Enter your Contact Number" {...field} />
               </FormControl>
 
               <FormMessage />

@@ -68,7 +68,12 @@ const patientSchema = z
     lastName: z.string().trim().min(2, "Last name is required"),
     gender: z.enum(["male", "female", "other", "unknown"]),
     dateOfBirth: z.string().optional().or(z.literal("")),
-    age: z.number().int().min(0, "Age must be 0 or greater").max(150, "Age must be 150 or less").optional(),
+    age: z
+      .number()
+      .int()
+      .min(0, "Age must be 0 or greater")
+      .max(150, "Age must be 150 or less")
+      .optional(),
     phoneNumber: z
       .string()
       .min(1, "Phone number is required")
@@ -224,7 +229,7 @@ export function PatientForm({
               <FormItem>
                 <FormLabel>First Name *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ravi" {...field} />
+                  <Input placeholder="Enter first name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -237,7 +242,7 @@ export function PatientForm({
               <FormItem>
                 <FormLabel>Last Name *</FormLabel>
                 <FormControl>
-                  <Input placeholder="Kumar" {...field} />
+                  <Input placeholder="Enter last name " {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -296,7 +301,7 @@ export function PatientForm({
                   type="number"
                   min={0}
                   max={150}
-                  placeholder="Enter age in years"
+                  placeholder="Enter age"
                   readOnly={hasDateOfBirth}
                   disabled={hasDateOfBirth}
                   className={hasDateOfBirth ? "bg-slate-50" : undefined}
@@ -331,7 +336,7 @@ export function PatientForm({
                     type="tel"
                     inputMode="numeric"
                     autoComplete="tel-national"
-                    placeholder="9876543210"
+                    placeholder="Enter Phone Number"
                     maxLength={INDIAN_MOBILE_LENGTH}
                     value={field.value ?? ""}
                     onBlur={field.onBlur}
@@ -364,8 +369,8 @@ export function PatientForm({
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
-                  10-digit Indian mobile only (starts with 6, 7, 8, or 9). Letters
-                  are not allowed.
+                  10-digit Indian mobile only (starts with 6, 7, 8, or 9).
+                  Letters are not allowed.
                 </p>
                 <FormMessage />
               </FormItem>

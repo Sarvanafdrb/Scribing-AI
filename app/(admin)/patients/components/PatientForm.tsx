@@ -35,6 +35,7 @@ import {
   calculateAgeFromDateOfBirth,
   INDIAN_MOBILE_LENGTH,
   INDIAN_PHONE_ERROR,
+  sanitizeAgeInput,
   sanitizeIndianPhoneInput,
 } from "@/utils/patient.utils";
 import { Organization } from "@/types/organization.types";
@@ -298,6 +299,8 @@ export function PatientForm({
               <FormLabel>Age {hasDateOfBirth ? "" : "*"}</FormLabel>
               <FormControl>
                 <Input
+                  ref={field.ref}
+                  name={field.name}
                   type="number"
                   min={0}
                   max={150}
@@ -306,9 +309,48 @@ export function PatientForm({
                   disabled={hasDateOfBirth}
                   className={hasDateOfBirth ? "bg-slate-50" : undefined}
                   value={field.value ?? ""}
+                  onBlur={field.onBlur}
+                  onKeyDown={(event) => {
+                    if (hasDateOfBirth) return;
+
+                    const controlKeys = [
+                      "Backspace",
+                      "Delete",
+                      "Tab",
+                      "ArrowLeft",
+                      "ArrowRight",
+                      "Home",
+                      "End",
+                    ];
+                    if (controlKeys.includes(event.key)) return;
+                    if (event.ctrlKey || event.metaKey) return;
+                    if (!/^\d$/.test(event.key)) {
+                      event.preventDefault();
+                      return;
+                    }
+
+                    const currentDigits = sanitizeAgeInput(
+                      String(field.value ?? ""),
+                    );
+                    if (currentDigits.length >= 3) {
+                      event.preventDefault();
+                    }
+                  }}
+                  onPaste={(event) => {
+                    if (hasDateOfBirth) return;
+
+                    event.preventDefault();
+                    const pasted = event.clipboardData.getData("text");
+                    const sanitized = sanitizeAgeInput(pasted);
+                    field.onChange(
+                      sanitized === "" ? undefined : Number(sanitized),
+                    );
+                  }}
                   onChange={(event) => {
-                    const value = event.target.value;
-                    field.onChange(value === "" ? undefined : Number(value));
+                    const sanitized = sanitizeAgeInput(event.target.value);
+                    field.onChange(
+                      sanitized === "" ? undefined : Number(sanitized),
+                    );
                   }}
                 />
               </FormControl>

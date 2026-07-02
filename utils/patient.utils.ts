@@ -3,6 +3,12 @@ import type { Patient } from "@/types/patient.types";
 /** Indian mobile: 10 digits, starts with 6, 7, 8, or 9 */
 export const INDIAN_MOBILE_LENGTH = 10;
 
+/** Age input: numeric only, up to 3 digits */
+export const AGE_MAX_DIGITS = 3;
+
+export const sanitizeAgeInput = (value: string): string =>
+  value.replace(/\D/g, "").slice(0, AGE_MAX_DIGITS);
+
 export const INDIAN_PHONE_ERROR =
   "Enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9)";
 

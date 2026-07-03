@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoginGlassShell } from "@/components/auth/LoginGlassShell";
 import { isAxiosError } from "axios";
+import { useMounted } from "@/hooks/useMounted";
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
@@ -68,6 +69,7 @@ export default function LoginPage() {
   const { selectWorkspace } = useWorkspaceSelection();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const mounted = useMounted();
 
   const {
     register,
@@ -149,91 +151,106 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@organization.com"
-                className={glassFieldClass}
-                {...register("email")}
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700">
-                Password
-              </Label>
-              <div className="relative">
+          {mounted ? (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-slate-700">
+                  Email
+                </Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  className={cn(glassFieldClass, "pr-12")}
-                  {...register("password")}
+                  id="email"
+                  type="email"
+                  placeholder="name@organization.com"
+                  className={glassFieldClass}
+                  {...register("email")}
                   disabled={isLoading}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-[#1e3a8a]"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                {errors.email && (
+                  <p className="text-sm text-red-600">{errors.email.message}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
-              )}
-            </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex cursor-pointer items-center gap-2.5">
-                <input
-                  type="checkbox"
-                  {...register("rememberMe")}
-                  className="h-4 w-4 rounded border-white/60 bg-white/50 accent-[#1e3a8a]"
-                />
-                <span className="text-sm text-slate-600">Remember me</span>
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-sm font-medium text-[#1e3a8a] transition hover:text-[#172554]"
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-700">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className={cn(glassFieldClass, "pr-12")}
+                    {...register("password")}
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-[#1e3a8a]"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-sm text-red-600">{errors.password.message}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex cursor-pointer items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    {...register("rememberMe")}
+                    className="h-4 w-4 rounded border-white/60 bg-white/50 accent-[#1e3a8a]"
+                  />
+                  <span className="text-sm text-slate-600">Remember me</span>
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-[#1e3a8a] transition hover:text-[#172554]"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className={cn(
+                  "mt-2 h-12 w-full rounded-2xl border border-[#172554]/20 text-base font-medium text-white",
+                  "bg-[#1e3a8a] shadow-[0_14px_36px_rgba(30,58,138,0.35)]",
+                  "transition-all duration-300 hover:scale-[1.01] hover:bg-[#172554]",
+                  "disabled:scale-100 disabled:opacity-80",
+                )}
               >
-                Forgot password?
-              </Link>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
+                  </>
+                )}
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-5" aria-hidden>
+              <div className="space-y-2">
+                <div className="h-4 w-12 rounded bg-white/30" />
+                <div className={cn(glassFieldClass, "h-12 animate-pulse bg-white/30")} />
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 w-16 rounded bg-white/30" />
+                <div className={cn(glassFieldClass, "h-12 animate-pulse bg-white/30")} />
+              </div>
+              <div className="h-4" />
+              <div className="mt-2 h-12 animate-pulse rounded-2xl bg-[#1e3a8a]/40" />
             </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className={cn(
-                "mt-2 h-12 w-full rounded-2xl border border-[#172554]/20 text-base font-medium text-white",
-                "bg-[#1e3a8a] shadow-[0_14px_36px_rgba(30,58,138,0.35)]",
-                "transition-all duration-300 hover:scale-[1.01] hover:bg-[#172554]",
-                "disabled:scale-100 disabled:opacity-80",
-              )}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign In
-                </>
-              )}
-            </Button>
-          </form>
+          )}
 
           <p className="mt-7 text-center text-xs leading-relaxed text-slate-500">
             Organization access is managed by your super admin.

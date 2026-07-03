@@ -25,6 +25,7 @@ import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
 import { AppHeader } from "@/components/shared/AppHeader";
+import { NotificationBell } from "@/components/shared/NotificationBell";
 
 const menuItems = [
   {
@@ -210,7 +211,11 @@ export default function AdminLayout({
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {menuItems
-              .filter((item) => hasPermission(user, item.permission))
+              .filter((item) =>
+                item.path === "/settings"
+                  ? true
+                  : hasPermission(user, item.permission),
+              )
               .map((item) => {
                 const Icon = item.icon;
                 const isActive =
@@ -250,7 +255,9 @@ export default function AdminLayout({
       {/* Main Content */}
       <main className="lg:ml-64 min-h-screen">
         {pathname !== "/access-not-assigned" && (
-          <AppHeader subtitle="Admin Panel" />
+          <AppHeader subtitle="Admin Panel">
+            <NotificationBell />
+          </AppHeader>
         )}
         <div className="p-6">{children}</div>
       </main>

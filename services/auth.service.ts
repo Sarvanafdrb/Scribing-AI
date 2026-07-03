@@ -33,7 +33,29 @@ export const authService = {
     return response.data;
   },
 
-  changePassword: (data: any) => api.post("/auth/change-password", data),
+  changePassword: (data: {
+    currentPassword: string;
+    newPassword: string;
+  }) => api.post("/auth/change-password", data),
+
+  updateProfile: async (data: {
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  }) => {
+    const response = await api.patch("/auth/me", data);
+    return response.data;
+  },
+
+  uploadProfilePicture: async (file: File) => {
+    const formData = new FormData();
+    formData.append("profilePicture", file);
+    const response = await api.post("/auth/me/profile-picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
   forgotPassword: (email: string) =>
     api.post("/auth/forgot-password", { email }),
   resetPassword: (token: string, password: string) =>

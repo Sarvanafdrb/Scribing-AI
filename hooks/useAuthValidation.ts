@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/auth.store";
 import { authService } from "@/services/auth.service";
+import { normalizeAuthUser } from "@/types/auth.types";
 
 export const useAuthValidation = () => {
   const { token, setUser, logout, _hasHydrated, isLoading } = useAuthStore();
@@ -39,14 +40,14 @@ export const useAuthValidation = () => {
           throw new Error("Invalid user response structure");
         }
 
-        const user = {
+        const user = normalizeAuthUser({
           ...userData,
           isSuperAdmin: Boolean(userData.isSuperAdmin),
           permissions: userData.permissions || [],
           organizationName:
             userData.organizationName || userData.organization?.name,
           organization: userData.isSuperAdmin ? null : userData.organization,
-        };
+        });
 
         setUser(user);
         console.log("✅ User validated successfully:", user.email);

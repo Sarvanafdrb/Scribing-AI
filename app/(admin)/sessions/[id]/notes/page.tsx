@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
+import { AiNotesExportActions } from "@/components/ai-notes/AiNotesExportActions";
 import { healthcareSolid } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +78,7 @@ export default function SessionNotesPage() {
   const sessionId = id as string;
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
   const {
+    session,
     aiNotes,
     isLoading,
     isGenerating,
@@ -203,6 +205,8 @@ export default function SessionNotesPage() {
             </Button>
           </div>
         )}
+
+        <AiNotesExportActions aiNotes={aiNotes} session={session} />
 
         <section className={healthcareSolid.section}>
           <div className="mb-3 flex items-center gap-2">

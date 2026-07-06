@@ -65,9 +65,6 @@ const editSchema = z.object({
     "completed",
     "failed",
   ]),
-  audioUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-  transcript: z.string().optional(),
-  duration: z.number().min(0).optional(),
 });
 
 type CreateFormData = z.infer<typeof createSchema>;
@@ -106,9 +103,6 @@ export function SessionForm({
           description: initialData?.description || "",
           sessionType: initialData?.sessionType || "consultation",
           status: initialData?.status || "created",
-          audioUrl: initialData?.audioUrl || "",
-          transcript: initialData?.transcript || "",
-          duration: initialData?.duration || 0,
         }
       : {
           organizationId: "",
@@ -168,9 +162,6 @@ export function SessionForm({
         description: initialData.description || "",
         sessionType: initialData.sessionType || "consultation",
         status: initialData.status || "created",
-        audioUrl: initialData.audioUrl || "",
-        transcript: initialData.transcript || "",
-        duration: initialData.duration || 0,
       });
     }
   }, [initialData, form, isEditing]);

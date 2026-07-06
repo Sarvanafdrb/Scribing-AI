@@ -47,7 +47,7 @@ export default function SessionDetailLayout({
             Back to Sessions
           </Button>
         </Link>
-        <Link href={`/sessions/${sessionId}/edit`}>
+        {/* <Link href={`/sessions/${sessionId}/edit`}>
           <Button
             variant="outline"
             className={cn("rounded-xl", healthcareGlass.button)}
@@ -55,7 +55,7 @@ export default function SessionDetailLayout({
             <Edit className="mr-2 h-4 w-4" />
             Edit
           </Button>
-        </Link>
+        </Link> */}
       </div>
 
       <div className={cn("p-6", healthcareSolid.section)}>

@@ -92,7 +92,8 @@ export function ProfileForm() {
     await uploadProfilePicture.mutateAsync(file);
   };
 
-  const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
+  const initials =
+    `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
   const isSaving = updateProfile.isPending || uploadProfilePicture.isPending;
 
   return (
@@ -105,7 +106,9 @@ export function ProfileForm() {
           <div className="relative">
             <Avatar className="h-20 w-20">
               <AvatarImage src={previewUrl} alt="Profile picture" />
-              <AvatarFallback className="text-lg">{initials || "U"}</AvatarFallback>
+              <AvatarFallback className="text-lg">
+                {initials || "U"}
+              </AvatarFallback>
             </Avatar>
             <button
               type="button"
@@ -132,14 +135,14 @@ export function ProfileForm() {
               {user?.firstName} {user?.lastName}
             </p>
             <p className="text-sm text-gray-500">{user?.email}</p>
-            <p className="mt-1 text-xs text-gray-400">
-              Profile picture is optional
-            </p>
           </div>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -186,7 +189,11 @@ export function ProfileForm() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FormLabel>Email Address</FormLabel>
-                <Input value={user?.email || ""} disabled className="mt-2 bg-gray-50" />
+                <Input
+                  value={user?.email || ""}
+                  disabled
+                  className="mt-2 bg-gray-50"
+                />
               </div>
               <div>
                 <FormLabel>Role</FormLabel>

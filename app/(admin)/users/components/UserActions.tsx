@@ -33,7 +33,8 @@ export function UserActions({ user, onStatusChange }: UserActionsProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { activateUser, deactivateUser, deleteUser } = useUserMutations();
-  const { canEditUser, canManageUserStatus, canDeleteUser } = useAccessControl();
+  const { canEditUser, canManageUserStatus, canDeleteUser } =
+    useAccessControl();
 
   const getUserId = (): string => {
     if (user.id) return user.id;
@@ -129,7 +130,10 @@ export function UserActions({ user, onStatusChange }: UserActionsProps) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>

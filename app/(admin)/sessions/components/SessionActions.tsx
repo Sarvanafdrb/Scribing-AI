@@ -24,7 +24,15 @@ import {
 } from "@/components/ui/dialog";
 import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
 import { Session, SessionStatus } from "@/types/session.types";
-import { Edit, Eye, FileText, Mic, MoreHorizontal, Trash2, Activity } from "lucide-react";
+import {
+  Edit,
+  Eye,
+  FileText,
+  Mic,
+  MoreHorizontal,
+  Trash2,
+  Activity,
+} from "lucide-react";
 import { SESSION_STATUS_OPTIONS } from "./SessionStatusBadge";
 
 interface SessionActionsProps {
@@ -32,7 +40,10 @@ interface SessionActionsProps {
   onStatusChange?: () => void;
 }
 
-export function SessionActions({ session, onStatusChange }: SessionActionsProps) {
+export function SessionActions({
+  session,
+  onStatusChange,
+}: SessionActionsProps) {
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { deleteSession, updateSessionStatus } = useSessionMutations();
@@ -80,7 +91,9 @@ export function SessionActions({ session, onStatusChange }: SessionActionsProps)
             <FileText className="mr-2 h-4 w-4" />
             View Transcript
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push(`/sessions/${sessionId}`)}>
+          <DropdownMenuItem
+            onClick={() => router.push(`/sessions/${sessionId}`)}
+          >
             <Eye className="mr-2 h-4 w-4" />
             View Details
           </DropdownMenuItem>
@@ -128,7 +141,10 @@ export function SessionActions({ session, onStatusChange }: SessionActionsProps)
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>

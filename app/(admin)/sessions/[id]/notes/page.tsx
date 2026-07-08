@@ -86,6 +86,7 @@ export default function SessionNotesPage() {
     isCompleted,
     transcriptReady,
     generate,
+    saveExportContent,
   } = useAiNotes(sessionId);
 
   const handleRegenerate = () => {
@@ -206,7 +207,11 @@ export default function SessionNotesPage() {
           </div>
         )}
 
-        <AiNotesExportActions aiNotes={aiNotes} session={session} />
+        <AiNotesExportActions
+          aiNotes={aiNotes}
+          session={session}
+          onSaveNotes={saveExportContent}
+        />
 
         <section className={healthcareSolid.section}>
           <div className="mb-3 flex items-center gap-2">

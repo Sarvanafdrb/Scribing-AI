@@ -20,4 +20,12 @@ export const aiNotesService = {
     );
     return response.data.data;
   },
+
+  update: async (
+    sessionId: string,
+    data: import("@/types/ai-notes.types").UpdateAiNotesData,
+  ): Promise<AiNotes> => {
+    const response = await api.patch(`/sessions/${sessionId}/ai-notes`, data);
+    return response.data.data;
+  },
 };

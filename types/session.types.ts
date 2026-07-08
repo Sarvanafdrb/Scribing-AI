@@ -4,6 +4,8 @@ import type { AiNotes } from "@/types/ai-notes.types";
 
 export type SessionType = "consultation" | "follow_up" | "diagnostic" | "other";
 
+export type VisitType = "outpatient" | "inpatient";
+
 export type SessionStatus =
   | "created"
   | "recording"
@@ -18,6 +20,8 @@ export interface SessionUser {
   firstName?: string;
   lastName?: string;
   email?: string;
+  qualification?: string;
+  signature?: string;
 }
 
 export interface SessionOrganization {
@@ -25,6 +29,9 @@ export interface SessionOrganization {
   id?: string;
   name?: string;
   organizationCode?: string;
+  logo?: string;
+  address?: string;
+  contactNumber?: string;
 }
 
 export interface Session {
@@ -37,6 +44,8 @@ export interface Session {
   title: string;
   description?: string;
   sessionType: SessionType;
+  visitType?: VisitType;
+  admittedDate?: string;
   status: SessionStatus;
   audioUrl?: string;
   audioPlaybackUrl?: string | null;

@@ -22,6 +22,8 @@ export interface AuthUser {
   email: string;
   phone?: string;
   profilePicture?: string;
+  signature?: string;
+  qualification?: string;
   isSuperAdmin?: boolean;
   organizationName?: string;
   organization?: AuthOrganization | null;
@@ -38,6 +40,8 @@ type AuthUserInput = {
   email: string;
   phone?: string;
   profilePicture?: string;
+  signature?: string;
+  qualification?: string;
   isSuperAdmin?: boolean;
   organizationName?: string;
   organization?: AuthOrganization | null;
@@ -62,6 +66,8 @@ export const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
     email: user.email,
     phone: user.phone || "",
     profilePicture: user.profilePicture || "",
+    signature: user.signature || "",
+    qualification: user.qualification || "",
     isSuperAdmin: Boolean(user.isSuperAdmin),
     permissions: user.permissions || [],
     organizationName: user.organizationName || user.organization?.name,

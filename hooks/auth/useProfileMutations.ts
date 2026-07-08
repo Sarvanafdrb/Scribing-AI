@@ -13,6 +13,7 @@ export const useProfileMutations = () => {
       firstName: string;
       lastName: string;
       phone?: string;
+      qualification?: string;
     }) => authService.updateProfile(data),
     onSuccess: (response: any) => {
       const userData = response?.data?.user || response?.data || response?.user || response;
@@ -42,6 +43,22 @@ export const useProfileMutations = () => {
     },
   });
 
+  const uploadSignature = useMutation({
+    mutationFn: (file: File) => authService.uploadSignature(file),
+    onSuccess: (response: any) => {
+      const userData = response?.data?.user || response?.data || response?.user || response;
+      const user = normalizeAuthUser(userData);
+      setUser(user);
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      toast.success("Signature updated successfully");
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to upload signature",
+      );
+    },
+  });
+
   const changePassword = useMutation({
     mutationFn: (data: { currentPassword: string; newPassword: string }) =>
       authService.changePassword(data),
@@ -53,5 +70,5 @@ export const useProfileMutations = () => {
     },
   });
 
-  return { updateProfile, uploadProfilePicture, changePassword };
+  return { updateProfile, uploadProfilePicture, uploadSignature, changePassword };
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,21 @@ export default function SessionDetailLayout({
   children: React.ReactNode;
 }) {
   const { id } = useParams();
+  const pathname = usePathname();
   const sessionId = id as string;
+  const isPreviewPage = pathname.endsWith("/preview");
   const { data: session, isLoading } = useSession(sessionId);
 
-  if (isLoading) {
+  if (isLoading && !isPreviewPage) {
     return <div className="animate-pulse p-6">Loading session...</div>;
+  }
+
+  if (!session && !isPreviewPage) {
+    return <div className="p-6">Session not found</div>;
+  }
+
+  if (isPreviewPage) {
+    return <>{children}</>;
   }
 
   if (!session) {

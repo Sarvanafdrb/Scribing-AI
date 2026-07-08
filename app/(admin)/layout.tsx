@@ -140,6 +140,8 @@ export default function AdminLayout({
     router.push("/login");
   };
 
+  const isPreviewPage = /\/sessions\/[^/]+\/preview$/.test(pathname);
+
   if (shouldShowLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -254,12 +256,12 @@ export default function AdminLayout({
 
       {/* Main Content */}
       <main className="lg:ml-64 min-h-screen">
-        {pathname !== "/access-not-assigned" && (
+        {!isPreviewPage && pathname !== "/access-not-assigned" && (
           <AppHeader subtitle="Admin Panel">
             <NotificationBell />
           </AppHeader>
         )}
-        <div className="p-6">{children}</div>
+        <div className={isPreviewPage ? "" : "p-6"}>{children}</div>
       </main>
     </div>
   );

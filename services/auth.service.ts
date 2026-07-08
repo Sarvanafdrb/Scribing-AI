@@ -42,6 +42,7 @@ export const authService = {
     firstName: string;
     lastName: string;
     phone?: string;
+    qualification?: string;
   }) => {
     const response = await api.patch("/auth/me", data);
     return response.data;
@@ -51,6 +52,15 @@ export const authService = {
     const formData = new FormData();
     formData.append("profilePicture", file);
     const response = await api.post("/auth/me/profile-picture", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  uploadSignature: async (file: File) => {
+    const formData = new FormData();
+    formData.append("signature", file);
+    const response = await api.post("/auth/me/signature", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;

@@ -18,7 +18,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, PenLine } from "lucide-react";
+import { resolveUploadUrl } from "@/utils/media-url.utils";
 
 const profileSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
@@ -30,25 +31,22 @@ const profileSchema = z.object({
       (value) => !value || value.trim() === "" || /^[0-9]{10,15}$/.test(value),
       "Phone must be 10 to 15 digits",
     ),
+  qualification: z.string().trim().max(200).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-const resolveProfilePictureUrl = (profilePicture?: string) => {
-  if (!profilePicture) return "";
-  if (profilePicture.startsWith("http")) return profilePicture;
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_DIRECT_URL ||
-    process.env.NEXT_PUBLIC_API_URL?.replace("/api/backend", "") ||
-    "http://localhost:5000";
-  return `${apiBase.replace(/\/$/, "")}${profilePicture.startsWith("/") ? profilePicture : `/${profilePicture}`}`;
-};
+const resolveProfilePictureUrl = (profilePicture?: string) =>
+  resolveUploadUrl(profilePicture);
 
 export function ProfileForm() {
   const { user } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const { updateProfile, uploadProfilePicture } = useProfileMutations();
+  const [signaturePreviewUrl, setSignaturePreviewUrl] = useState("");
+  const { updateProfile, uploadProfilePicture, uploadSignature } =
+    useProfileMutations();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -56,6 +54,7 @@ export function ProfileForm() {
       firstName: user?.firstName || "",
       lastName: user?.lastName || "",
       phone: user?.phone || "",
+      qualification: user?.qualification || "",
     },
   });
 
@@ -65,8 +64,10 @@ export function ProfileForm() {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         phone: user.phone || "",
+        qualification: user.qualification || "",
       });
       setPreviewUrl(resolveProfilePictureUrl(user.profilePicture));
+      setSignaturePreviewUrl(resolveUploadUrl(user.signature));
     }
   }, [user, form]);
 
@@ -75,7 +76,22 @@ export function ProfileForm() {
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone?.trim() || undefined,
+      qualification: data.qualification?.trim() || undefined,
     });
+  };
+
+  const handleSignatureChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      return;
+    }
+
+    setSignaturePreviewUrl(URL.createObjectURL(file));
+    await uploadSignature.mutateAsync(file);
   };
 
   const handleFileChange = async (
@@ -94,7 +110,10 @@ export function ProfileForm() {
 
   const initials =
     `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
-  const isSaving = updateProfile.isPending || uploadProfilePicture.isPending;
+  const isSaving =
+    updateProfile.isPending ||
+    uploadProfilePicture.isPending ||
+    uploadSignature.isPending;
 
   return (
     <Card>
@@ -136,6 +155,52 @@ export function ProfileForm() {
             </p>
             <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
+        </div>
+
+        <div className="mb-6 rounded-lg border bg-slate-50 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                Digital Signature
+              </p>
+              <p className="text-xs text-gray-500">
+                Upload once to appear on AI Notes prescriptions and PDFs.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => signatureInputRef.current?.click()}
+            >
+              {uploadSignature.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <PenLine className="mr-2 h-4 w-4" />
+              )}
+              Upload Signature
+            </Button>
+            <input
+              ref={signatureInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleSignatureChange}
+            />
+          </div>
+          {signaturePreviewUrl ? (
+            <div className="flex justify-end">
+              <img
+                src={signaturePreviewUrl}
+                alt="Doctor signature preview"
+                className="max-h-20 max-w-[220px] object-contain"
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No signature uploaded yet.
+            </p>
+          )}
         </div>
 
         <Form {...form}>
@@ -180,6 +245,23 @@ export function ProfileForm() {
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
                     <Input placeholder="Phone number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="qualification"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Qualification / Education</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g. MBBS, MD"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -6,6 +6,8 @@ import { aiNotesKeys } from "@/services/ai-notes.queries";
 import { sessionKeys } from "@/services/session.queries";
 import { useSession } from "@/hooks/sessions/useSession";
 import { AiNotes } from "@/types/ai-notes.types";
+import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
+import { exportContentToAiNotesUpdate } from "@/utils/ai-notes-export.utils";
 
 const hasTranscript = (session?: {
   transcript?: string;
@@ -52,6 +54,25 @@ export const useAiNotes = (sessionId: string) => {
       toast.error(
         error?.response?.data?.message || "Failed to generate AI Notes",
       );
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (content: AiNotesExportContent) =>
+      aiNotesService.update(sessionId, exportContentToAiNotesUpdate(content)),
+    onSuccess: (updatedNotes) => {
+      queryClient.setQueryData(aiNotesKeys.detail(sessionId), updatedNotes);
+      queryClient.setQueryData(sessionKeys.detail(sessionId), (current: any) =>
+        current ? { ...current, aiNotes: updatedNotes } : current,
+      );
+      queryClient.invalidateQueries({ queryKey: aiNotesKeys.detail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) });
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to save AI Notes changes",
+      );
+      throw error;
     },
   });
 
@@ -106,6 +127,8 @@ export const useAiNotes = (sessionId: string) => {
     isCompleted,
     transcriptReady,
     generate: (force = false) => generateMutation.mutate(force),
+    saveExportContent: (content: AiNotesExportContent) =>
+      updateMutation.mutateAsync(content),
     refetch: aiNotesQuery.refetch,
   };
 };

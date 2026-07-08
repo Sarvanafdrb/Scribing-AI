@@ -9,7 +9,7 @@ import {
   TranscriptSpeaker,
 } from "@/types/transcript.types";
 import { cn } from "@/lib/utils";
-import { Stethoscope, User } from "lucide-react";
+import { Stethoscope, User, Pencil, Mic } from "lucide-react";
 
 interface TranscriptSegmentListProps {
   segments: TranscriptSegment[];
@@ -105,9 +105,12 @@ export function TranscriptSegmentList({
                   segment.speaker.slice(1)}
               </Badge>
               <Badge variant="outline">
-                {formatTimestamp(segment.start)} – {formatTimestamp(segment.end)}
+                {formatTimestamp(segment.start)} –{" "}
+                {formatTimestamp(segment.end)}
               </Badge>
-              <Badge variant="outline">{formatLanguage(segment.language)}</Badge>
+              <Badge variant="outline">
+                {formatLanguage(segment.language)}
+              </Badge>
               <Badge variant="outline">
                 {formatConfidence(segment.confidence)}
               </Badge>
@@ -147,7 +150,7 @@ export function TranscriptSegmentList({
                     {segment.translation}
                   </p>
                 )}
-                {onEditStart && (
+                {/* {onEditStart && (
                   <button
                     type="button"
                     className="text-xs font-medium text-blue-600 hover:underline"
@@ -155,7 +158,27 @@ export function TranscriptSegmentList({
                   >
                     Edit segment
                   </button>
-                )}
+                )} */}
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => onEditStart?.(segment)}
+                    className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                  >
+                    <Pencil className="mr-1 h-3.5 w-3.5" />
+                    Edit Text
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => console.log("Voice Edit", segment)}
+                    className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                  >
+                    <Mic className="mr-1 h-3.5 w-3.5" />
+                    Voice Edit
+                  </button>
+                </div>
               </div>
             )}
           </div>

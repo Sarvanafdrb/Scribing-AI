@@ -46,9 +46,8 @@ export function TranscriptViewer({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
-  const [editingSegment, setEditingSegment] = useState<TranscriptSegment | null>(
-    null,
-  );
+  const [editingSegment, setEditingSegment] =
+    useState<TranscriptSegment | null>(null);
   const [editValue, setEditValue] = useState("");
   const [fullTextDraft, setFullTextDraft] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -140,8 +139,7 @@ export function TranscriptViewer({
   };
 
   const isFailed =
-    session.status === "failed" ||
-    transcript?.metadata.status === "failed";
+    session.status === "failed" || transcript?.metadata.status === "failed";
   const hasRecording = Boolean(session.audioPlaybackUrl || session.audioUrl);
   const canAutoGenerate =
     hasRecording &&
@@ -183,8 +181,8 @@ export function TranscriptViewer({
             <CardHeader>
               <CardTitle>Transcript</CardTitle>
               <CardDescription>
-                Whisper-generated transcript with speaker labels, timestamps, and
-                confidence scores
+                Whisper-generated transcript with speaker labels, timestamps,
+                and confidence scores
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -249,10 +247,7 @@ export function TranscriptViewer({
                       {isProcessing ? "Processing..." : "Generate Transcript"}
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    onClick={() => refetch()}
-                  >
+                  <Button variant="outline" onClick={() => refetch()}>
                     <RefreshCw className="mr-2 h-4 w-4" />
                     Refresh
                   </Button>
@@ -305,7 +300,8 @@ export function TranscriptViewer({
               ) : (
                 !isProcessing && (
                   <p className="text-sm text-muted-foreground">
-                    Generate a transcript to see speaker segments and timestamps.
+                    Generate a transcript to see speaker segments and
+                    timestamps.
                   </p>
                 )
               )}

@@ -42,6 +42,7 @@ const createSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   organizationId: z.string().min(1, "Organization is required"),
   roleId: z.string().optional(),
+  qualifications: z.array(z.string()).optional(),
 });
 
 const editSchema = createSchema.omit({ password: true }).extend({
@@ -82,6 +83,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
       password: "",
       organizationId: orgId || "",
       roleId: roleId || "",
+      qualifications: data?.qualifications || [],
     };
   }
 
@@ -92,6 +94,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
     password: "",
     organizationId: "",
     roleId: "",
+    qualifications: [],
   };
 };
 
@@ -383,7 +386,32 @@ export function UserForm({
             )}
           />
         )}
+        <FormField
+          control={form.control}
+          name="qualifications"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Qualifications</FormLabel>
 
+              <FormControl>
+                <Input
+                  placeholder="MBBS, MD, DM Cardiology"
+                  value={(field.value ?? []).join(", ")}
+                  onChange={(e) =>
+                    field.onChange(
+                      e.target.value
+                        .split(",")
+                        .map((q) => q.trim())
+                        .filter(Boolean),
+                    )
+                  }
+                />
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <Button
           type="submit"
           className="w-full bg-blue-600 hover:bg-blue-700"

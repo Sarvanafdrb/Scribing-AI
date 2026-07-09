@@ -21,6 +21,7 @@ export interface User {
   organizationId?: UserOrganization | string;
   organizationName?: string;
   roleId?: UserRole | string;
+  qualifications?: string[];
   isActive?: boolean;
   isEmailVerified?: boolean;
   lastLogin?: string | Date;
@@ -35,6 +36,7 @@ export interface CreateUserData {
   password: string;
   organizationId: string;
   roleId?: string;
+  qualifications?: string[];
   isActive?: boolean;
 }
 
@@ -44,5 +46,6 @@ export interface UpdateUserData {
   email?: string;
   password?: string;
   roleId?: string;
+  qualifications?: string[];
   isActive?: boolean;
 }

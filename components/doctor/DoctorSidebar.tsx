@@ -42,14 +42,12 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const { user } = useAuthStore();
   const { sessions, getSessionId, getPatientFromSession } = useDoctorQueue();
 
-  const doctorName = user
-    ? `Dr. ${user.firstName} ${user.lastName}`
-    : "Doctor";
+  const doctorName = user ? `Dr. ${user.firstName} ${user.lastName}` : "Doctor";
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-gray-200 bg-white">
       <div className="border-b border-gray-200 px-5 py-5">
-        <h1 className="text-xl font-bold text-teal-600">Heidi</h1>
+        <h1 className="text-xl font-bold text-teal-600">Titanium</h1>
         <p className="text-xs text-gray-500">AI Medical Scribe</p>
       </div>
 

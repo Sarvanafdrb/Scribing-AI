@@ -34,6 +34,11 @@ export interface SessionOrganization {
   contactNumber?: string;
 }
 
+export interface LastVisit {
+  date: string;
+  sessionType?: SessionType | string;
+}
+
 export interface Session {
   _id?: string;
   id?: string;
@@ -58,6 +63,7 @@ export interface Session {
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  lastVisit?: LastVisit | null;
 }
 
 export interface CreateSessionData {

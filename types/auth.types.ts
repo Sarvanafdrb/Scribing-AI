@@ -6,6 +6,7 @@ export interface AuthOrganization {
   _id?: string;
   name: string;
   organizationCode?: string;
+  logo?: string;
 }
 
 export interface AuthRole {

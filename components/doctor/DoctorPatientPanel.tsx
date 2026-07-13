@@ -16,19 +16,29 @@ import {
   getPatientFullName,
 } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
+import type { LastVisit } from "@/types/session.types";
 import { cn } from "@/lib/utils";
 
 interface DoctorPatientPanelProps {
   sessionId: string;
 }
 
-const formatLastVisit = (dateStr?: string) => {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-GB", {
+const formatSessionTypeLabel = (type?: string) => {
+  if (!type) return "";
+  return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const formatLastVisit = (lastVisit?: LastVisit | null) => {
+  if (!lastVisit?.date) return "First Visit";
+
+  const dateLabel = new Date(lastVisit.date).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
+
+  const typeLabel = formatSessionTypeLabel(lastVisit.sessionType);
+  return typeLabel ? `${dateLabel} • ${typeLabel}` : dateLabel;
 };
 
 export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
@@ -42,6 +52,8 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
 
   const patientAge = getPatientAge(patient);
   const medications = aiNotes?.medications?.filter((m) => m.medicine) || [];
+  const allergies =
+    patient?.allergies?.map((allergy) => allergy.trim()).filter(Boolean) || [];
 
   return (
     <div className="space-y-4">
@@ -75,16 +87,31 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
             <Calendar className="h-3.5 w-3.5 text-gray-400" />
             <dt className="text-gray-500">Last Visit</dt>
             <dd className="ml-auto font-medium text-gray-800">
-              {formatLastVisit(patient?.updatedAt)}
+              {formatLastVisit(session?.lastVisit)}
             </dd>
           </div>
         </dl>
       </section>
 
-      <section className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2">
-        <AlertTriangle className="h-4 w-4 text-red-600" />
-        <span className="text-sm font-medium text-red-700">Allergies</span>
-        <span className="ml-auto text-xs text-red-600">Not recorded</span>
+      <section className="rounded-xl border border-red-100 bg-red-50 px-3 py-3">
+        <div className="mb-2 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <span className="text-sm font-medium text-red-700">Allergies</span>
+        </div>
+        {allergies.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {allergies.map((allergy) => (
+              <span
+                key={allergy}
+                className="rounded-md bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
+              >
+                {allergy}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-red-600">No allergies recorded.</p>
+        )}
       </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">

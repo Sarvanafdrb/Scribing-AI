@@ -19,6 +19,7 @@ export interface Patient {
   phoneNumber: string;
   email?: string;
   address?: string;
+  allergies?: string[];
   organizationId: string | PatientOrganization;
   isActive?: boolean;
   createdAt?: string;
@@ -34,6 +35,7 @@ export interface CreatePatientData {
   phoneNumber: string;
   email?: string;
   address?: string;
+  allergies?: string[];
   organizationId: string;
 }
 
@@ -46,5 +48,6 @@ export interface UpdatePatientData {
   phoneNumber?: string;
   email?: string;
   address?: string;
+  allergies?: string[];
   isActive?: boolean;
 }

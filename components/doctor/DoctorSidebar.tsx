@@ -6,6 +6,7 @@ import { History, UserRound } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useDoctorQueue } from "@/hooks/doctor/useDoctorQueue";
 import { getPatientFullName } from "@/utils/patient.utils";
+import { getUserOrganizationName } from "@/types/auth.types";
 import type { Session } from "@/types/session.types";
 import { cn } from "@/lib/utils";
 
@@ -43,12 +44,27 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const { sessions, getSessionId, getPatientFromSession } = useDoctorQueue();
 
   const doctorName = user ? `Dr. ${user.firstName} ${user.lastName}` : "Doctor";
+  const organizationName = getUserOrganizationName(user) || "Organization";
+  const organizationLogo = user?.organization?.logo;
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-gray-200 bg-white">
       <div className="border-b border-gray-200 px-5 py-5">
-        <h1 className="text-xl font-bold text-teal-600">Titanium</h1>
-        <p className="text-xs text-gray-500">AI Medical Scribe</p>
+        <div className="flex items-center gap-3">
+          {organizationLogo ? (
+            <img
+              src={organizationLogo}
+              alt={`${organizationName} logo`}
+              className="h-9 w-9 shrink-0 rounded-lg object-contain"
+            />
+          ) : null}
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold text-teal-600">
+              {organizationName}
+            </h1>
+            <p className="text-xs text-gray-500">AI Medical Scribe</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">

@@ -17,11 +17,20 @@ const STRIP_REQUEST_HEADERS = new Set([
   "host",
   "content-length",
   "accept-encoding",
+  "cookie",
+]);
+
+const ALLOWED_REQUEST_HEADERS = new Set([
+  "authorization",
+  "content-type",
+  "accept",
+  "range",
 ]);
 
 const STRIP_RESPONSE_HEADERS = new Set([
   ...STRIP_REQUEST_HEADERS,
   "content-encoding",
+  "set-cookie",
 ]);
 
 const buildTargetUrl = (request: NextRequest, path: string[]) => {
@@ -39,7 +48,9 @@ const buildForwardHeaders = (request: NextRequest) => {
   const headers = new Headers();
 
   request.headers.forEach((value, key) => {
-    if (STRIP_REQUEST_HEADERS.has(key.toLowerCase())) return;
+    const lower = key.toLowerCase();
+    if (STRIP_REQUEST_HEADERS.has(lower)) return;
+    if (!ALLOWED_REQUEST_HEADERS.has(lower)) return;
     headers.set(key, value);
   });
 

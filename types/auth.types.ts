@@ -1,6 +1,26 @@
 import { decodeAccessToken } from "@/utils/token";
 import { hasPermissionCode } from "@/constants/permissions";
 
+const isDataUrl = (value?: string | null) =>
+  Boolean(value && value.startsWith("data:"));
+
+const isSafeMediaUrl = (value?: string | null) => {
+  if (!value) return false;
+  return (
+    value.startsWith("/uploads/") ||
+    value.startsWith("http://") ||
+    value.startsWith("https://")
+  );
+};
+
+/** Strip Base64 / unsafe media payloads before persisting auth state. */
+export const sanitizeMediaUrl = (value?: string | null): string => {
+  if (!value) return "";
+  if (isDataUrl(value)) return "";
+  if (isSafeMediaUrl(value)) return value;
+  return "";
+};
+
 export interface AuthOrganization {
   id?: string;
   _id?: string;
@@ -26,6 +46,7 @@ export interface AuthUser {
   signature?: string;
   qualification?: string;
   isSuperAdmin?: boolean;
+  organizationId?: string;
   organizationName?: string;
   organization?: AuthOrganization | null;
   role?: AuthRole | null;
@@ -44,6 +65,7 @@ type AuthUserInput = {
   signature?: string;
   qualification?: string;
   isSuperAdmin?: boolean;
+  organizationId?: string;
   organizationName?: string;
   organization?: AuthOrganization | null;
   role?: AuthRole | string | null;
@@ -54,25 +76,50 @@ type AuthUserInput = {
 export const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
   const role: AuthRole | null =
     user.role && typeof user.role === "object"
-      ? user.role
+      ? {
+          id: user.role.id || user.role._id,
+          _id: user.role._id || user.role.id,
+          name: user.role.name,
+        }
       : user.roleName || (typeof user.role === "string" ? user.role : undefined)
         ? { name: user.roleName || (user.role as string) }
         : null;
 
+  const organizationId =
+    user.organizationId ||
+    user.organization?.id ||
+    user.organization?._id ||
+    "";
+
+  const organizationLogo = sanitizeMediaUrl(user.organization?.logo);
+
+  const organization: AuthOrganization | null = user.isSuperAdmin
+    ? null
+    : user.organization
+      ? {
+          id: organizationId || user.organization.id || user.organization._id,
+          _id: organizationId || user.organization._id || user.organization.id,
+          name: user.organization.name,
+          organizationCode: user.organization.organizationCode,
+          logo: organizationLogo,
+        }
+      : null;
+
   return {
     id: user.id || user._id || "",
-    _id: user._id,
+    _id: user._id || user.id,
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
     phone: user.phone || "",
-    profilePicture: user.profilePicture || "",
-    signature: user.signature || "",
+    profilePicture: sanitizeMediaUrl(user.profilePicture),
+    signature: sanitizeMediaUrl(user.signature),
     qualification: user.qualification || "",
     isSuperAdmin: Boolean(user.isSuperAdmin),
-    permissions: user.permissions || [],
+    permissions: Array.isArray(user.permissions) ? user.permissions : [],
+    organizationId: organizationId || undefined,
     organizationName: user.organizationName || user.organization?.name,
-    organization: user.isSuperAdmin ? null : (user.organization ?? null),
+    organization,
     role,
     roleName:
       user.roleName ||
@@ -83,17 +130,10 @@ export const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
 export const getUserOrganizationId = (user?: AuthUser | null): string => {
   if (!user) return "";
 
+  if (user.organizationId) return user.organizationId;
+
   if (user.organization) {
     const org = user.organization;
-    return org.id || org._id || "";
-  }
-
-  const rawOrgId = (user as AuthUser & { organizationId?: unknown })
-    .organizationId;
-
-  if (typeof rawOrgId === "string") return rawOrgId;
-  if (rawOrgId && typeof rawOrgId === "object") {
-    const org = rawOrgId as AuthOrganization;
     return org.id || org._id || "";
   }
 
@@ -103,6 +143,47 @@ export const getUserOrganizationId = (user?: AuthUser | null): string => {
 export const getUserOrganizationName = (user?: AuthUser | null): string => {
   if (!user) return "";
   return user.organizationName || user.organization?.name || "";
+};
+
+/** Minimal snapshot persisted to localStorage — never includes Base64 blobs. */
+export const toPersistedAuthUser = (user: AuthUser | null): AuthUser | null => {
+  if (!user) return null;
+
+  const normalized = normalizeAuthUser(user);
+  const organizationId =
+    normalized.organizationId || getUserOrganizationId(normalized);
+
+  return {
+    id: normalized.id,
+    firstName: normalized.firstName,
+    lastName: normalized.lastName,
+    email: normalized.email,
+    isSuperAdmin: normalized.isSuperAdmin,
+    organizationId: organizationId || undefined,
+    organizationName: normalized.organizationName,
+    organization: normalized.organization
+      ? {
+          id: organizationId || normalized.organization.id,
+          name: normalized.organization.name,
+          logo: sanitizeMediaUrl(normalized.organization.logo),
+        }
+      : organizationId
+        ? {
+            id: organizationId,
+            name: normalized.organizationName || "",
+            logo: "",
+          }
+        : null,
+    role: normalized.role
+      ? {
+          id: normalized.role.id || normalized.role._id,
+          name: normalized.role.name,
+        }
+      : null,
+    roleName: normalized.roleName,
+    permissions: normalized.permissions || [],
+    profilePicture: sanitizeMediaUrl(normalized.profilePicture),
+  };
 };
 
 export const isSuperAdminUser = (

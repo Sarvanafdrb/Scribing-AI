@@ -14,7 +14,7 @@ import {
   useWorkspaceSelection,
 } from "@/hooks/useWorkspaceSelection";
 import { authService } from "@/services/auth.service";
-import { normalizeAuthUser } from "@/types/auth.types";
+import { normalizeAuthUser, toPersistedAuthUser } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,7 +103,7 @@ export default function LoginPage() {
         throw new Error("Invalid response from server");
       }
 
-      setAuth(normalizeAuthUser(user), accessToken, refreshToken);
+      setAuth(toPersistedAuthUser(normalizeAuthUser(user))!, accessToken, refreshToken);
 
       toast.success("Welcome back!", {
         description: `Hello ${user.firstName} ${user.lastName}`,

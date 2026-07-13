@@ -1,7 +1,7 @@
 // store/auth.store.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { AuthUser } from "@/types/auth.types";
+import { AuthUser, toPersistedAuthUser } from "@/types/auth.types";
 import { useWorkspaceStore } from "@/store/workspace.store";
 
 interface AuthState {
@@ -24,6 +24,14 @@ interface AuthState {
   updateToken: (token: string) => void;
 }
 
+const AUTH_STORAGE_KEY = "auth-storage";
+
+export const clearPersistedAuthStorage = () => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem("workspace-storage");
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -35,14 +43,14 @@ export const useAuthStore = create<AuthState>()(
 
       setAuth: (user, token, refreshToken) => {
         set({
-          user,
+          user: toPersistedAuthUser(user),
           token,
           refreshToken: refreshToken || null,
           isLoading: false,
         });
       },
 
-      setUser: (user) => set({ user }),
+      setUser: (user) => set({ user: toPersistedAuthUser(user) }),
       setToken: (token) => set({ token }),
       setLoading: (isLoading) => set({ isLoading }),
       setHasHydrated: (state) => set({ _hasHydrated: state }),
@@ -58,19 +66,31 @@ export const useAuthStore = create<AuthState>()(
           _hasHydrated: true,
         });
         useWorkspaceStore.getState().clearWorkspace();
-        localStorage.removeItem("auth-storage");
-        localStorage.removeItem("workspace-storage");
+        clearPersistedAuthStorage();
         sessionStorage.clear();
       },
     }),
     {
-      name: "auth-storage",
+      name: AUTH_STORAGE_KEY,
       partialize: (state) => ({
-        user: state.user,
+        user: toPersistedAuthUser(state.user),
         token: state.token,
         refreshToken: state.refreshToken,
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState || {}) as Partial<AuthState>;
+        return {
+          ...currentState,
+          ...persisted,
+          user: toPersistedAuthUser(persisted.user ?? null),
+          token: persisted.token ?? null,
+          refreshToken: persisted.refreshToken ?? null,
+        };
+      },
       onRehydrateStorage: () => (state) => {
+        if (state?.user) {
+          state.setUser(toPersistedAuthUser(state.user));
+        }
         state?.setHasHydrated(true);
         state?.setLoading(false);
       },

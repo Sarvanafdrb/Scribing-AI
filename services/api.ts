@@ -32,30 +32,36 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
+  // Auth uses Bearer tokens in Authorization — do not rely on large cookies.
+  withCredentials: false,
 });
 
-// Request interceptor
+// Request interceptor — only attach Authorization (+ optional workspace id).
 api.interceptors.request.use(
   (config) => {
-    // Get fresh token from store
     const token = useAuthStore.getState().token;
     const workspaceId = useWorkspaceStore.getState().selectedWorkspace?.id;
 
+    // Start from a clean header set for auth-sensitive fields.
+    if (config.headers) {
+      delete config.headers.Cookie;
+      delete config.headers.cookie;
+      delete config.headers["X-User"];
+      delete config.headers["X-User-Data"];
+      delete config.headers["X-Organization"];
+    }
+
     if (token && !isPublicAuthRequest(config.url)) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else if (config.headers) {
+      delete config.headers.Authorization;
     }
 
     if (workspaceId) {
       config.headers["X-Workspace-Id"] = workspaceId;
+    } else if (config.headers) {
+      delete config.headers["X-Workspace-Id"];
     }
-
-    console.log("📤 Request:", {
-      url: config.url,
-      method: config.method,
-      hasToken: !!token,
-      headers: config.headers,
-    });
 
     return config;
   },
@@ -82,28 +88,23 @@ api.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        // Call refresh endpoint
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh-token`,
           { refreshToken },
-          { withCredentials: true },
+          { withCredentials: false },
         );
 
         const { accessToken, refreshToken: newRefreshToken } =
           response.data.data;
 
-        // Update store with new tokens
         const { user } = useAuthStore.getState();
-        useAuthStore.getState().setAuth(user!, accessToken, newRefreshToken);
+        useAuthStore.getState().setAuth(user, accessToken, newRefreshToken);
 
-        // Retry original request with new token
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed - logout user
         useAuthStore.getState().logout();
 
-        // Redirect to login if in browser
         if (typeof window !== "undefined") {
           window.location.href = "/login";
         }

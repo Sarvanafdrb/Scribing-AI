@@ -20,11 +20,22 @@ const STRIP_REQUEST_HEADERS = new Set([
   // Avoid upstream compression; fetch() decompresses but we must not
   // forward content-encoding to the browser with a decompressed body.
   "accept-encoding",
+  // Never forward browser cookies — they can exceed Vercel/header limits (HTTP 431).
+  "cookie",
+]);
+
+const ALLOWED_REQUEST_HEADERS = new Set([
+  "authorization",
+  "content-type",
+  "accept",
+  "x-workspace-id",
+  "x-requested-with",
 ]);
 
 const STRIP_RESPONSE_HEADERS = new Set([
   ...STRIP_REQUEST_HEADERS,
   "content-encoding",
+  "set-cookie",
 ]);
 
 const buildTargetUrl = (request: NextRequest, path: string[]) => {
@@ -42,7 +53,9 @@ const buildForwardHeaders = (request: NextRequest) => {
   const headers = new Headers();
 
   request.headers.forEach((value, key) => {
-    if (STRIP_REQUEST_HEADERS.has(key.toLowerCase())) return;
+    const lower = key.toLowerCase();
+    if (STRIP_REQUEST_HEADERS.has(lower)) return;
+    if (!ALLOWED_REQUEST_HEADERS.has(lower)) return;
     headers.set(key, value);
   });
 

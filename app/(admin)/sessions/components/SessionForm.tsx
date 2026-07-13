@@ -26,6 +26,7 @@ import {
 import {
   CreateSessionData,
   Session,
+  SessionVitals,
   UpdateSessionData,
 } from "@/types/session.types";
 import { organizationService } from "@/services/organization.service";
@@ -45,13 +46,62 @@ import { useTenantScope } from "@/hooks/useTenantScope";
 import { healthcarePrimaryButton } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
 
-const createSchema = z.object({
-  organizationId: z.string().min(1, "Organization is required"),
-  patientId: z.string().min(1, "Patient is required"),
-  userId: z.string().min(1, "Doctor is required"),
-  sessionType: z.enum(["consultation", "follow_up", "diagnostic", "other"]),
-  description: z.string().optional(),
-});
+const emptyToUndefined = (value: unknown) => {
+  if (value === "" || value === null || value === undefined) return undefined;
+  return value;
+};
+
+const optionalDecimalField = z.preprocess(
+  emptyToUndefined,
+  z.coerce
+    .number({ error: "Temperature must be a number" })
+    .finite("Temperature must be a valid number")
+    .optional(),
+);
+
+const optionalPositiveIntField = z.preprocess(
+  emptyToUndefined,
+  z.coerce
+    .number({ error: "Must be a number" })
+    .int("Must be a whole number")
+    .positive("Must be a positive number")
+    .optional(),
+);
+
+const optionalSpo2Field = z.preprocess(
+  emptyToUndefined,
+  z.coerce
+    .number({ error: "SpO₂ must be a number" })
+    .min(0, "SpO₂ must be between 0 and 100")
+    .max(100, "SpO₂ must be between 0 and 100")
+    .optional(),
+);
+
+const createSchema = z
+  .object({
+    organizationId: z.string().min(1, "Organization is required"),
+    patientId: z.string().min(1, "Patient is required"),
+    userId: z.string().min(1, "Doctor is required"),
+    sessionType: z.enum(["consultation", "follow_up", "diagnostic", "other"]),
+    description: z.string().optional(),
+    temperature: optionalDecimalField,
+    systolic: optionalPositiveIntField,
+    diastolic: optionalPositiveIntField,
+    heartRate: optionalPositiveIntField,
+    spo2: optionalSpo2Field,
+  })
+  .superRefine((data, ctx) => {
+    const hasSystolic = data.systolic !== undefined;
+    const hasDiastolic = data.diastolic !== undefined;
+
+    if (hasSystolic !== hasDiastolic) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Both systolic and diastolic are required",
+        path: hasSystolic ? ["diastolic"] : ["systolic"],
+      });
+    }
+  });
 
 const editSchema = z.object({
   title: z.string().trim().min(2, "Title is required"),
@@ -85,6 +135,31 @@ const getOrgId = (session?: Session) => {
   return session.organizationId;
 };
 
+const buildVitalsPayload = (data: CreateFormData): SessionVitals | undefined => {
+  const vitals: SessionVitals = {};
+
+  if (data.temperature !== undefined) {
+    vitals.temperature = data.temperature;
+  }
+
+  if (data.systolic !== undefined && data.diastolic !== undefined) {
+    vitals.bloodPressure = {
+      systolic: data.systolic,
+      diastolic: data.diastolic,
+    };
+  }
+
+  if (data.heartRate !== undefined) {
+    vitals.heartRate = data.heartRate;
+  }
+
+  if (data.spo2 !== undefined) {
+    vitals.spo2 = data.spo2;
+  }
+
+  return Object.keys(vitals).length > 0 ? vitals : undefined;
+};
+
 export function SessionForm({
   initialData,
   onSubmit,
@@ -110,6 +185,11 @@ export function SessionForm({
           userId: "",
           sessionType: "consultation",
           description: "",
+          temperature: undefined,
+          systolic: undefined,
+          diastolic: undefined,
+          heartRate: undefined,
+          spo2: undefined,
         },
   });
 
@@ -186,12 +266,14 @@ export function SessionForm({
     }
 
     const createData = data as CreateFormData;
+    const vitals = buildVitalsPayload(createData);
     const payload: CreateSessionData = {
       organizationId: scopedOrgId || createData.organizationId,
       patientId: createData.patientId,
       userId: createData.userId,
       sessionType: createData.sessionType,
       description: createData.description,
+      ...(vitals ? { vitals } : {}),
     };
 
     await onSubmit(payload);
@@ -329,6 +411,157 @@ export function SessionForm({
               </FormItem>
             )}
           />
+
+          <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Today&apos;s Vitals
+              </h3>
+              <p className="mt-0.5 text-xs text-gray-500">
+                Optional. Saved with this consultation only.
+              </p>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="temperature"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Temperature (°F)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      inputMode="decimal"
+                      placeholder="98.6"
+                      className="rounded-xl bg-white"
+                      value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.value === ""
+                            ? undefined
+                            : event.target.value,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="systolic"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Blood Pressure — Systolic</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="120"
+                        className="rounded-xl bg-white"
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : event.target.value,
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="diastolic"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Blood Pressure — Diastolic</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="80"
+                        className="rounded-xl bg-white"
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : event.target.value,
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="heartRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Heart Rate (bpm)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="72"
+                        className="rounded-xl bg-white"
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : event.target.value,
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="spo2"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>SpO₂ (%)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="99"
+                        className="rounded-xl bg-white"
+                        value={field.value ?? ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? undefined
+                              : event.target.value,
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
 
           <Button
             type="submit"

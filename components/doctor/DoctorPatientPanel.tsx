@@ -16,7 +16,7 @@ import {
   getPatientFullName,
 } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
-import type { LastVisit } from "@/types/session.types";
+import type { LastVisit, SessionVitals } from "@/types/session.types";
 import { cn } from "@/lib/utils";
 
 interface DoctorPatientPanelProps {
@@ -41,6 +41,22 @@ const formatLastVisit = (lastVisit?: LastVisit | null) => {
   return typeLabel ? `${dateLabel} • ${typeLabel}` : dateLabel;
 };
 
+const formatTemperature = (temperature?: number) =>
+  temperature === undefined || temperature === null ? "—" : `${temperature}°F`;
+
+const formatBloodPressure = (vitals?: SessionVitals) => {
+  const systolic = vitals?.bloodPressure?.systolic;
+  const diastolic = vitals?.bloodPressure?.diastolic;
+  if (systolic === undefined || diastolic === undefined) return "—";
+  return `${systolic}/${diastolic} mmHg`;
+};
+
+const formatHeartRate = (heartRate?: number) =>
+  heartRate === undefined || heartRate === null ? "—" : `${heartRate} bpm`;
+
+const formatSpo2 = (spo2?: number) =>
+  spo2 === undefined || spo2 === null ? "—" : `${spo2}%`;
+
 export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
   const { data: session } = useSession(sessionId);
   const { aiNotes } = useAiNotes(sessionId);
@@ -54,6 +70,11 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
   const medications = aiNotes?.medications?.filter((m) => m.medicine) || [];
   const allergies =
     patient?.allergies?.map((allergy) => allergy.trim()).filter(Boolean) || [];
+  const vitals = session?.vitals;
+  const temperatureValue = formatTemperature(vitals?.temperature);
+  const bloodPressureValue = formatBloodPressure(vitals);
+  const heartRateValue = formatHeartRate(vitals?.heartRate);
+  const spo2Value = formatSpo2(vitals?.spo2);
 
   return (
     <div className="space-y-4">
@@ -145,27 +166,35 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
         <div className="grid grid-cols-2 gap-3">
           <VitalCard
             label="Temp"
-            value="—"
+            value={temperatureValue}
             icon={Thermometer}
-            valueClassName="text-gray-500"
+            valueClassName={
+              temperatureValue === "—" ? "text-gray-500" : "text-gray-800"
+            }
           />
           <VitalCard
             label="BP"
-            value="—"
+            value={bloodPressureValue}
             icon={Heart}
-            valueClassName="text-green-600"
+            valueClassName={
+              bloodPressureValue === "—" ? "text-gray-500" : "text-green-600"
+            }
           />
           <VitalCard
             label="HR"
-            value="—"
+            value={heartRateValue}
             icon={Heart}
-            valueClassName="text-green-600"
+            valueClassName={
+              heartRateValue === "—" ? "text-gray-500" : "text-green-600"
+            }
           />
           <VitalCard
             label="SpO2"
-            value="—"
+            value={spo2Value}
             icon={Heart}
-            valueClassName="text-blue-600"
+            valueClassName={
+              spo2Value === "—" ? "text-gray-500" : "text-blue-600"
+            }
           />
         </div>
       </section>

@@ -39,6 +39,16 @@ export interface LastVisit {
   sessionType?: SessionType | string;
 }
 
+export interface SessionVitals {
+  temperature?: number;
+  bloodPressure?: {
+    systolic?: number;
+    diastolic?: number;
+  };
+  heartRate?: number;
+  spo2?: number;
+}
+
 export interface Session {
   _id?: string;
   id?: string;
@@ -57,6 +67,7 @@ export interface Session {
   transcript?: string;
   transcriptData?: TranscriptData;
   aiNotes?: AiNotes;
+  vitals?: SessionVitals;
   duration?: number;
   startedAt?: string;
   completedAt?: string;
@@ -73,6 +84,7 @@ export interface CreateSessionData {
   patientId: string;
   userId: string;
   sessionType: SessionType;
+  vitals?: SessionVitals;
 }
 
 export interface UpdateSessionData {
@@ -84,6 +96,7 @@ export interface UpdateSessionData {
   transcript?: string;
   duration?: number;
   isActive?: boolean;
+  vitals?: SessionVitals;
 }
 
 export interface SessionStatusCounts {

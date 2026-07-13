@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Wifi } from "lucide-react";
-import { useAuthStore } from "@/store/auth.store";
 import { useSession } from "@/hooks/sessions/useSession";
+import { UserProfileDropdown } from "@/components/shared/UserProfileDropdown";
 import { getPatientAge, getPatientFullName } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,6 @@ export function DoctorHeader({
   elapsedSeconds = 0,
   isRecording = false,
 }: DoctorHeaderProps) {
-  const { user } = useAuthStore();
   const { data: session } = useSession(sessionId);
   const [saved, setSaved] = useState(true);
 
@@ -42,9 +41,6 @@ export function DoctorHeader({
       : null;
 
   const patientAge = getPatientAge(patient);
-  const doctorInitials = user
-    ? `${user.firstName?.charAt(0) || ""}${user.lastName?.charAt(0) || ""}`.toUpperCase()
-    : "DR";
 
   useEffect(() => {
     if (isRecording) {
@@ -95,9 +91,7 @@ export function DoctorHeader({
 
         <Wifi className="h-4 w-4 text-gray-400" />
 
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-600 text-xs font-semibold text-white">
-          {doctorInitials}
-        </div>
+        <UserProfileDropdown />
       </div>
     </header>
   );

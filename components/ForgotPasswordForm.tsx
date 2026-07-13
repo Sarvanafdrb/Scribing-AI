@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { authService } from "@/services/auth.service";
 import Link from "next/link";
+import { STRICT_EMAIL_REGEX } from "@/lib/validation";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -13,10 +14,20 @@ export function ForgotPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (
+      !STRICT_EMAIL_REGEX.test(normalizedEmail) ||
+      normalizedEmail.includes("..")
+    ) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await authService.forgotPassword(email);
+      await authService.forgotPassword(normalizedEmail);
       setSubmitted(true);
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to send reset email");

@@ -24,9 +24,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  lastNameSchema,
+  organizationNameSchema,
+  strictEmailSchema,
+} from "@/lib/validation";
 
-const nameRegex = /^[a-zA-Z\s'-]+$/;
 const phoneRegex = /^[0-9]{10,15}$/;
+const firstNameRegex = /^[a-zA-Z\s'-]+$/;
 
 const registerSchema = z
   .object({
@@ -34,20 +39,12 @@ const registerSchema = z
       .string()
       .trim()
       .min(2, "First name must be at least 2 characters")
-      .regex(nameRegex, "First name can only contain letters"),
-    lastName: z
-      .string()
-      .trim()
-      .min(2, "Last name must be at least 2 characters")
-      .regex(nameRegex, "Last name can only contain letters"),
-    email: z.string().trim().email("Invalid email address"),
+      .regex(firstNameRegex, "First name can only contain letters"),
+    lastName: lastNameSchema,
+    email: strictEmailSchema,
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
-    organizationName: z
-      .string()
-      .trim()
-      .min(2, "Organization name is required")
-      .regex(/[a-zA-Z]/, "Organization name must contain at least one letter"),
+    organizationName: organizationNameSchema,
     phone: z
       .string()
       .optional()

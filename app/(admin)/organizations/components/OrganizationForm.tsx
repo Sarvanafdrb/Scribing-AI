@@ -29,12 +29,13 @@ import {
 import { Organization } from "@/types/organization.types";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useTenantScope } from "@/hooks/useTenantScope";
+import {
+  organizationNameSchema,
+  strictEmailSchema,
+} from "@/lib/validation";
 
 const baseFormSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "Organization name must be at least 2 characters"),
+  name: organizationNameSchema,
   organizationType: z.string().min(1, "Organization type is required"),
   parentOrganizationId: z.string().optional(),
   description: z.string().optional(),
@@ -44,7 +45,7 @@ const baseFormSchema = z.object({
   speciality: z.string().optional(),
   providerCount: z.string().optional(),
   adminName: z.string().trim().min(2, "Admin name required"),
-  adminEmail: z.string().trim().email("Invalid admin email"),
+  adminEmail: strictEmailSchema,
   adminPassword: z.string().optional(),
 });
 

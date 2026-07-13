@@ -20,10 +20,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Camera, Loader2, PenLine } from "lucide-react";
 import { resolveUploadUrl } from "@/utils/media-url.utils";
+import { lastNameSchema } from "@/lib/validation";
 
 const profileSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
-  lastName: z.string().trim().min(2, "Last name is required"),
+  lastName: lastNameSchema,
   phone: z
     .string()
     .optional()

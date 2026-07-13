@@ -28,6 +28,7 @@ import { roleService } from "@/services/role.service";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { Organization } from "@/types/organization.types";
+import { lastNameSchema, strictEmailSchema } from "@/lib/validation";
 
 const getOrganizationOptionId = (org: Organization): string => {
   const rawId = org.id || org._id;
@@ -37,8 +38,8 @@ const getOrganizationOptionId = (org: Organization): string => {
 
 const createSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
-  lastName: z.string().trim().min(2, "Last name is required"),
-  email: z.string().trim().email("Invalid email"),
+  lastName: lastNameSchema,
+  email: strictEmailSchema,
   password: z.string().min(6, "Password must be at least 6 characters"),
   organizationId: z.string().min(1, "Organization is required"),
   roleId: z.string().optional(),

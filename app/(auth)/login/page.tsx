@@ -22,9 +22,10 @@ import { LoginGlassShell } from "@/components/auth/LoginGlassShell";
 import { isAxiosError } from "axios";
 import { useMounted } from "@/hooks/useMounted";
 import { cn } from "@/lib/utils";
+import { strictEmailSchema } from "@/lib/validation";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: strictEmailSchema,
   password: z.string().min(6, "Password must be at least 6 characters"),
   rememberMe: z.boolean().optional(),
 });

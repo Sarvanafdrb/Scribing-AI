@@ -4,7 +4,9 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useWorkspaceStore } from "@/store/workspace.store";
+import { useAuthStore } from "@/store/auth.store";
 import { Workspace } from "@/types/workspace.types";
+import { isDoctorUser } from "@/types/auth.types";
 import { organizationKeys } from "@/services/organization.queries";
 import { userKeys } from "@/services/user.queries";
 import { roleKeys } from "@/services/role.queries";
@@ -75,6 +77,11 @@ export const resolvePostLoginWorkspace = async (): Promise<{
   if (!defaultWorkspace) {
     useWorkspaceStore.getState().clearWorkspace();
     return { redirectTo: "/access-not-assigned" };
+  }
+
+  const user = useAuthStore.getState().user;
+  if (isDoctorUser(user)) {
+    return { redirectTo: "/doctor/workspace", workspace: defaultWorkspace };
   }
 
   return { redirectTo: "/dashboard", workspace: defaultWorkspace };

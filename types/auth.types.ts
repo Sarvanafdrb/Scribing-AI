@@ -199,6 +199,15 @@ export const isSuperAdminUser = (
   return Boolean(tokenPayload?.isSuperAdmin);
 };
 
+export const getUserRoleName = (user?: AuthUser | null): string =>
+  (user?.roleName || user?.role?.name || "").trim();
+
+/** True when the user's role name is Doctor (case-insensitive). Super Admin is never a doctor. */
+export const isDoctorUser = (user?: AuthUser | null): boolean => {
+  if (!user || user.isSuperAdmin) return false;
+  return getUserRoleName(user).toLowerCase() === "doctor";
+};
+
 export const canManageAllOrganizations = (
   user?: AuthUser | null,
   token?: string | null,

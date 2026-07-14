@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/useAccessControl";
-import { hasPermission } from "@/types/auth.types";
+import { hasPermission, isDoctorUser } from "@/types/auth.types";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
@@ -131,10 +131,13 @@ export default function AdminLayout({
     if (!isAuthenticated) {
       console.log("🔐 No token, redirecting to login");
       router.replace("/login");
-    } else {
-      console.log("✅ Authenticated, showing dashboard");
+      return;
     }
-  }, [isAuthenticated, _hasHydrated, isValidating, router]);
+
+    if (isDoctorUser(user)) {
+      router.replace("/doctor/workspace");
+    }
+  }, [isAuthenticated, _hasHydrated, isValidating, router, user]);
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -156,7 +159,7 @@ export default function AdminLayout({
   if (!isAuthenticated || shouldBlock) {
     return null;
   }
-  if (!user) {
+  if (!user || isDoctorUser(user)) {
     return null;
   }
   return (

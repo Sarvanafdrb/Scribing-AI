@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
+import { isDoctorUser } from "@/types/auth.types";
 
 const PUBLIC_AUTH_PATHS = [
   "/login",
@@ -16,7 +17,7 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { token } = useAuthStore();
+  const { token, user } = useAuthStore();
   const pathname = usePathname();
   const router = useRouter();
   const isAuthenticated = !!token;
@@ -27,8 +28,8 @@ export default function AuthLayout({
 
   useEffect(() => {
     if (!isAuthenticated || !isPublicAuthPage) return;
-    router.push("/dashboard");
-  }, [isAuthenticated, isPublicAuthPage, router]);
+    router.push(isDoctorUser(user) ? "/doctor/workspace" : "/dashboard");
+  }, [isAuthenticated, isPublicAuthPage, router, user]);
 
   if (isLoginPage) {
     return <>{children}</>;

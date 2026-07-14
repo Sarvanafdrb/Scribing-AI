@@ -16,7 +16,7 @@ import {
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
-import type { Patient } from "@/types/patient.types";
+import type { PreviousHistoryItem } from "@/types/session.types";
 
 interface DoctorAiNotesPanelProps {
   sessionId: string;
@@ -83,26 +83,78 @@ const formatMedications = (medications?: AiNotesMedication[]) => {
   );
 };
 
-const formatPreviousHistory = (items?: string[]) => {
-  const history = items?.map((item) => item.trim()).filter(Boolean) || [];
+const formatConsultationDate = (value?: string | null) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
 
-  if (history.length === 0) {
+const getMedicationNames = (medications?: AiNotesMedication[]) =>
+  (medications || [])
+    .map((med) => med.medicine?.trim())
+    .filter(Boolean)
+    .join(", ");
+
+const formatPreviousHistory = (items?: PreviousHistoryItem[]) => {
+  if (!items?.length) {
     return (
       <p className="text-sm text-gray-400 italic">
-        No previous history recorded.
+        No previous consultation history found.
       </p>
     );
   }
 
   return (
-    <ul className="space-y-1 text-sm text-gray-700">
-      {history.map((item) => (
-        <li key={item} className="flex items-start gap-2">
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-500" />
-          {item}
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-2.5">
+      {items.map((item) => {
+        const medicationNames = getMedicationNames(item.aiNotes?.medications);
+        const assessment = item.aiNotes?.assessment?.trim();
+        const summary = item.aiNotes?.summary?.trim();
+
+        return (
+          <article
+            key={item.sessionId}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5"
+          >
+            <p className="text-[11px] font-semibold tracking-wide text-teal-700 uppercase">
+              {formatConsultationDate(item.completedAt)}
+            </p>
+            {item.title ? (
+              <p className="mt-0.5 truncate text-xs text-gray-500">{item.title}</p>
+            ) : null}
+            <dl className="mt-2 space-y-1.5 text-sm">
+              <div>
+                <dt className="text-[11px] font-medium text-gray-400 uppercase">
+                  Assessment (Diagnosis)
+                </dt>
+                <dd className="whitespace-pre-wrap text-gray-700">
+                  {assessment || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] font-medium text-gray-400 uppercase">
+                  Summary
+                </dt>
+                <dd className="whitespace-pre-wrap text-gray-700">
+                  {summary || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] font-medium text-gray-400 uppercase">
+                  Medications
+                </dt>
+                <dd className="text-gray-700">{medicationNames || "—"}</dd>
+              </div>
+            </dl>
+          </article>
+        );
+      })}
+    </div>
   );
 };
 
@@ -116,11 +168,6 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
     transcriptReady,
     generate,
   } = useAiNotes(sessionId);
-
-  const patient =
-    session && typeof session.patientId === "object"
-      ? (session.patientId as Patient)
-      : null;
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     previous_history: true,
@@ -263,7 +310,7 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
                   {section.key === "prescription"
                     ? formatMedications(aiNotes?.medications)
                     : section.key === "previous_history"
-                      ? formatPreviousHistory(patient?.medications)
+                      ? formatPreviousHistory(session?.previousHistory)
                       : renderContent(section.content)}
                 </div>
               )}

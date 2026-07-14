@@ -39,6 +39,20 @@ export interface LastVisit {
   sessionType?: SessionType | string;
 }
 
+export interface PreviousHistoryAiNotes {
+  summary?: string;
+  assessment?: string;
+  plan?: string;
+  medications?: AiNotes["medications"];
+}
+
+export interface PreviousHistoryItem {
+  sessionId: string;
+  completedAt?: string | null;
+  title: string;
+  aiNotes: PreviousHistoryAiNotes;
+}
+
 export interface SessionVitals {
   temperature?: number;
   bloodPressure?: {
@@ -75,6 +89,7 @@ export interface Session {
   createdAt?: string;
   updatedAt?: string;
   lastVisit?: LastVisit | null;
+  previousHistory?: PreviousHistoryItem[];
 }
 
 export interface CreateSessionData {

@@ -6,6 +6,7 @@ import {
   ChevronUp,
   ClipboardList,
   FileText,
+  History,
   Loader2,
   Pencil,
   Pill,
@@ -13,7 +14,10 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
+import { useSession } from "@/hooks/sessions/useSession";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
+import type { Patient } from "@/types/patient.types";
+
 interface DoctorAiNotesPanelProps {
   sessionId: string;
 }
@@ -79,7 +83,31 @@ const formatMedications = (medications?: AiNotesMedication[]) => {
   );
 };
 
+const formatPreviousHistory = (items?: string[]) => {
+  const history = items?.map((item) => item.trim()).filter(Boolean) || [];
+
+  if (history.length === 0) {
+    return (
+      <p className="text-sm text-gray-400 italic">
+        No previous history recorded.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-1 text-sm text-gray-700">
+      {history.map((item) => (
+        <li key={item} className="flex items-start gap-2">
+          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-500" />
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
+  const { data: session } = useSession(sessionId);
   const {
     aiNotes,
     isLoading,
@@ -89,7 +117,13 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
     generate,
   } = useAiNotes(sessionId);
 
+  const patient =
+    session && typeof session.patientId === "object"
+      ? (session.patientId as Patient)
+      : null;
+
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    previous_history: true,
     prescription: true,
   });
 
@@ -109,6 +143,12 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
       label: "History of Present Illness",
       icon: FileText,
       content: aiNotes?.subjective,
+    },
+    {
+      key: "previous_history",
+      label: "Previous History",
+      icon: History,
+      defaultOpen: true,
     },
     {
       key: "examination",
@@ -222,7 +262,9 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
                 <div className="border-t border-gray-100 px-3 py-3">
                   {section.key === "prescription"
                     ? formatMedications(aiNotes?.medications)
-                    : renderContent(section.content)}
+                    : section.key === "previous_history"
+                      ? formatPreviousHistory(patient?.medications)
+                      : renderContent(section.content)}
                 </div>
               )}
             </div>

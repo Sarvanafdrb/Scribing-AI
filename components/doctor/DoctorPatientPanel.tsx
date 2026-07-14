@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   Calendar,
+  Droplets,
   Heart,
   Phone,
   Pill,
@@ -102,6 +103,13 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
             <dt className="text-gray-500">Phone</dt>
             <dd className="ml-auto font-medium text-gray-800">
               {patient?.phoneNumber || "—"}
+            </dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <Droplets className="h-3.5 w-3.5 text-gray-400" />
+            <dt className="text-gray-500">Blood Group</dt>
+            <dd className="ml-auto font-medium text-gray-800">
+              {patient?.bloodGroup || "—"}
             </dd>
           </div>
           <div className="flex items-center gap-2">

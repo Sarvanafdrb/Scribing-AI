@@ -1,5 +1,18 @@
 export type PatientGender = "male" | "female" | "other" | "unknown";
 
+export const BLOOD_GROUPS = [
+  "A+",
+  "A-",
+  "B+",
+  "B-",
+  "AB+",
+  "AB-",
+  "O+",
+  "O-",
+] as const;
+
+export type BloodGroup = (typeof BLOOD_GROUPS)[number];
+
 export interface PatientOrganization {
   _id?: string;
   id?: string;
@@ -20,6 +33,8 @@ export interface Patient {
   email?: string;
   address?: string;
   allergies?: string[];
+  medications?: string[];
+  bloodGroup?: BloodGroup;
   organizationId: string | PatientOrganization;
   isActive?: boolean;
   createdAt?: string;
@@ -36,6 +51,8 @@ export interface CreatePatientData {
   email?: string;
   address?: string;
   allergies?: string[];
+  medications?: string[];
+  bloodGroup?: BloodGroup;
   organizationId: string;
 }
 
@@ -49,5 +66,7 @@ export interface UpdatePatientData {
   email?: string;
   address?: string;
   allergies?: string[];
+  medications?: string[];
+  bloodGroup?: BloodGroup | "";
   isActive?: boolean;
 }

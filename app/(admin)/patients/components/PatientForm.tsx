@@ -28,6 +28,8 @@ import {
   Patient,
   PatientGender,
   UpdatePatientData,
+  BLOOD_GROUPS,
+  BloodGroup,
 } from "@/types/patient.types";
 import { organizationService } from "@/services/organization.service";
 import { useTenantScope } from "@/hooks/useTenantScope";
@@ -47,7 +49,19 @@ const genderOptions: { value: PatientGender; label: string }[] = [
   { value: "unknown", label: "Unknown" },
 ];
 
+const bloodGroupOptions: { value: BloodGroup; label: string }[] =
+  BLOOD_GROUPS.map((group) => ({ value: group, label: group }));
+
 const DOB_OR_AGE_MESSAGE = "Please provide either Date of Birth or Age.";
+
+const parseListField = (value?: string) =>
+  (value || "")
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const formatListField = (values?: string[]) =>
+  Array.isArray(values) ? values.join("\n") : "";
 
 const getOrganizationOptionId = (org: Organization): string => {
   const rawId = org.id || org._id;
@@ -84,6 +98,10 @@ const patientSchema = z
       }),
     email: z.string().email("Invalid email").optional().or(z.literal("")),
     address: z.string().trim().optional(),
+    bloodGroup: z
+      .enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", ""])
+      .optional(),
+    medications: z.string().optional(),
     organizationId: z.string().min(1, "Organization is required"),
   })
   .superRefine((data, ctx) => {
@@ -147,6 +165,8 @@ export function PatientForm({
       phoneNumber: sanitizeIndianPhoneInput(initialData?.phoneNumber || ""),
       email: initialData?.email || "",
       address: initialData?.address || "",
+      bloodGroup: initialData?.bloodGroup || "",
+      medications: formatListField(initialData?.medications),
       organizationId: getOrgId(initialData) || scopedOrgId || "",
     },
   });
@@ -203,6 +223,8 @@ export function PatientForm({
       phoneNumber: data.phoneNumber,
       email: data.email || undefined,
       address: data.address,
+      bloodGroup: (data.bloodGroup || undefined) as BloodGroup | undefined,
+      medications: parseListField(data.medications),
       ...demographics,
     };
 
@@ -420,22 +442,50 @@ export function PatientForm({
           />
           <FormField
             control={form.control}
-            name="email"
+            name="bloodGroup"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="patient@example.com"
-                    {...field}
-                  />
-                </FormControl>
+                <FormLabel>Blood Group</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {bloodGroupOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="patient@example.com"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -450,6 +500,27 @@ export function PatientForm({
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="medications"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Previous History / Medications</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="One item per line (e.g. Hypertension, Metformin 500mg)"
+                  rows={3}
+                  {...field}
+                />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                Shown as Previous History in the doctor workspace notes panel.
+              </p>
               <FormMessage />
             </FormItem>
           )}

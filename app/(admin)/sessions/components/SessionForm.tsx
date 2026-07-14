@@ -51,31 +51,57 @@ const emptyToUndefined = (value: unknown) => {
   return value;
 };
 
-const optionalDecimalField = z.preprocess(
-  emptyToUndefined,
-  z.coerce
-    .number({ error: "Temperature must be a number" })
-    .finite("Temperature must be a valid number")
-    .optional(),
+const parseOptionalNumber = (
+  value: unknown,
+  ctx: z.RefinementCtx,
+  message: string,
+): number | undefined => {
+  const normalized = emptyToUndefined(value);
+  if (normalized === undefined) return undefined;
+
+  const num =
+    typeof normalized === "number" ? normalized : Number(String(normalized).trim());
+
+  if (Number.isNaN(num) || !Number.isFinite(num)) {
+    ctx.addIssue({ code: "custom", message });
+    return z.NEVER;
+  }
+
+  return num;
+};
+
+const optionalDecimalField = z.custom<number | undefined>().transform(
+  (value, ctx) => parseOptionalNumber(value, ctx, "Temperature must be a number"),
 );
 
-const optionalPositiveIntField = z.preprocess(
-  emptyToUndefined,
-  z.coerce
-    .number({ error: "Must be a number" })
-    .int("Must be a whole number")
-    .positive("Must be a positive number")
-    .optional(),
+const optionalPositiveIntField = z.custom<number | undefined>().transform(
+  (value, ctx) => {
+    const num = parseOptionalNumber(value, ctx, "Must be a number");
+    if (num === undefined) return undefined;
+    if (!Number.isInteger(num)) {
+      ctx.addIssue({ code: "custom", message: "Must be a whole number" });
+      return z.NEVER;
+    }
+    if (num <= 0) {
+      ctx.addIssue({ code: "custom", message: "Must be a positive number" });
+      return z.NEVER;
+    }
+    return num;
+  },
 );
 
-const optionalSpo2Field = z.preprocess(
-  emptyToUndefined,
-  z.coerce
-    .number({ error: "SpO₂ must be a number" })
-    .min(0, "SpO₂ must be between 0 and 100")
-    .max(100, "SpO₂ must be between 0 and 100")
-    .optional(),
-);
+const optionalSpo2Field = z.custom<number | undefined>().transform((value, ctx) => {
+  const num = parseOptionalNumber(value, ctx, "SpO₂ must be a number");
+  if (num === undefined) return undefined;
+  if (num < 0 || num > 100) {
+    ctx.addIssue({
+      code: "custom",
+      message: "SpO₂ must be between 0 and 100",
+    });
+    return z.NEVER;
+  }
+  return num;
+});
 
 const createSchema = z
   .object({

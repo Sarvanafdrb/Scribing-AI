@@ -11,6 +11,9 @@ export type SessionStatus =
   | "recording"
   | "uploading"
   | "processing"
+  | "transcript_ready"
+  | "ai_notes_generated"
+  | "ready_for_review"
   | "completed"
   | "failed";
 
@@ -120,6 +123,9 @@ export interface SessionStatusCounts {
   recording: number;
   uploading: number;
   processing: number;
+  transcript_ready: number;
+  ai_notes_generated: number;
+  ready_for_review: number;
   completed: number;
   failed: number;
 }

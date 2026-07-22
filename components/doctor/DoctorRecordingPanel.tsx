@@ -16,7 +16,10 @@ import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
 import { transcriptKeys } from "@/services/transcript.queries";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
-import { SessionStatus } from "@/types/session.types";
+import {
+  canStartRecording,
+  isTranscriptAvailable,
+} from "@/utils/session-status.utils";
 import { cn } from "@/lib/utils";
 
 type WorkflowPhase = "ready" | "recording" | "postStop";
@@ -84,14 +87,14 @@ export function DoctorRecordingPanel({
   const inPostStopFlow = workflow === "postStop" && (hasAudio || isUploading);
   const showPlayback =
     Boolean(session?.audioUrl) &&
-    session?.status === "completed" &&
+    isTranscriptAvailable(session?.status) &&
     !isUploading;
   const showPipeline = inPostStopFlow && !showPlayback;
   const showStart =
     workflow === "ready" &&
     recorderState === "idle" &&
     !hasAudio &&
-    session?.status !== "completed";
+    canStartRecording(session?.status);
   const controlsLocked = inPostStopFlow;
   const isMicActive =
     recorderState === "recording" || recorderState === "paused";
@@ -131,6 +134,7 @@ export function DoctorRecordingPanel({
 
       try {
         await sessionService.updateStatus(sessionId, "uploading");
+        await queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
         await refetch();
 
         const uploadConfig = await recordingService.getUploadUrl(
@@ -180,7 +184,7 @@ export function DoctorRecordingPanel({
         setIsUploading(false);
       }
     },
-    [invalidateSessionData, refetch, sessionId],
+    [invalidateSessionData, queryClient, refetch, sessionId],
   );
 
   const handleStop = useCallback(async () => {
@@ -234,6 +238,7 @@ export function DoctorRecordingPanel({
       await recordingService.start(sessionId);
       await startRecorder();
       setWorkflow("recording");
+      await queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
       await refetch();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -265,7 +270,14 @@ export function DoctorRecordingPanel({
     if (isMicActive) return "RECORDING";
     if (isUploading) return "UPLOADING";
     if (session?.status === "processing") return "PROCESSING";
-    if (hasAudio && session?.status === "completed") return "DONE";
+    if (session?.status === "transcript_ready") return "TRANSCRIPT READY";
+    if (
+      session?.status === "ai_notes_generated" ||
+      session?.status === "ready_for_review"
+    ) {
+      return "READY FOR REVIEW";
+    }
+    if (hasAudio && isTranscriptAvailable(session?.status)) return "DONE";
     return "READY";
   };
 
@@ -381,7 +393,7 @@ export function DoctorRecordingPanel({
       {!showStart && !isMicActive && recorderState === "idle" && (
         <WaveformPlaceholder
           active={
-            isUploading || session.status === ("processing" as SessionStatus)
+            isUploading || session.status === "processing"
           }
           className="mt-2"
         />

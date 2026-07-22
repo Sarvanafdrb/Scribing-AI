@@ -20,8 +20,20 @@ const statusConfig: Record<
     className: "bg-blue-100 text-blue-700 hover:bg-blue-200",
   },
   processing: {
-    label: "Processing",
+    label: "Processing Transcript",
     className: "bg-amber-100 text-amber-700 hover:bg-amber-200",
+  },
+  transcript_ready: {
+    label: "Transcript Ready",
+    className: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200",
+  },
+  ai_notes_generated: {
+    label: "AI Notes Generated",
+    className: "bg-violet-100 text-violet-700 hover:bg-violet-200",
+  },
+  ready_for_review: {
+    label: "Ready for Review",
+    className: "bg-teal-100 text-teal-700 hover:bg-teal-200",
   },
   completed: {
     label: "Completed",
@@ -44,7 +56,10 @@ export const SESSION_STATUS_OPTIONS: { value: SessionStatus; label: string }[] =
     { value: "created", label: "Created" },
     { value: "recording", label: "Recording" },
     { value: "uploading", label: "Uploading" },
-    { value: "processing", label: "Processing" },
+    { value: "processing", label: "Processing Transcript" },
+    { value: "transcript_ready", label: "Transcript Ready" },
+    { value: "ai_notes_generated", label: "AI Notes Generated" },
+    { value: "ready_for_review", label: "Ready for Review" },
     { value: "completed", label: "Completed" },
     { value: "failed", label: "Failed" },
   ];

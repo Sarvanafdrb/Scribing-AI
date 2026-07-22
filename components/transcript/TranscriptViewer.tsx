@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SessionStatusBadge } from "@/app/(admin)/sessions/components/SessionStatusBadge";
+import { isTranscriptAvailable } from "@/utils/session-status.utils";
 import { TranscriptAudioSection } from "@/components/transcript/TranscriptAudioSection";
 import { TranscriptMetadataPanel } from "@/components/transcript/TranscriptMetadataPanel";
 import { TranscriptSegmentList } from "@/components/transcript/TranscriptSegmentList";
@@ -146,7 +147,7 @@ export function TranscriptViewer({
     !isProcessing &&
     !transcript?.segments?.length &&
     !transcript?.fullText &&
-    session.status !== "completed";
+    !isTranscriptAvailable(session.status);
 
   const handleTranslate = async () => {
     await translateTranscript.mutateAsync(targetLanguage);
@@ -236,7 +237,7 @@ export function TranscriptViewer({
                         !hasRecording ||
                         generateTranscript.isPending ||
                         isProcessing ||
-                        session.status === "completed"
+                        isTranscriptAvailable(session.status)
                       }
                     >
                       {generateTranscript.isPending || isProcessing ? (

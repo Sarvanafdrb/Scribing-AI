@@ -1,12 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
-import { SessionStatus } from "@/types/session.types";
-
-const POLLING_STATUSES: SessionStatus[] = [
-  "uploading",
-  "processing",
-];
+import { isPipelineActive } from "@/utils/session-status.utils";
 
 export const useSession = (id: string) => {
   return useQuery({
@@ -15,7 +10,7 @@ export const useSession = (id: string) => {
     enabled: Boolean(id),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      if (status && POLLING_STATUSES.includes(status)) {
+      if (isPipelineActive(status)) {
         return 2000;
       }
       return false;

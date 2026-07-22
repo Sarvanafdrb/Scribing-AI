@@ -159,6 +159,10 @@ export function AiNotesPrescriptionPreview({
   };
 
   useEffect(() => {
+    hasAutoActionRun.current = false;
+  }, [autoAction, session.id || session._id]);
+
+  useEffect(() => {
     if (!autoAction || isEditing || hasAutoActionRun.current) return;
 
     hasAutoActionRun.current = true;

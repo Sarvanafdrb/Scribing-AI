@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
+  Eye,
   FileDown,
   HelpCircle,
   Loader2,
@@ -15,11 +17,18 @@ import { toast } from "sonner";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import { AiNotesPreviewModal } from "@/components/ai-notes/AiNotesPreviewModal";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { sessionService } from "@/services/session.service";
+import { sessionKeys } from "@/services/session.queries";
+import { aiNotesKeys } from "@/services/ai-notes.queries";
 import {
   buildAiNotesExportContent,
+  downloadAiNotesPdf,
   hasExportableAiNotes,
 } from "@/utils/ai-notes-export.utils";
+import {
+  isConsultationCompleted,
+  isReviewReady,
+} from "@/utils/session-status.utils";
 import { getPatientFullName } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
 import { cn } from "@/lib/utils";
@@ -30,11 +39,15 @@ interface DoctorWorkspaceFooterProps {
 
 export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps) {
   const router = useRouter();
-  const isMobile = useIsMobile();
-  const { data: session } = useSession(sessionId);
+  const queryClient = useQueryClient();
+  const { data: session, refetch } = useSession(sessionId);
   const { aiNotes, saveExportContent } = useAiNotes(sessionId);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewAutoAction, setPreviewAutoAction] = useState<
+    "print" | "pdf" | undefined
+  >(undefined);
 
   const patient =
     session && typeof session.patientId === "object"
@@ -43,35 +56,105 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
 
   const patientName = getPatientFullName(patient);
   const canExport = Boolean(session && hasExportableAiNotes(aiNotes));
+  const isCompleted = isConsultationCompleted(session?.status);
+  const canSave =
+    Boolean(session) &&
+    !isCompleted &&
+    (canExport || isReviewReady(session?.status));
   const exportContent =
     session && aiNotes && canExport
       ? buildAiNotesExportContent(aiNotes, session)
       : null;
 
-  const navigateToPreview = (action?: "print" | "pdf") => {
-    if (!sessionId) return;
-    const query = action ? `?action=${action}` : "";
-    router.push(`/sessions/${sessionId}/preview${query}`);
-  };
+  const statusLabel = (() => {
+    if (!session) return "Loading";
+    if (isCompleted) return "Completed";
+    if (session.status === "ready_for_review") return "Ready for Review";
+    if (session.status === "ai_notes_generated") return "AI Notes Generated";
+    if (session.status === "transcript_ready") return "Transcript Ready";
+    if (session.status === "processing") return "Processing Transcript";
+    if (session.status === "uploading") return "Uploading";
+    if (session.status === "recording") return "Recording";
+    return "In Progress";
+  })();
 
   const openPreview = (action?: "print" | "pdf") => {
-    if (isMobile) {
-      setIsPreviewOpen(true);
+    if (!exportContent || !session) {
+      toast.error("Preview is available after AI notes are generated.");
       return;
     }
-    navigateToPreview(action);
+    setPreviewAutoAction(action);
+    setIsPreviewOpen(true);
   };
 
   const handleSave = async () => {
+    if (!sessionId || !session) return;
+
+    if (isCompleted) {
+      toast.info("Consultation is already completed.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      toast.success("Consultation saved.");
+      // Persist latest AI notes content if available (SOAP, diagnosis, meds, etc.)
+      if (exportContent) {
+        await saveExportContent(exportContent);
+      }
+
+      await sessionService.updateStatus(sessionId, "completed");
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: sessionKeys.detail(sessionId),
+        }),
+        queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: sessionKeys.stats() }),
+        queryClient.invalidateQueries({
+          queryKey: aiNotesKeys.detail(sessionId),
+        }),
+      ]);
+      await refetch();
+
+      toast.success("Consultation saved and marked as completed.");
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to save consultation",
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleExportPdf = () => openPreview("pdf");
+  const handleExportPdf = async () => {
+    if (!exportContent || !session) {
+      toast.error("PDF is available after AI notes are generated.");
+      return;
+    }
+
+    try {
+      setIsGeneratingPdf(true);
+      await downloadAiNotesPdf(exportContent, session);
+      toast.success("PDF generated successfully.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to generate PDF. Please try again.",
+      );
+      // Fall back to preview so the doctor can retry from the preview UI.
+      openPreview("pdf");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const handlePrint = () => openPreview("print");
 
   const handleEditNotes = () => {
@@ -83,7 +166,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
       <footer className="border-t border-gray-200 bg-white px-6 py-3">
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-gray-500">
-            Consultation · {patientName} · Ready
+            Consultation · {patientName} · {statusLabel}
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -100,11 +183,18 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
               onClick={handleEditNotes}
             />
             <FooterButton
+              icon={Eye}
+              label="Preview"
+              variant="outline"
+              onClick={() => openPreview()}
+              disabled={!canExport}
+            />
+            <FooterButton
               icon={FileDown}
               label="Generate PDF"
               variant="outline"
               onClick={handleExportPdf}
-              disabled={!canExport}
+              disabled={!canExport || isGeneratingPdf}
             />
             <FooterButton
               icon={Printer}
@@ -116,7 +206,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || !canSave}
               className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
             >
               {isSaving ? (
@@ -124,7 +214,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              Save Consultation
+              {isCompleted ? "Completed" : "Save Consultation"}
             </button>
           </div>
 
@@ -138,13 +228,17 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
         </div>
       </footer>
 
-      {isMobile && exportContent && session && (
+      {exportContent && session && (
         <AiNotesPreviewModal
           open={isPreviewOpen}
-          onOpenChange={setIsPreviewOpen}
+          onOpenChange={(open) => {
+            setIsPreviewOpen(open);
+            if (!open) setPreviewAutoAction(undefined);
+          }}
           initialContent={exportContent}
           session={session}
           onSave={saveExportContent}
+          autoAction={previewAutoAction}
         />
       )}
     </>

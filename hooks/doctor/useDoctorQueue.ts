@@ -6,6 +6,7 @@ import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
 import type { Session } from "@/types/session.types";
 import type { Patient } from "@/types/patient.types";
+import { isPipelineActive } from "@/utils/session-status.utils";
 
 export const getSessionId = (session: Session) =>
   String(session._id || session.id || "");
@@ -94,8 +95,15 @@ export const useDoctorQueue = () => {
       };
     },
     enabled: isScopeReady,
-    staleTime: 30 * 1000,
+    staleTime: 5 * 1000,
     retry: 1,
+    refetchInterval: (queryResult) => {
+      const sessions = queryResult.state.data?.sessions || [];
+      const hasActivePipeline = sessions.some((session) =>
+        isPipelineActive(session.status),
+      );
+      return hasActivePipeline ? 2000 : false;
+    },
   });
 
   const allSessions = query.data?.sessions || [];
@@ -103,7 +111,7 @@ export const useDoctorQueue = () => {
     (session) =>
       isToday(session.createdAt) ||
       isToday(session.startedAt) ||
-      session.status === "recording",
+      isPipelineActive(session.status),
   );
 
   return {

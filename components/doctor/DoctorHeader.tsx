@@ -52,6 +52,17 @@ export function DoctorHeader({
     }
   }, [isRecording, session?.status]);
 
+  // Reflect unsaved consultation state for review-ready sessions.
+  useEffect(() => {
+    if (
+      session?.status === "ready_for_review" ||
+      session?.status === "ai_notes_generated" ||
+      session?.status === "transcript_ready"
+    ) {
+      setSaved(false);
+    }
+  }, [session?.status]);
+
   const conditionTag =
     session?.sessionType === "consultation"
       ? "Consultation"
@@ -84,9 +95,14 @@ export function DoctorHeader({
           {formatTimer(elapsedSeconds)}
         </span>
 
-        <div className="flex items-center gap-1.5 text-sm text-green-600">
+        <div
+          className={cn(
+            "flex items-center gap-1.5 text-sm",
+            saved ? "text-green-600" : "text-amber-600",
+          )}
+        >
           <CheckCircle2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Saved</span>
+          <span className="hidden sm:inline">{saved ? "Saved" : "Unsaved"}</span>
         </div>
 
         <Wifi className="h-4 w-4 text-gray-400" />

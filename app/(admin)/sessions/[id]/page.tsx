@@ -52,7 +52,10 @@ const recordingStatusLabel = (status: string, hasAudio: boolean) => {
   if (status === "recording") return "Recording in progress";
   if (status === "uploading") return "Uploading audio";
   if (status === "processing") return "Generating transcript";
-  if (status === "completed" && hasAudio) return "Transcript ready";
+  if (status === "transcript_ready") return "Transcript ready";
+  if (status === "ai_notes_generated") return "AI notes generated";
+  if (status === "ready_for_review") return "Ready for review";
+  if (status === "completed" && hasAudio) return "Consultation completed";
   if (hasAudio) return "Recording available";
   if (status === "completed") return "Completed without audio";
   if (status === "failed") return "Transcription failed";

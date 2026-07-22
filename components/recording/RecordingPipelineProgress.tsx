@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Session } from "@/types/session.types";
 import { TranscriptData } from "@/types/transcript.types";
+import { isTranscriptAvailable } from "@/utils/session-status.utils";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -46,7 +47,7 @@ const isTranscriptComplete = (
   }
 
   return Boolean(
-    session.status === "completed" &&
+    isTranscriptAvailable(session.status) &&
       (session.transcript?.trim() ||
         transcript?.fullText?.trim() ||
         session.transcriptData?.fullText?.trim()),
@@ -61,7 +62,7 @@ const getActiveStep = (
   if (transcriptComplete) return "completed";
   if (isUploading || status === "uploading") return "uploading";
   if (status === "processing") return "processing";
-  if (status === "completed") return "completed";
+  if (isTranscriptAvailable(status)) return "completed";
   if (status === "failed") return "processing";
   return "stopped";
 };

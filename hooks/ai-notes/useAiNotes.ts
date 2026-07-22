@@ -24,6 +24,7 @@ const hasTranscript = (session?: {
 export const useAiNotes = (sessionId: string) => {
   const queryClient = useQueryClient();
   const hasRequestedGeneration = useRef(false);
+  const hasSyncedCompletedStatus = useRef(false);
   const { data: session, isLoading: isSessionLoading } = useSession(sessionId);
 
   const transcriptReady = hasTranscript(session);
@@ -46,6 +47,7 @@ export const useAiNotes = (sessionId: string) => {
       queryClient.setQueryData(aiNotesKeys.detail(sessionId), data.aiNotes);
       queryClient.setQueryData(sessionKeys.detail(sessionId), data.session);
       queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: aiNotesKeys.detail(sessionId) });
     },
     onError: (error: any) => {
@@ -67,6 +69,7 @@ export const useAiNotes = (sessionId: string) => {
       );
       queryClient.invalidateQueries({ queryKey: aiNotesKeys.detail(sessionId) });
       queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
     },
     onError: (error: any) => {
       toast.error(
@@ -90,7 +93,17 @@ export const useAiNotes = (sessionId: string) => {
 
   useEffect(() => {
     hasRequestedGeneration.current = false;
+    hasSyncedCompletedStatus.current = false;
   }, [sessionId]);
+
+  useEffect(() => {
+    if (aiNotes?.status !== "completed" || hasSyncedCompletedStatus.current) {
+      return;
+    }
+    hasSyncedCompletedStatus.current = true;
+    queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) });
+    queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
+  }, [aiNotes?.status, queryClient, sessionId]);
 
   useEffect(() => {
     if (

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { History, UserRound } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useSession } from "@/hooks/sessions/useSession";
@@ -8,6 +10,7 @@ import { useConsultationNavigationGuard } from "@/hooks/doctor/useConsultationNa
 import { RecordingSwitchDialog } from "@/components/doctor/RecordingSwitchDialog";
 import { getPatientFullName } from "@/utils/patient.utils";
 import { getUserOrganizationName } from "@/types/auth.types";
+import { sessionKeys } from "@/services/session.queries";
 import type { Session, SessionStatus } from "@/types/session.types";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +53,18 @@ const QUEUE_STATUS_STYLES: Partial<
     label: "Processing",
     className: "bg-amber-50 text-amber-700",
   },
+  transcript_ready: {
+    label: "Transcript Ready",
+    className: "bg-indigo-50 text-indigo-700",
+  },
+  ai_notes_generated: {
+    label: "AI Notes Generated",
+    className: "bg-violet-50 text-violet-700",
+  },
+  ready_for_review: {
+    label: "Ready for Review",
+    className: "bg-teal-50 text-teal-700",
+  },
   completed: {
     label: "Completed",
     className: "bg-green-50 text-green-700",
@@ -69,6 +84,7 @@ interface DoctorSidebarProps {
 }
 
 export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { data: activeSession } = useSession(activeSessionId);
   const { sessions, getSessionId, getPatientFromSession } = useDoctorQueue();
@@ -83,6 +99,31 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
     currentSessionId: activeSessionId,
     currentSessionStatus: activeSession?.status,
   });
+
+  // Keep the patient list in sync with the active session's latest status.
+  useEffect(() => {
+    if (!activeSession?.status) return;
+
+    queryClient.setQueriesData(
+      { queryKey: sessionKeys.lists() },
+      (current: unknown) => {
+        if (!current || typeof current !== "object") return current;
+        const data = current as { sessions?: Session[] };
+        if (!Array.isArray(data.sessions)) return current;
+
+        let changed = false;
+        const sessions = data.sessions.map((session) => {
+          const id = String(session._id || session.id || "");
+          if (id !== activeSessionId) return session;
+          if (session.status === activeSession.status) return session;
+          changed = true;
+          return { ...session, status: activeSession.status };
+        });
+
+        return changed ? { ...data, sessions } : current;
+      },
+    );
+  }, [activeSession?.status, activeSessionId, queryClient]);
 
   const doctorName = user ? `Dr. ${user.firstName} ${user.lastName}` : "Doctor";
   const organizationName = getUserOrganizationName(user) || "Organization";

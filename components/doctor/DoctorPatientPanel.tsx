@@ -7,6 +7,7 @@ import {
   Heart,
   Phone,
   Pill,
+  Scale,
   Thermometer,
   User,
 } from "lucide-react";
@@ -58,6 +59,9 @@ const formatHeartRate = (heartRate?: number) =>
 const formatSpo2 = (spo2?: number) =>
   spo2 === undefined || spo2 === null ? "—" : `${spo2}%`;
 
+const formatWeight = (weight?: number) =>
+  weight === undefined || weight === null ? "—" : `${weight} kg`;
+
 export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
   const { data: session } = useSession(sessionId);
   const { aiNotes } = useAiNotes(sessionId);
@@ -76,6 +80,7 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
   const bloodPressureValue = formatBloodPressure(vitals);
   const heartRateValue = formatHeartRate(vitals?.heartRate);
   const spo2Value = formatSpo2(vitals?.spo2);
+  const weightValue = formatWeight(vitals?.weight);
 
   return (
     <div className="space-y-4">
@@ -202,6 +207,14 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
             icon={Heart}
             valueClassName={
               spo2Value === "—" ? "text-gray-500" : "text-blue-600"
+            }
+          />
+          <VitalCard
+            label="Weight"
+            value={weightValue}
+            icon={Scale}
+            valueClassName={
+              weightValue === "—" ? "text-gray-500" : "text-gray-800"
             }
           />
         </div>

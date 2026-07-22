@@ -9,6 +9,7 @@ import { useSession } from "@/hooks/sessions/useSession";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
 import { useDoctorQueue } from "@/hooks/doctor/useDoctorQueue";
+import { DoctorAudioPlayer } from "@/components/doctor/DoctorAudioPlayer";
 import { RecordingPipelineProgress } from "@/components/recording/RecordingPipelineProgress";
 import { recordingService } from "@/services/recording.service";
 import { sessionService } from "@/services/session.service";
@@ -81,6 +82,11 @@ export function DoctorRecordingPanel({
 
   const hasAudio = Boolean(session?.audioUrl);
   const inPostStopFlow = workflow === "postStop" && (hasAudio || isUploading);
+  const showPlayback =
+    Boolean(session?.audioUrl) &&
+    session?.status === "completed" &&
+    !isUploading;
+  const showPipeline = inPostStopFlow && !showPlayback;
   const showStart =
     workflow === "ready" &&
     recorderState === "idle" &&
@@ -381,7 +387,7 @@ export function DoctorRecordingPanel({
         />
       )}
 
-      {inPostStopFlow && session && (
+      {showPipeline && session && (
         <div className="mt-4">
           <RecordingPipelineProgress
             session={session}
@@ -389,6 +395,16 @@ export function DoctorRecordingPanel({
             isUploading={isUploading}
             isRetrying={generateTranscript.isPending}
             onRetry={handleRetryTranscript}
+          />
+        </div>
+      )}
+
+      {showPlayback && session?.audioUrl && (
+        <div className="mt-4">
+          <DoctorAudioPlayer
+            sessionId={sessionId}
+            audioUrl={session.audioUrl}
+            audioPlaybackUrl={session.audioPlaybackUrl}
           />
         </div>
       )}

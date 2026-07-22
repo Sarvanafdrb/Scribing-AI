@@ -103,6 +103,18 @@ const optionalSpo2Field = z.custom<number | undefined>().transform((value, ctx) 
   return num;
 });
 
+const optionalWeightField = z.custom<number | undefined>().transform(
+  (value, ctx) => {
+    const num = parseOptionalNumber(value, ctx, "Weight must be a number");
+    if (num === undefined) return undefined;
+    if (num <= 0) {
+      ctx.addIssue({ code: "custom", message: "Weight must be a positive number" });
+      return z.NEVER;
+    }
+    return num;
+  },
+);
+
 const createSchema = z
   .object({
     organizationId: z.string().min(1, "Organization is required"),
@@ -115,6 +127,7 @@ const createSchema = z
     diastolic: optionalPositiveIntField,
     heartRate: optionalPositiveIntField,
     spo2: optionalSpo2Field,
+    weight: optionalWeightField,
   })
   .superRefine((data, ctx) => {
     const hasSystolic = data.systolic !== undefined;
@@ -183,6 +196,10 @@ const buildVitalsPayload = (data: CreateFormData): SessionVitals | undefined => 
     vitals.spo2 = data.spo2;
   }
 
+  if (data.weight !== undefined) {
+    vitals.weight = data.weight;
+  }
+
   return Object.keys(vitals).length > 0 ? vitals : undefined;
 };
 
@@ -216,6 +233,7 @@ export function SessionForm({
           diastolic: undefined,
           heartRate: undefined,
           spo2: undefined,
+          weight: undefined,
         },
   });
 
@@ -587,6 +605,34 @@ export function SessionForm({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Weight (kg)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      inputMode="decimal"
+                      placeholder="68.5"
+                      className="rounded-xl bg-white"
+                      value={field.value ?? ""}
+                      onChange={(event) =>
+                        field.onChange(
+                          event.target.value === ""
+                            ? undefined
+                            : event.target.value,
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <Button

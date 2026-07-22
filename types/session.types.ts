@@ -61,6 +61,7 @@ export interface SessionVitals {
   };
   heartRate?: number;
   spo2?: number;
+  weight?: number;
 }
 
 export interface Session {

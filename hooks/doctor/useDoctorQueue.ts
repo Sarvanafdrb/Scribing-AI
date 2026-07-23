@@ -18,15 +18,12 @@ export const getSessionDoctorId = (session: Session): string => {
   return String(session.userId || "");
 };
 
-const isToday = (dateStr?: string) => {
-  if (!dateStr) return false;
-  const date = new Date(dateStr);
+const getLocalDayKey = () => {
   const today = new Date();
-  return (
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate()
-  );
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const getPatientFromSession = (session: Session): Patient | null => {
@@ -39,6 +36,7 @@ const getPatientFromSession = (session: Session): Patient | null => {
 const filterSessionsForDoctor = (sessions: Session[], doctorId: string) =>
   sessions.filter((session) => getSessionDoctorId(session) === doctorId);
 
+/** Earliest consultation time first (existing queue behavior). */
 const sortSessionsForQueue = (sessions: Session[]) =>
   [...sessions].sort((a, b) => {
     const aTime = new Date(a.startedAt || a.createdAt || 0).getTime();
@@ -55,6 +53,7 @@ export const useDoctorQueue = () => {
 
   const doctorId = String(user?.id || user?._id || "");
   const scopedOrganizationId = organizationId || selectedWorkspace?.id || "";
+  const todayKey = getLocalDayKey();
 
   const isScopeReady =
     authHydrated &&
@@ -68,11 +67,13 @@ export const useDoctorQueue = () => {
       "doctor-queue",
       doctorId,
       scopedOrganizationId,
+      todayKey,
     ],
     queryFn: async () => {
       const baseParams = {
         organizationId: scopedOrganizationId,
         isActive: "true",
+        today: "true",
         limit: 100,
         page: 1,
       };
@@ -84,6 +85,8 @@ export const useDoctorQueue = () => {
 
       let sessions = scopedResult.sessions;
 
+      // Fallback if userId scoping returns nothing (permissions edge case),
+      // still constrained to today's sessions only.
       if (sessions.length === 0) {
         const orgResult = await sessionService.getAll(baseParams);
         sessions = filterSessionsForDoctor(orgResult.sessions, doctorId);
@@ -106,21 +109,15 @@ export const useDoctorQueue = () => {
     },
   });
 
-  const allSessions = query.data?.sessions || [];
-  const todaySessions = allSessions.filter(
-    (session) =>
-      isToday(session.createdAt) ||
-      isToday(session.startedAt) ||
-      isPipelineActive(session.status),
-  );
+  const todaySessions = query.data?.sessions || [];
 
   return {
     ...query,
     doctorId,
     organizationId: scopedOrganizationId,
     isScopeReady,
-    sessions: todaySessions.length > 0 ? todaySessions : allSessions,
-    allSessions,
+    sessions: todaySessions,
+    allSessions: todaySessions,
     getSessionId,
     getPatientFromSession,
   };

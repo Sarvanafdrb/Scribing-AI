@@ -17,6 +17,9 @@ export const sessionService = {
     patientId?: string;
     userId?: string;
     isActive?: string;
+    today?: string;
+    dateFrom?: string;
+    dateTo?: string;
     page?: number;
     limit?: number;
   }) => {

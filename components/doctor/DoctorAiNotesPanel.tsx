@@ -32,9 +32,7 @@ interface NoteSection {
 
 const renderContent = (content?: string) => {
   if (!content?.trim()) {
-    return (
-      <p className="text-sm text-gray-400 italic">No content yet.</p>
-    );
+    return <p className="text-sm text-gray-400 italic">No content yet.</p>;
   }
 
   const lines = content
@@ -57,14 +55,18 @@ const renderContent = (content?: string) => {
 
 const formatMedications = (medications?: AiNotesMedication[]) => {
   if (!medications?.length) {
-    return <p className="text-sm text-gray-400 italic">No prescriptions yet.</p>;
+    return (
+      <p className="text-sm text-gray-400 italic">No prescriptions yet.</p>
+    );
   }
 
   return (
     <ol className="space-y-2 text-sm text-gray-700">
       {medications.map((med, i) => (
         <li key={`${med.medicine}-${i}`}>
-          <span className="font-medium">{i + 1}. {med.medicine}</span>
+          <span className="font-medium">
+            {i + 1}. {med.medicine}
+          </span>
           {(med.morning || med.afternoon || med.night) && (
             <span className="text-gray-500">
               {" "}
@@ -125,7 +127,9 @@ const formatPreviousHistory = (items?: PreviousHistoryItem[]) => {
               {formatConsultationDate(item.completedAt)}
             </p>
             {item.title ? (
-              <p className="mt-0.5 truncate text-xs text-gray-500">{item.title}</p>
+              <p className="mt-0.5 truncate text-xs text-gray-500">
+                {item.title}
+              </p>
             ) : null}
             <dl className="mt-2 space-y-1.5 text-sm">
               <div>
@@ -193,7 +197,7 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
     },
     {
       key: "previous_history",
-      label: "Previous History",
+      label: "Previous History (Last 3 Visits)",
       icon: History,
       defaultOpen: true,
     },

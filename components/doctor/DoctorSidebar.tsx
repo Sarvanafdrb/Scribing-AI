@@ -222,7 +222,9 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
           </nav>
 
           {sessions.length === 0 && (
-            <p className="px-2 text-sm text-gray-500">No sessions today</p>
+            <p className="px-2 text-sm text-gray-500">
+              No consultations scheduled for today.
+            </p>
           )}
         </div>
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Download,
   Edit3,
   Loader2,
+  Minus,
+  Plus,
   Printer,
   Save,
   X,
@@ -38,6 +40,10 @@ interface AiNotesPrescriptionPreviewProps {
   autoAction?: "print" | "pdf";
 }
 
+const ZOOM_MIN = 0.75;
+const ZOOM_MAX = 1.5;
+const ZOOM_STEP = 0.1;
+
 export function AiNotesPrescriptionPreview({
   initialContent,
   session,
@@ -52,7 +58,10 @@ export function AiNotesPrescriptionPreview({
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [paperHeight, setPaperHeight] = useState(0);
   const hasAutoActionRun = useRef(false);
+  const paperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setContent(initialContent);
@@ -63,6 +72,17 @@ export function AiNotesPrescriptionPreview({
     () => buildAiNotesPrescriptionBodyHtml(content),
     [content],
   );
+
+  const patientName = content.metadata.patientName || "—";
+  const sessionDate = content.metadata.documentDate || "—";
+
+  useLayoutEffect(() => {
+    if (isEditing || !paperRef.current) {
+      setPaperHeight(0);
+      return;
+    }
+    setPaperHeight(paperRef.current.offsetHeight);
+  }, [previewHtml, isEditing, mode]);
 
   const updateSection = (key: keyof AiNotesExportContent, value: string) => {
     setContent((current) => ({ ...current, [key]: value }));
@@ -158,6 +178,11 @@ export function AiNotesPrescriptionPreview({
     onClose?.();
   };
 
+  const adjustZoom = (next: number) => {
+    const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
+    setZoom(Number(clamped.toFixed(2)));
+  };
+
   useEffect(() => {
     hasAutoActionRun.current = false;
   }, [autoAction, session.id || session._id]);
@@ -178,71 +203,52 @@ export function AiNotesPrescriptionPreview({
     void runAction();
   }, [autoAction, isEditing]);
 
-  const pageActionButtons = (
-    <div className="flex shrink-0 flex-wrap items-center gap-1">
-      {isEditing ? (
-        <Button type="button" size="sm" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Save Changes
-        </Button>
-      ) : (
-        <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            <Edit3 className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-          <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
-            |
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handlePrint}
-            disabled={isPrinting}
-          >
-            {isPrinting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Printer className="mr-2 h-4 w-4" />
-            )}
-            Print
-          </Button>
-          <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
-            |
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleGeneratePdf}
-            disabled={isGeneratingPdf}
-          >
-            {isGeneratingPdf ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            Generate PDF
-          </Button>
-        </>
-      )}
+  const zoomControls = (
+    <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="h-8 w-8 text-gray-600"
+        onClick={() => adjustZoom(zoom - ZOOM_STEP)}
+        disabled={isEditing || zoom <= ZOOM_MIN}
+        aria-label="Zoom out"
+      >
+        <Minus className="h-4 w-4" />
+      </Button>
+      <button
+        type="button"
+        onClick={() => setZoom(1)}
+        disabled={isEditing}
+        className="min-w-[3.25rem] rounded-md px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-white disabled:opacity-50"
+        aria-label="Reset zoom to 100 percent"
+      >
+        {Math.round(zoom * 100)}%
+      </button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="h-8 w-8 text-gray-600"
+        onClick={() => adjustZoom(zoom + ZOOM_STEP)}
+        disabled={isEditing || zoom >= ZOOM_MAX}
+        aria-label="Zoom in"
+      >
+        <Plus className="h-4 w-4" />
+      </Button>
     </div>
   );
 
-  const actionButtons = (
-    <div className="flex flex-wrap items-center gap-2">
+  const primaryActions = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
       {isEditing ? (
-        <Button type="button" onClick={handleSave} disabled={isSaving}>
+        <Button
+          type="button"
+          size="sm"
+          className="rounded-xl bg-teal-600 text-white hover:bg-teal-700"
+          onClick={handleSave}
+          disabled={isSaving}
+        >
           {isSaving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -254,6 +260,8 @@ export function AiNotesPrescriptionPreview({
         <Button
           type="button"
           variant="outline"
+          size="sm"
+          className="rounded-xl border-gray-200"
           onClick={() => setIsEditing(true)}
         >
           <Edit3 className="mr-2 h-4 w-4" />
@@ -264,6 +272,8 @@ export function AiNotesPrescriptionPreview({
       <Button
         type="button"
         variant="outline"
+        size="sm"
+        className="rounded-xl border-gray-200"
         onClick={handlePrint}
         disabled={isPrinting || isEditing}
       >
@@ -277,6 +287,8 @@ export function AiNotesPrescriptionPreview({
 
       <Button
         type="button"
+        size="sm"
+        className="rounded-xl bg-teal-600 text-white hover:bg-teal-700"
         onClick={handleGeneratePdf}
         disabled={isGeneratingPdf || isEditing}
       >
@@ -285,18 +297,19 @@ export function AiNotesPrescriptionPreview({
         ) : (
           <Download className="mr-2 h-4 w-4" />
         )}
-        Generate PDF
+        Export PDF
       </Button>
     </div>
   );
 
   const documentView = (
     <div
+      ref={paperRef}
       className={cn(
         "w-full bg-white",
         mode === "page"
           ? "shadow-md"
-          : "mx-auto max-w-[210mm] overflow-hidden rounded-xl border shadow-sm",
+          : "overflow-hidden rounded-sm shadow-[0_8px_30px_rgba(15,23,42,0.12)]",
       )}
     >
       <style>{PRESCRIPTION_DOCUMENT_STYLES}</style>
@@ -311,7 +324,7 @@ export function AiNotesPrescriptionPreview({
     <div
       className={cn(
         "w-full space-y-4 rounded-xl border bg-white p-6",
-        mode === "page" ? "shadow-md" : "mx-auto max-w-4xl",
+        mode === "page" ? "shadow-md" : "shadow-sm",
       )}
     >
       {PRESCRIPTION_SECTIONS.map((section) => (
@@ -407,20 +420,138 @@ export function AiNotesPrescriptionPreview({
 
   if (mode === "modal") {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex-1 overflow-y-auto bg-slate-100 p-4">
-          {isEditing ? editForm : documentView}
-        </div>
-        <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <Button type="button" variant="ghost" onClick={handleBack}>
-            <X className="mr-2 h-4 w-4" />
-            Cancel
-          </Button>
-          {actionButtons}
+      <div className="flex h-full min-h-0 flex-1 flex-col bg-white">
+        <header className="sticky top-0 z-20 shrink-0 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
+          <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3 sm:items-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="shrink-0 rounded-xl px-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                onClick={handleBack}
+              >
+                {isEditing ? (
+                  <>
+                    <X className="mr-1.5 h-4 w-4" />
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <ArrowLeft className="mr-1.5 h-4 w-4" />
+                    Back
+                  </>
+                )}
+              </Button>
+
+              <div className="min-w-0 border-l border-gray-200 pl-3 sm:pl-4">
+                <h2 className="text-sm font-semibold text-gray-900 sm:text-base">
+                  Consultation Preview
+                </h2>
+                <p className="mt-0.5 truncate text-xs text-gray-500 sm:text-sm">
+                  <span className="font-medium text-gray-700">{patientName}</span>
+                  <span className="mx-1.5 text-gray-300">·</span>
+                  <span>{sessionDate}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 lg:justify-end">
+              {!isEditing && zoomControls}
+              {primaryActions}
+            </div>
+          </div>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#e8eaed]">
+          <div className="mx-auto flex w-full max-w-[1200px] justify-center px-4 py-8 sm:px-8 sm:py-10">
+            {isEditing ? (
+              <div className="w-full max-w-4xl">{editForm}</div>
+            ) : (
+              <div
+                className="flex justify-center"
+                style={{
+                  width: `min(100%, calc(210mm * ${zoom}))`,
+                  height: paperHeight ? `${paperHeight * zoom}px` : undefined,
+                }}
+              >
+                <div
+                  style={{
+                    width: "min(210mm, 100%)",
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "top center",
+                  }}
+                >
+                  {documentView}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
   }
+
+  const pageActionButtons = (
+    <div className="flex shrink-0 flex-wrap items-center gap-1">
+      {isEditing ? (
+        <Button type="button" size="sm" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Save Changes
+        </Button>
+      ) : (
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit3 className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
+            |
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handlePrint}
+            disabled={isPrinting}
+          >
+            {isPrinting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Printer className="mr-2 h-4 w-4" />
+            )}
+            Print
+          </Button>
+          <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
+            |
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleGeneratePdf}
+            disabled={isGeneratingPdf}
+          >
+            {isGeneratingPdf ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Generate PDF
+          </Button>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
@@ -442,8 +573,7 @@ export function AiNotesPrescriptionPreview({
                 AI Notes Preview
               </h1>
               <p className="text-sm text-slate-500">
-                Review and edit the prescription layout before printing or
-                exporting.
+                {patientName} · {sessionDate}
               </p>
             </div>
           </div>

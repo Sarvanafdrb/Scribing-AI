@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AiNotesPrescriptionPreview } from "@/components/ai-notes/AiNotesPrescriptionPreview";
@@ -30,14 +29,15 @@ export function AiNotesPreviewModal({
 }: AiNotesPreviewModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92vh] w-[min(96vw,1100px)] max-w-none flex-col gap-0 overflow-hidden p-0">
-        <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>Consultation Preview</DialogTitle>
-          <DialogDescription>
-            Review transcript notes, SOAP, diagnosis, medications, advice, and
-            patient information before printing or exporting.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        aria-describedby={undefined}
+        className="flex h-[95vh] w-[95vw] max-w-none translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-2xl ring-0 sm:max-w-none"
+      >
+        <DialogTitle className="sr-only">Consultation Preview</DialogTitle>
+        <DialogDescription className="sr-only">
+          Fullscreen consultation document preview with print and PDF export.
+        </DialogDescription>
 
         {open && (
           <AiNotesPrescriptionPreview

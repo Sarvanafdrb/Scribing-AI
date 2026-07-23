@@ -417,6 +417,7 @@ export function DoctorRecordingPanel({
             sessionId={sessionId}
             audioUrl={session.audioUrl}
             audioPlaybackUrl={session.audioPlaybackUrl}
+            knownDuration={session.duration}
           />
         </div>
       )}

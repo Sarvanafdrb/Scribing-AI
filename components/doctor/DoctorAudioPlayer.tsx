@@ -11,36 +11,73 @@ interface DoctorAudioPlayerProps {
   sessionId: string;
   audioUrl?: string;
   audioPlaybackUrl?: string | null;
+  /** Server-recorded length in seconds; used when the browser cannot read metadata yet. */
+  knownDuration?: number | null;
 }
 
-function formatPlaybackTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60)
-    .toString()
-    .padStart(2, "0");
+function isValidDuration(seconds: number): boolean {
+  return Number.isFinite(seconds) && seconds >= 0;
+}
+
+function formatPlaybackTime(seconds: number | null) {
+  if (seconds === null || !isValidDuration(seconds)) return "--:--";
+
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  const secs = (total % 60).toString().padStart(2, "0");
+
+  if (hours > 0) {
+    return `${hours}:${mins.toString().padStart(2, "0")}:${secs}`;
+  }
+
   return `${mins}:${secs}`;
+}
+
+function readAudioDuration(audio: HTMLAudioElement): number | null {
+  const { duration } = audio;
+  if (!isValidDuration(duration)) return null;
+  return duration;
 }
 
 export function DoctorAudioPlayer({
   sessionId,
   audioUrl,
   audioPlaybackUrl,
+  knownDuration,
 }: DoctorAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const durationProbeRef = useRef(false);
+  const hasDurationRef = useRef(false);
   const [src, setSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState<number | null>(null);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] =
     useState<(typeof PLAYBACK_SPEEDS)[number]>(1);
 
+  const applyDuration = useCallback((next: number | null) => {
+    if (next === null || !isValidDuration(next)) return;
+    hasDurationRef.current = true;
+    setDuration((prev) =>
+      prev !== null && Math.abs(prev - next) < 0.05 ? prev : next,
+    );
+  }, []);
+
   useEffect(() => {
     let active = true;
+
+    setSrc(null);
+    setCurrentTime(0);
+    hasDurationRef.current = false;
+    durationProbeRef.current = false;
+    setDuration(null);
+    setIsPlaying(false);
+    setError(null);
 
     const loadPlaybackUrl = async () => {
       if (!audioUrl && !audioPlaybackUrl) return;
@@ -89,6 +126,115 @@ export function DoctorAudioPlayer({
       active = false;
     };
   }, [sessionId, audioUrl, audioPlaybackUrl]);
+
+  useEffect(() => {
+    // Seed duration from the session record when the browser has not resolved it yet.
+    if (hasDurationRef.current) return;
+    if (knownDuration == null || !isValidDuration(knownDuration) || knownDuration <= 0) {
+      return;
+    }
+    applyDuration(knownDuration);
+  }, [knownDuration, applyDuration, src]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !src) return;
+
+    const syncDurationFromElement = () => {
+      const resolved = readAudioDuration(audio);
+      if (resolved !== null) {
+        applyDuration(resolved);
+        return true;
+      }
+      return false;
+    };
+
+    /**
+     * MediaRecorder WebM often reports Infinity until the browser seeks near EOF.
+     * Force a one-shot probe so duration is available before the user presses Play.
+     */
+    const probeUnknownDuration = () => {
+      if (durationProbeRef.current) return;
+      if (syncDurationFromElement()) return;
+      if (audio.duration !== Infinity) return;
+
+      durationProbeRef.current = true;
+      const wasPaused = audio.paused;
+      const previousTime = audio.currentTime;
+
+      const onTimeUpdate = () => {
+        if (!isValidDuration(audio.duration)) return;
+
+        audio.removeEventListener("timeupdate", onTimeUpdate);
+        applyDuration(audio.duration);
+
+        if (wasPaused) {
+          audio.currentTime = 0;
+        } else {
+          audio.currentTime = previousTime;
+        }
+      };
+
+      audio.addEventListener("timeupdate", onTimeUpdate);
+
+      try {
+        audio.currentTime = 1e101;
+      } catch {
+        audio.removeEventListener("timeupdate", onTimeUpdate);
+        durationProbeRef.current = false;
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      if (!syncDurationFromElement()) {
+        probeUnknownDuration();
+      }
+    };
+
+    const handleDurationChange = () => {
+      syncDurationFromElement();
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime || 0);
+      if (!hasDurationRef.current) {
+        syncDurationFromElement();
+      }
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+    const handleError = () => setError("No recording available.");
+
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("durationchange", handleDurationChange);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
+
+    // Cached media may already have metadata before listeners attach.
+    if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) {
+      handleLoadedMetadata();
+    } else {
+      audio.load();
+    }
+
+    return () => {
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("durationchange", handleDurationChange);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+    };
+  }, [src, applyDuration]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -156,28 +302,13 @@ export function DoctorAudioPlayer({
     return null;
   }
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const seekMax = duration != null && duration > 0 ? duration : 0;
+  const progressPercent =
+    duration != null && duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-      <audio
-        ref={audioRef}
-        src={src}
-        preload="metadata"
-        onLoadedMetadata={(e) => {
-          setDuration(e.currentTarget.duration || 0);
-        }}
-        onTimeUpdate={(e) => {
-          setCurrentTime(e.currentTarget.currentTime || 0);
-        }}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onEnded={() => {
-          setIsPlaying(false);
-          setCurrentTime(0);
-        }}
-        onError={() => setError("No recording available.")}
-      />
+      <audio ref={audioRef} src={src} preload="metadata" />
 
       <div className="flex items-center gap-3">
         <button
@@ -197,12 +328,13 @@ export function DoctorAudioPlayer({
           <input
             type="range"
             min={0}
-            max={duration || 0}
+            max={seekMax}
             step={0.1}
-            value={currentTime}
+            value={Math.min(currentTime, seekMax)}
             onChange={(e) => handleSeek(Number(e.target.value))}
             aria-label="Seek"
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-teal-600"
+            disabled={seekMax <= 0}
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
             style={{
               background: `linear-gradient(to right, #0d9488 ${progressPercent}%, #e5e7eb ${progressPercent}%)`,
             }}

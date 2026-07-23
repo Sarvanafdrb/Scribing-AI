@@ -48,6 +48,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
   const [previewAutoAction, setPreviewAutoAction] = useState<
     "print" | "pdf" | undefined
   >(undefined);
+  const [previewAutoVoiceEdit, setPreviewAutoVoiceEdit] = useState(false);
 
   const patient =
     session && typeof session.patientId === "object"
@@ -78,13 +79,28 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
     return "In Progress";
   })();
 
-  const openPreview = (action?: "print" | "pdf") => {
+  const openPreview = (action?: "print" | "pdf", options?: { voiceEdit?: boolean }) => {
     if (!exportContent || !session) {
       toast.error("Preview is available after AI notes are generated.");
       return;
     }
     setPreviewAutoAction(action);
+    setPreviewAutoVoiceEdit(Boolean(options?.voiceEdit));
     setIsPreviewOpen(true);
+  };
+
+  const handleVoiceEdit = () => {
+    if (!canExport) {
+      toast.error("Voice Edit is available after AI notes are generated.");
+      return;
+    }
+    if (!isCompleted) {
+      toast.info(
+        "Save the consultation as Completed first, then use Voice Edit from Preview.",
+      );
+      return;
+    }
+    openPreview(undefined, { voiceEdit: true });
   };
 
   const handleSave = async () => {
@@ -174,7 +190,8 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
               icon={Mic}
               label="Voice Edit"
               variant="teal"
-              onClick={() => toast.info("Voice edit coming soon")}
+              onClick={handleVoiceEdit}
+              disabled={!canExport || !isCompleted}
             />
             <FooterButton
               icon={Pencil}
@@ -233,12 +250,29 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
           open={isPreviewOpen}
           onOpenChange={(open) => {
             setIsPreviewOpen(open);
-            if (!open) setPreviewAutoAction(undefined);
+            if (!open) {
+              setPreviewAutoAction(undefined);
+              setPreviewAutoVoiceEdit(false);
+            }
           }}
           initialContent={exportContent}
           session={session}
           onSave={saveExportContent}
+          onNotesUpdated={(notes) => {
+            queryClient.setQueryData(aiNotesKeys.detail(sessionId), notes);
+            queryClient.setQueryData(sessionKeys.detail(sessionId), (current: unknown) => {
+              if (!current || typeof current !== "object") return current;
+              return { ...(current as object), aiNotes: notes };
+            });
+            queryClient.invalidateQueries({
+              queryKey: sessionKeys.detail(sessionId),
+            });
+            queryClient.invalidateQueries({
+              queryKey: aiNotesKeys.detail(sessionId),
+            });
+          }}
           autoAction={previewAutoAction}
+          autoVoiceEdit={previewAutoVoiceEdit}
         />
       )}
     </>

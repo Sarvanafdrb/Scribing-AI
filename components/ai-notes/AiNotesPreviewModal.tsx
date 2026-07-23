@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AiNotesPrescriptionPreview } from "@/components/ai-notes/AiNotesPrescriptionPreview";
+import type { AiNotes } from "@/types/ai-notes.types";
 import type { Session } from "@/types/session.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 
@@ -16,7 +17,9 @@ interface AiNotesPreviewModalProps {
   initialContent: AiNotesExportContent;
   session: Session;
   onSave?: (content: AiNotesExportContent) => Promise<unknown>;
+  onNotesUpdated?: (notes: AiNotes) => void;
   autoAction?: "print" | "pdf";
+  autoVoiceEdit?: boolean;
 }
 
 export function AiNotesPreviewModal({
@@ -25,7 +28,9 @@ export function AiNotesPreviewModal({
   initialContent,
   session,
   onSave,
+  onNotesUpdated,
   autoAction,
+  autoVoiceEdit,
 }: AiNotesPreviewModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -45,8 +50,10 @@ export function AiNotesPreviewModal({
             initialContent={initialContent}
             session={session}
             onSave={onSave}
+            onNotesUpdated={onNotesUpdated}
             onClose={() => onOpenChange(false)}
             autoAction={autoAction}
+            autoVoiceEdit={autoVoiceEdit}
           />
         )}
       </DialogContent>

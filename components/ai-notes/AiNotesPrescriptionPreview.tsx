@@ -6,6 +6,7 @@ import {
   Download,
   Edit3,
   Loader2,
+  Mic,
   Minus,
   Plus,
   Printer,
@@ -17,27 +18,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { AiNotesMedication } from "@/types/ai-notes.types";
+import { VoiceEditDialog } from "@/components/ai-notes/VoiceEditDialog";
+import { VoiceEditReview } from "@/components/ai-notes/VoiceEditReview";
+import type { AiNotes, AiNotesMedication, VoiceEditPreviewResult } from "@/types/ai-notes.types";
 import type { Session } from "@/types/session.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import {
   PRESCRIPTION_SECTIONS,
   PRESCRIPTION_DOCUMENT_STYLES,
+  buildAiNotesExportContent,
   buildAiNotesPrescriptionBodyHtml,
   createEmptyMedication,
   downloadAiNotesPdf,
   printAiNotes,
 } from "@/utils/ai-notes-export.utils";
 import { cn } from "@/lib/utils";
+import { isConsultationCompleted } from "@/utils/session-status.utils";
 
 interface AiNotesPrescriptionPreviewProps {
   initialContent: AiNotesExportContent;
   session: Session;
   onSave?: (content: AiNotesExportContent) => Promise<unknown>;
+  onNotesUpdated?: (notes: AiNotes) => void;
   mode?: "page" | "modal";
   onBack?: () => void;
   onClose?: () => void;
   autoAction?: "print" | "pdf";
+  autoVoiceEdit?: boolean;
 }
 
 const ZOOM_MIN = 0.75;
@@ -48,10 +55,12 @@ export function AiNotesPrescriptionPreview({
   initialContent,
   session,
   onSave,
+  onNotesUpdated,
   mode = "page",
   onBack,
   onClose,
   autoAction,
+  autoVoiceEdit = false,
 }: AiNotesPrescriptionPreviewProps) {
   const [content, setContent] = useState(initialContent);
   const [isEditing, setIsEditing] = useState(false);
@@ -60,8 +69,17 @@ export function AiNotesPrescriptionPreview({
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [paperHeight, setPaperHeight] = useState(0);
+  const [isVoiceEditOpen, setIsVoiceEditOpen] = useState(false);
+  const [isVoiceReviewOpen, setIsVoiceReviewOpen] = useState(false);
+  const [voicePreview, setVoicePreview] = useState<VoiceEditPreviewResult | null>(
+    null,
+  );
   const hasAutoActionRun = useRef(false);
+  const hasAutoVoiceEditRun = useRef(false);
   const paperRef = useRef<HTMLDivElement>(null);
+
+  const sessionId = String(session._id || session.id || "");
+  const canVoiceEdit = isConsultationCompleted(session.status);
 
   useEffect(() => {
     setContent(initialContent);
@@ -188,6 +206,10 @@ export function AiNotesPrescriptionPreview({
   }, [autoAction, session.id || session._id]);
 
   useEffect(() => {
+    hasAutoVoiceEditRun.current = false;
+  }, [autoVoiceEdit, session.id || session._id]);
+
+  useEffect(() => {
     if (!autoAction || isEditing || hasAutoActionRun.current) return;
 
     hasAutoActionRun.current = true;
@@ -202,6 +224,59 @@ export function AiNotesPrescriptionPreview({
 
     void runAction();
   }, [autoAction, isEditing]);
+
+  useEffect(() => {
+    if (!autoVoiceEdit || hasAutoVoiceEditRun.current || isEditing) return;
+    if (!canVoiceEdit) return;
+    hasAutoVoiceEditRun.current = true;
+    setIsVoiceEditOpen(true);
+  }, [autoVoiceEdit, canVoiceEdit, isEditing]);
+
+  const handleOpenVoiceEdit = () => {
+    if (!canVoiceEdit) {
+      toast.info("Voice Edit is available after the consultation is saved as Completed.");
+      return;
+    }
+    if (isEditing) {
+      toast.info("Finish or cancel Manual Edit before using Voice Edit.");
+      return;
+    }
+    setIsVoiceEditOpen(true);
+  };
+
+  const handleVoicePreviewReady = (preview: VoiceEditPreviewResult) => {
+    setVoicePreview(preview);
+    setIsVoiceReviewOpen(true);
+  };
+
+  const handleVoiceAccepted = (aiNotes: AiNotes) => {
+    const nextSession = {
+      ...session,
+      aiNotes,
+    };
+    setContent(buildAiNotesExportContent(aiNotes, nextSession));
+    setVoicePreview(null);
+    onNotesUpdated?.(aiNotes);
+  };
+
+  const voiceEditOverlays = (
+    <>
+      <VoiceEditDialog
+        open={isVoiceEditOpen}
+        sessionId={sessionId}
+        onOpenChange={setIsVoiceEditOpen}
+        onPreviewReady={handleVoicePreviewReady}
+      />
+      <VoiceEditReview
+        open={isVoiceReviewOpen}
+        sessionId={sessionId}
+        preview={voicePreview}
+        onOpenChange={setIsVoiceReviewOpen}
+        onAccepted={handleVoiceAccepted}
+        onContinueVoiceEdit={() => setIsVoiceEditOpen(true)}
+      />
+    </>
+  );
 
   const zoomControls = (
     <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
@@ -257,16 +332,29 @@ export function AiNotesPrescriptionPreview({
           Save Changes
         </Button>
       ) : (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="rounded-xl border-gray-200"
-          onClick={() => setIsEditing(true)}
-        >
-          <Edit3 className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl border-gray-200"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit3 className="mr-2 h-4 w-4" />
+            Manual Edit
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl border-teal-200 text-teal-700 hover:bg-teal-50"
+            onClick={handleOpenVoiceEdit}
+            disabled={!canVoiceEdit}
+          >
+            <Mic className="mr-2 h-4 w-4" />
+            Voice Edit
+          </Button>
+        </>
       )}
 
       <Button
@@ -488,6 +576,7 @@ export function AiNotesPrescriptionPreview({
             )}
           </div>
         </div>
+        {voiceEditOverlays}
       </div>
     );
   }
@@ -512,7 +601,17 @@ export function AiNotesPrescriptionPreview({
             onClick={() => setIsEditing(true)}
           >
             <Edit3 className="mr-2 h-4 w-4" />
-            Edit
+            Manual Edit
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenVoiceEdit}
+            disabled={!canVoiceEdit}
+          >
+            <Mic className="mr-2 h-4 w-4" />
+            Voice Edit
           </Button>
           <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
             |
@@ -591,6 +690,7 @@ export function AiNotesPrescriptionPreview({
           {isEditing ? editForm : documentView}
         </div>
       </div>
+      {voiceEditOverlays}
     </div>
   );
 }

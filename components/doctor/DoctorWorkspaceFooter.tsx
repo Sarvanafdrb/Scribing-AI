@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import {
   Eye,
   FileDown,
@@ -38,7 +37,6 @@ interface DoctorWorkspaceFooterProps {
 }
 
 export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { data: session, refetch } = useSession(sessionId);
   const { aiNotes, saveExportContent } = useAiNotes(sessionId);
@@ -49,6 +47,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
     "print" | "pdf" | undefined
   >(undefined);
   const [previewAutoVoiceEdit, setPreviewAutoVoiceEdit] = useState(false);
+  const [previewAutoManualEdit, setPreviewAutoManualEdit] = useState(false);
 
   const patient =
     session && typeof session.patientId === "object"
@@ -79,13 +78,17 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
     return "In Progress";
   })();
 
-  const openPreview = (action?: "print" | "pdf", options?: { voiceEdit?: boolean }) => {
+  const openPreview = (
+    action?: "print" | "pdf",
+    options?: { voiceEdit?: boolean; manualEdit?: boolean },
+  ) => {
     if (!exportContent || !session) {
-      toast.error("Preview is available after AI notes are generated.");
+      toast.error("This action is available after AI notes are generated.");
       return;
     }
     setPreviewAutoAction(action);
     setPreviewAutoVoiceEdit(Boolean(options?.voiceEdit));
+    setPreviewAutoManualEdit(Boolean(options?.manualEdit));
     setIsPreviewOpen(true);
   };
 
@@ -103,6 +106,10 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
     openPreview(undefined, { voiceEdit: true });
   };
 
+  const handleEditNotes = () => {
+    openPreview(undefined, { manualEdit: true });
+  };
+
   const handleSave = async () => {
     if (!sessionId || !session) return;
 
@@ -113,7 +120,6 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
 
     setIsSaving(true);
     try {
-      // Persist latest AI notes content if available (SOAP, diagnosis, meds, etc.)
       if (exportContent) {
         await saveExportContent(exportContent);
       }
@@ -164,7 +170,6 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
           ? error.message
           : "Unable to generate PDF. Please try again.",
       );
-      // Fall back to preview so the doctor can retry from the preview UI.
       openPreview("pdf");
     } finally {
       setIsGeneratingPdf(false);
@@ -172,10 +177,6 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
   };
 
   const handlePrint = () => openPreview("print");
-
-  const handleEditNotes = () => {
-    router.push(`/sessions/${sessionId}/notes`);
-  };
 
   return (
     <>
@@ -198,6 +199,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
               label="Edit Notes"
               variant="blue"
               onClick={handleEditNotes}
+              disabled={!canExport}
             />
             <FooterButton
               icon={Eye}
@@ -253,6 +255,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
             if (!open) {
               setPreviewAutoAction(undefined);
               setPreviewAutoVoiceEdit(false);
+              setPreviewAutoManualEdit(false);
             }
           }}
           initialContent={exportContent}
@@ -260,10 +263,13 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
           onSave={saveExportContent}
           onNotesUpdated={(notes) => {
             queryClient.setQueryData(aiNotesKeys.detail(sessionId), notes);
-            queryClient.setQueryData(sessionKeys.detail(sessionId), (current: unknown) => {
-              if (!current || typeof current !== "object") return current;
-              return { ...(current as object), aiNotes: notes };
-            });
+            queryClient.setQueryData(
+              sessionKeys.detail(sessionId),
+              (current: unknown) => {
+                if (!current || typeof current !== "object") return current;
+                return { ...(current as object), aiNotes: notes };
+              },
+            );
             queryClient.invalidateQueries({
               queryKey: sessionKeys.detail(sessionId),
             });
@@ -273,6 +279,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
           }}
           autoAction={previewAutoAction}
           autoVoiceEdit={previewAutoVoiceEdit}
+          autoManualEdit={previewAutoManualEdit}
         />
       )}
     </>

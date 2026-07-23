@@ -45,6 +45,7 @@ interface AiNotesPrescriptionPreviewProps {
   onClose?: () => void;
   autoAction?: "print" | "pdf";
   autoVoiceEdit?: boolean;
+  autoManualEdit?: boolean;
 }
 
 const ZOOM_MIN = 0.75;
@@ -61,9 +62,10 @@ export function AiNotesPrescriptionPreview({
   onClose,
   autoAction,
   autoVoiceEdit = false,
+  autoManualEdit = false,
 }: AiNotesPrescriptionPreviewProps) {
   const [content, setContent] = useState(initialContent);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(Boolean(autoManualEdit));
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -76,15 +78,17 @@ export function AiNotesPrescriptionPreview({
   );
   const hasAutoActionRun = useRef(false);
   const hasAutoVoiceEditRun = useRef(false);
+  const hasAutoManualEditRun = useRef(Boolean(autoManualEdit));
   const paperRef = useRef<HTMLDivElement>(null);
 
   const sessionId = String(session._id || session.id || "");
   const canVoiceEdit = isConsultationCompleted(session.status);
 
+  // Sync latest notes into the viewer, but never wipe in-progress Manual Edit.
   useEffect(() => {
+    if (isEditing) return;
     setContent(initialContent);
-    setIsEditing(false);
-  }, [initialContent]);
+  }, [initialContent, isEditing]);
 
   const previewHtml = useMemo(
     () => buildAiNotesPrescriptionBodyHtml(content),
@@ -210,6 +214,10 @@ export function AiNotesPrescriptionPreview({
   }, [autoVoiceEdit, session.id || session._id]);
 
   useEffect(() => {
+    hasAutoManualEditRun.current = false;
+  }, [autoManualEdit, session.id || session._id]);
+
+  useEffect(() => {
     if (!autoAction || isEditing || hasAutoActionRun.current) return;
 
     hasAutoActionRun.current = true;
@@ -231,6 +239,12 @@ export function AiNotesPrescriptionPreview({
     hasAutoVoiceEditRun.current = true;
     setIsVoiceEditOpen(true);
   }, [autoVoiceEdit, canVoiceEdit, isEditing]);
+
+  useEffect(() => {
+    if (!autoManualEdit || hasAutoManualEditRun.current) return;
+    hasAutoManualEditRun.current = true;
+    setIsEditing(true);
+  }, [autoManualEdit]);
 
   const handleOpenVoiceEdit = () => {
     if (!canVoiceEdit) {

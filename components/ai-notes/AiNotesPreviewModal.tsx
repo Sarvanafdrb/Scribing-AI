@@ -20,6 +20,7 @@ interface AiNotesPreviewModalProps {
   onNotesUpdated?: (notes: AiNotes) => void;
   autoAction?: "print" | "pdf";
   autoVoiceEdit?: boolean;
+  autoManualEdit?: boolean;
 }
 
 export function AiNotesPreviewModal({
@@ -31,6 +32,7 @@ export function AiNotesPreviewModal({
   onNotesUpdated,
   autoAction,
   autoVoiceEdit,
+  autoManualEdit,
 }: AiNotesPreviewModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,6 +56,7 @@ export function AiNotesPreviewModal({
             onClose={() => onOpenChange(false)}
             autoAction={autoAction}
             autoVoiceEdit={autoVoiceEdit}
+            autoManualEdit={autoManualEdit}
           />
         )}
       </DialogContent>

@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   HeartPulse,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -45,6 +46,13 @@ const menuItems = [
     label: "Users",
     icon: Users,
     permission: "USER_VIEW",
+  },
+  {
+    path: "/reports",
+    label: "Reports",
+    icon: BarChart3,
+    permission: "REPORT_VIEW",
+    superAdminOnly: true,
   },
   {
     path: "/patients",
@@ -216,11 +224,15 @@ export default function AdminLayout({
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
             {menuItems
-              .filter((item) =>
-                item.path === "/settings"
-                  ? true
-                  : hasPermission(user, item.permission),
-              )
+              .filter((item) => {
+                if ("superAdminOnly" in item && item.superAdminOnly) {
+                  return isSuperAdmin;
+                }
+                if (item.path === "/settings") {
+                  return true;
+                }
+                return hasPermission(user, item.permission);
+              })
               .map((item) => {
                 const Icon = item.icon;
                 const isActive =

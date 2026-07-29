@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Clock, FileText, Stethoscope } from "lucide-react";
 import { useAccessControl } from "@/hooks/useAccessControl";
+import { useTenantScope } from "@/hooks/useTenantScope";
 import {
   useAverageAiNoteTimeReport,
   useAverageTranscriptionTimeReport,
@@ -23,39 +24,61 @@ function formatSeconds(seconds?: number) {
 }
 
 export default function ReportsPage() {
-  const { isSuperAdmin } = useAccessControl();
+  const { canViewReports, isSuperAdmin } = useAccessControl();
+  const { isAllOrganizations, organizationName } = useTenantScope();
   const [period, setPeriod] = useState<UsagePeriod>("weekly");
+  const canAccessReports = canViewReports();
 
-  const totalDoctorsQuery = useTotalDoctorsReport(isSuperAdmin);
+  const totalDoctorsQuery = useTotalDoctorsReport(canAccessReports);
   const transcriptionTimeQuery =
-    useAverageTranscriptionTimeReport(isSuperAdmin);
-  const aiNoteTimeQuery = useAverageAiNoteTimeReport(isSuperAdmin);
-  const usageQuery = useUsageReport(period, isSuperAdmin);
-  const topOrgsQuery = useTopOrganizationsReport(isSuperAdmin);
-  const transcriptionStatusQuery = useTranscriptionStatusReport(isSuperAdmin);
+    useAverageTranscriptionTimeReport(canAccessReports);
+  const aiNoteTimeQuery = useAverageAiNoteTimeReport(canAccessReports);
+  const usageQuery = useUsageReport(period, canAccessReports);
+  const topOrgsQuery = useTopOrganizationsReport(canAccessReports);
+  const transcriptionStatusQuery = useTranscriptionStatusReport(canAccessReports);
 
-  if (!isSuperAdmin) {
+  if (!canAccessReports) {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="rounded-lg border border-red-100 bg-red-50 px-6 py-4 text-center">
           <h1 className="text-lg font-semibold text-red-700">Access Denied</h1>
           <p className="mt-1 text-sm text-red-600">
-            Super Admin access is required to view platform reports.
+            You do not have permission to view reports.
           </p>
         </div>
       </div>
     );
   }
 
+  const queryError =
+    totalDoctorsQuery.error ||
+    transcriptionTimeQuery.error ||
+    aiNoteTimeQuery.error ||
+    usageQuery.error ||
+    topOrgsQuery.error ||
+    transcriptionStatusQuery.error;
+
+  const queryErrorMessage =
+    queryError instanceof Error
+      ? queryError.message
+      : "Failed to load reports.";
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
         <h1 className="text-2xl font-bold">Reports</h1>
         <p className="mt-1 text-blue-100">
-          Platform-wide analytics across organizations, doctors, and
-          consultations.
+          {isSuperAdmin && isAllOrganizations
+            ? "Platform-wide analytics across organizations, doctors, and consultations."
+            : `Analytics for ${organizationName || "your organization"}.`}
         </p>
       </div>
+
+      {queryError ? (
+        <div className="rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {queryErrorMessage}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <ReportStatCard

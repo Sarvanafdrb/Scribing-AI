@@ -9,6 +9,7 @@ export const organizationKeys = {
     search?: string;
     page?: number;
     limit?: number;
+    organizationId?: string;
   }) => [...organizationKeys.lists(), filters] as const,
   details: () => [...organizationKeys.all, "detail"] as const,
   detail: (id: string) => [...organizationKeys.details(), id] as const,

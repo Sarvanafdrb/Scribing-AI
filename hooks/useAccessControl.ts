@@ -17,6 +17,7 @@ import {
   USER_VIEW,
   ORGANIZATION_VIEW,
   ORGANIZATION_CREATE,
+  hasPermissionCode,
   PATIENT_VIEW,
   PATIENT_CREATE,
   PATIENT_EDIT,
@@ -44,6 +45,10 @@ export const useAccessControl = () => {
     hasAnyPermission: (permissions: string[]) =>
       hasAnyPermission(user, permissions, token),
     canManageOrganizations: canManageAllOrganizations(user, token),
+    canViewReports: () =>
+      hasPermission(user, "REPORT_VIEW", token) ||
+      hasPermission(user, "report:read", token) ||
+      hasPermissionCode(user?.permissions || [], "REPORT_VIEW"),
     canCreateOrganization: () =>
       canManageAllOrganizations(user, token) ||
       hasPermission(user, ORGANIZATION_CREATE, token) ||

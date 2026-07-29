@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { organizationService } from "@/services/organization.service";
 import { organizationKeys } from "@/services/organization.queries";
+import { useTenantScope } from "@/hooks/useTenantScope";
 
 interface UseOrganizationsParams {
   search?: string;
@@ -11,15 +12,22 @@ interface UseOrganizationsParams {
 }
 
 export const useOrganizations = (params?: UseOrganizationsParams) => {
+  const { organizationId } = useTenantScope();
   const search = params?.search || "";
   const status = params?.status || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;
 
   const query = useQuery({
-    queryKey: organizationKeys.list({ search, status, page, limit }),
+    queryKey: organizationKeys.list({
+      search,
+      status,
+      page,
+      limit,
+      organizationId: organizationId || "all",
+    }),
     queryFn: () => organizationService.getAll({ search, status, page, limit }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   return {

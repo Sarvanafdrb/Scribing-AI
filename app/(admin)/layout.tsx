@@ -52,7 +52,6 @@ const menuItems = [
     label: "Reports",
     icon: BarChart3,
     permission: "REPORT_VIEW",
-    superAdminOnly: true,
   },
   {
     path: "/patients",
@@ -225,9 +224,6 @@ export default function AdminLayout({
           <nav className="flex-1 p-4 space-y-1">
             {menuItems
               .filter((item) => {
-                if ("superAdminOnly" in item && item.superAdminOnly) {
-                  return isSuperAdmin;
-                }
                 if (item.path === "/settings") {
                   return true;
                 }

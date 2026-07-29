@@ -11,7 +11,7 @@ interface UseRolesParams {
 }
 
 export const useRoles = (params?: UseRolesParams) => {
-  const { organizationId: scopedOrgId } = useTenantScope();
+  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
   const organizationId = scopedOrgId || params?.organizationId || "";
   const search = params?.search || "";
   const page = params?.page || 1;
@@ -26,7 +26,7 @@ export const useRoles = (params?: UseRolesParams) => {
         page,
         limit,
       }),
-    enabled: !!organizationId,
+    enabled: !!organizationId || isSuperAdmin,
     staleTime: 5 * 60 * 1000,
   });
 

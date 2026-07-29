@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, Check, ChevronsUpDown, Search } from "lucide-react";
+import { Building2, Check, ChevronsUpDown, Globe2, Search } from "lucide-react";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useWorkspaceSelection } from "@/hooks/useWorkspaceSelection";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { Workspace } from "@/types/workspace.types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import {
+  ALL_ORGANIZATIONS_WORKSPACE,
+  isAllOrganizationsWorkspace,
+} from "@/utils/workspace.utils";
 
 interface WorkspaceSwitcherProps {
   className?: string;
@@ -47,6 +52,7 @@ export function WorkspaceSwitcher({
   const [search, setSearch] = useState("");
   const { workspaces, isLoading } = useWorkspaces();
   const { selectedWorkspace, switchWorkspace } = useWorkspaceSelection();
+  const { isSuperAdmin } = useAccessControl();
 
   const filteredWorkspaces = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -76,6 +82,8 @@ export function WorkspaceSwitcher({
     return null;
   }
 
+  const isAllSelected = isAllOrganizationsWorkspace(selectedWorkspace);
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -89,7 +97,11 @@ export function WorkspaceSwitcher({
         >
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700">
-              <Building2 className="h-4 w-4" />
+              {isAllSelected ? (
+                <Globe2 className="h-4 w-4" />
+              ) : (
+                <Building2 className="h-4 w-4" />
+              )}
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-gray-900">
@@ -121,6 +133,32 @@ export function WorkspaceSwitcher({
           </div>
         </div>
         <div className="max-h-72 overflow-y-auto p-1">
+          {isSuperAdmin && (
+            <>
+              <DropdownMenuItem
+                onSelect={() => handleSelect(ALL_ORGANIZATIONS_WORKSPACE)}
+                className="flex cursor-pointer items-start gap-3 rounded-md p-3"
+              >
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700">
+                  <Globe2 className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium text-gray-900">
+                      All Organizations
+                    </p>
+                    {isAllSelected && (
+                      <Check className="h-4 w-4 shrink-0 text-blue-600" />
+                    )}
+                  </div>
+                  <p className="truncate text-xs text-gray-500">
+                    Platform-wide aggregated data
+                  </p>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           {filteredWorkspaces.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-gray-500">
               No workspaces found

@@ -9,7 +9,7 @@ export const usePatients = (params?: {
   page?: number;
   limit?: number;
 }) => {
-  const { organizationId } = useTenantScope();
+  const { organizationId, isSuperAdmin } = useTenantScope();
   const search = (params?.search || "").trim().replace(/\s+/g, " ");
 
   const query = useQuery({
@@ -25,7 +25,7 @@ export const usePatients = (params?: {
         organizationId: organizationId || undefined,
         isActive: params?.isActive,
       }),
-    enabled: Boolean(organizationId),
+    enabled: Boolean(organizationId) || isSuperAdmin,
   });
 
   return {

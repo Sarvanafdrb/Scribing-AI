@@ -1,24 +1,29 @@
 "use client";
+
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useUsers } from "@/hooks/users/useUsers";
 import { useSessionStats } from "@/hooks/sessions/useSessions";
 import { useRoleStats } from "@/hooks/roles/useRoles";
+import { usePatients } from "@/hooks/patients/usePatients";
+import { useTotalDoctorsReport } from "@/hooks/reports/useReports";
+import { useTenantScope } from "@/hooks/useTenantScope";
 import {
   Building2,
   Users,
   Shield,
   Activity,
-  TrendingUp,
-  Calendar,
-  Clock,
   CheckCircle,
+  Stethoscope,
+  HeartPulse,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
+  const { organizationId, organizationName, isAllOrganizations, isSuperAdmin } =
+    useTenantScope();
   const { total: totalOrganizations, isLoading: orgCountLoading } =
     useOrganizations({ page: 1, limit: 1 });
   const { total: totalUsers, isLoading: userCountLoading } = useUsers({
@@ -28,6 +33,12 @@ export default function DashboardPage() {
   const { data: sessionStats, isLoading: sessionStatsLoading } =
     useSessionStats();
   const { data: roleStats, isLoading: roleStatsLoading } = useRoleStats();
+  const { total: totalPatients, isLoading: patientCountLoading } = usePatients({
+    page: 1,
+    limit: 1,
+  });
+  const { data: doctorsReport, isLoading: doctorsLoading } =
+    useTotalDoctorsReport(isSuperAdmin);
 
   if (!user) {
     return (
@@ -40,26 +51,28 @@ export default function DashboardPage() {
     );
   }
 
+  const organizationCount = organizationId ? 1 : totalOrganizations;
+
   const stats = [
     {
       title: "Total Organizations",
-      value: orgCountLoading ? "..." : String(totalOrganizations),
+      value: orgCountLoading && !organizationId ? "..." : String(organizationCount),
       icon: Building2,
-      change: "+0%",
+      change: isAllOrganizations ? "All organizations" : "Selected organization",
       color: "bg-blue-500",
     },
     {
       title: "Total Users",
       value: userCountLoading ? "..." : String(totalUsers),
       icon: Users,
-      change: "+0%",
+      change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
       color: "bg-blue-600",
     },
     {
       title: "Active Roles",
       value: roleStatsLoading ? "..." : String(roleStats?.activeCount ?? 0),
       icon: Shield,
-      change: "+0%",
+      change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
       color: "bg-blue-400",
     },
     {
@@ -68,9 +81,31 @@ export default function DashboardPage() {
         ? "..."
         : String(sessionStats?.activeCount || 0),
       icon: Activity,
-      change: "+0%",
+      change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
       color: "bg-blue-700",
     },
+    ...(isSuperAdmin
+      ? [
+          {
+            title: "Total Doctors",
+            value: doctorsLoading
+              ? "..."
+              : String(doctorsReport?.totalDoctors ?? 0),
+            icon: Stethoscope,
+            change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
+            color: "bg-teal-600",
+          },
+          {
+            title: "Total Patients",
+            value: patientCountLoading ? "..." : String(totalPatients),
+            icon: HeartPulse,
+            change: isAllOrganizations
+              ? "Platform-wide"
+              : "Organization scoped",
+            color: "bg-indigo-600",
+          },
+        ]
+      : []),
   ];
 
   const recentActivities = [
@@ -84,25 +119,27 @@ export default function DashboardPage() {
     },
   ];
 
+  const scopeLabel = isSuperAdmin
+    ? isAllOrganizations
+      ? "All Organizations"
+      : organizationName || "Selected Organization"
+    : user.organizationName
+      ? `Organization: ${user.organizationName}`
+      : "Dashboard";
+
   return (
     <div className="space-y-6">
-      {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold">
           Welcome back, {user.firstName} {user.lastName}!
         </h1>
-        <p className="text-blue-100 mt-1">
-          {user.organizationName
-            ? `Organization: ${user.organizationName}`
-            : "Super Admin Dashboard"}
-        </p>
+        <p className="text-blue-100 mt-1">{scopeLabel}</p>
         <p className="text-blue-100 text-sm mt-2">
-          Here's what's happening with your scribing platform today.
+          Here&apos;s what&apos;s happening with your scribing platform today.
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -119,18 +156,14 @@ export default function DashboardPage() {
                 <div className="text-2xl font-bold text-gray-900">
                   {stat.value}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {stat.change} from last month
-                </p>
+                <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activity */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
@@ -169,7 +202,6 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
         <div>
           <Card>
             <CardHeader>

@@ -57,7 +57,8 @@ api.interceptors.request.use(
       delete config.headers.Authorization;
     }
 
-    if (workspaceId) {
+    // "all" means platform-wide — do not send a workspace header.
+    if (workspaceId && workspaceId !== "all") {
       config.headers["X-Workspace-Id"] = workspaceId;
     } else if (config.headers) {
       delete config.headers["X-Workspace-Id"];

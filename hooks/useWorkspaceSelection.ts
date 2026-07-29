@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useWorkspaceStore } from "@/store/workspace.store";
 import { useAuthStore } from "@/store/auth.store";
 import { Workspace } from "@/types/workspace.types";
-import { isDoctorUser } from "@/types/auth.types";
+import { isDoctorUser, isSuperAdminUser } from "@/types/auth.types";
 import { organizationKeys } from "@/services/organization.queries";
 import { userKeys } from "@/services/user.queries";
 import { roleKeys } from "@/services/role.queries";
@@ -14,8 +14,12 @@ import { sessionKeys } from "@/services/session.queries";
 import { patientKeys } from "@/services/patient.queries";
 import { transcriptKeys } from "@/services/transcript.queries";
 import { workspaceKeys } from "@/services/workspace.queries";
+import { reportKeys } from "@/services/report.queries";
 import { workspaceService } from "@/services/workspace.service";
-import { getDefaultWorkspace } from "@/utils/workspace.utils";
+import {
+  getDefaultWorkspace,
+  isAllOrganizationsWorkspace,
+} from "@/utils/workspace.utils";
 
 export const invalidateWorkspaceData = (
   queryClient: ReturnType<typeof useQueryClient>,
@@ -27,6 +31,7 @@ export const invalidateWorkspaceData = (
   queryClient.invalidateQueries({ queryKey: sessionKeys.all });
   queryClient.invalidateQueries({ queryKey: patientKeys.all });
   queryClient.invalidateQueries({ queryKey: transcriptKeys.all });
+  queryClient.invalidateQueries({ queryKey: reportKeys.all });
 };
 
 export const useWorkspaceSelection = () => {
@@ -54,7 +59,9 @@ export const useWorkspaceSelection = () => {
 
       selectWorkspace(workspace);
       toast.success("Workspace switched", {
-        description: `Now working in ${workspace.name}`,
+        description: isAllOrganizationsWorkspace(workspace)
+          ? "Showing data across all organizations"
+          : `Now working in ${workspace.name}`,
       });
     },
     [selectWorkspace, selectedWorkspace?.id],
@@ -72,14 +79,16 @@ export const resolvePostLoginWorkspace = async (): Promise<{
   workspace?: Workspace;
 }> => {
   const workspaces = await workspaceService.getAll();
-  const defaultWorkspace = getDefaultWorkspace(workspaces);
+  const user = useAuthStore.getState().user;
+  const token = useAuthStore.getState().token;
+  const isSuperAdmin = isSuperAdminUser(user, token);
+  const defaultWorkspace = getDefaultWorkspace(workspaces, { isSuperAdmin });
 
   if (!defaultWorkspace) {
     useWorkspaceStore.getState().clearWorkspace();
     return { redirectTo: "/access-not-assigned" };
   }
 
-  const user = useAuthStore.getState().user;
   if (isDoctorUser(user)) {
     return { redirectTo: "/doctor/workspace", workspace: defaultWorkspace };
   }

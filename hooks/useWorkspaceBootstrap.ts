@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useWorkspaceStore } from "@/store/workspace.store";
 import { workspaceService } from "@/services/workspace.service";
 import { workspaceKeys } from "@/services/workspace.queries";
+import { isSuperAdminUser } from "@/types/auth.types";
 import {
   getDefaultWorkspace,
   isWorkspaceAccessible,
@@ -13,6 +14,7 @@ import {
 
 export const useWorkspaceBootstrap = () => {
   const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
   const authHydrated = useAuthStore((state) => state._hasHydrated);
   const selectedWorkspace = useWorkspaceStore((state) => state.selectedWorkspace);
   const workspaceHydrated = useWorkspaceStore((state) => state._hasHydrated);
@@ -23,6 +25,7 @@ export const useWorkspaceBootstrap = () => {
   const queryClient = useQueryClient();
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [hasWorkspaceAccess, setHasWorkspaceAccess] = useState(true);
+  const isSuperAdmin = isSuperAdminUser(user, token);
 
   useEffect(() => {
     if (!authHydrated || !workspaceHydrated || !token) {
@@ -41,7 +44,9 @@ export const useWorkspaceBootstrap = () => {
 
         if (cancelled) return;
 
-        const defaultWorkspace = getDefaultWorkspace(workspaces);
+        const defaultWorkspace = getDefaultWorkspace(workspaces, {
+          isSuperAdmin,
+        });
 
         if (!defaultWorkspace) {
           clearWorkspace();
@@ -51,7 +56,11 @@ export const useWorkspaceBootstrap = () => {
 
         setHasWorkspaceAccess(true);
 
-        if (!isWorkspaceAccessible(selectedWorkspace, workspaces)) {
+        if (
+          !isWorkspaceAccessible(selectedWorkspace, workspaces, {
+            isSuperAdmin,
+          })
+        ) {
           setSelectedWorkspace(defaultWorkspace);
         }
       } catch {
@@ -73,6 +82,7 @@ export const useWorkspaceBootstrap = () => {
   }, [
     authHydrated,
     clearWorkspace,
+    isSuperAdmin,
     queryClient,
     selectedWorkspace,
     setSelectedWorkspace,

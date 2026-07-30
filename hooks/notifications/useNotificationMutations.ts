@@ -1,6 +1,8 @@
+import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationService } from "@/services/notification.service";
 import { notificationKeys } from "@/services/notification.queries";
+import type { NotificationsResponse } from "@/types/notification.types";
 import { toast } from "sonner";
 
 export const useNotificationMutations = () => {
@@ -32,5 +34,31 @@ export const useNotificationMutations = () => {
     },
   });
 
-  return { markAsRead, markAllAsRead };
+  /** Dismiss from UI state/cache. No backend delete API yet — local only. */
+  const dismissNotification = useCallback(
+    (id: string, wasUnread: boolean) => {
+      queryClient.setQueriesData<NotificationsResponse>(
+        { queryKey: notificationKeys.all },
+        (current) => {
+          if (!current) return current;
+
+          const notifications = current.notifications.filter(
+            (notification) =>
+              (notification.id || notification._id || "") !== id,
+          );
+
+          return {
+            ...current,
+            notifications,
+            unreadCount: wasUnread
+              ? Math.max(0, current.unreadCount - 1)
+              : current.unreadCount,
+          };
+        },
+      );
+    },
+    [queryClient],
+  );
+
+  return { markAsRead, markAllAsRead, dismissNotification };
 };

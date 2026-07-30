@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Loader2 } from "lucide-react";
+import { useCallback, useState, type MouseEvent } from "react";
+import { Bell, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,6 +13,12 @@ import { Separator } from "@/components/ui/separator";
 import { useNotifications } from "@/hooks/notifications/useNotifications";
 import { useNotificationMutations } from "@/hooks/notifications/useNotificationMutations";
 import { cn } from "@/lib/utils";
+import type { Notification } from "@/types/notification.types";
+
+const DISMISS_ANIMATION_MS = 200;
+
+const getNotificationId = (notification: Notification) =>
+  notification.id || notification._id || "";
 
 const formatRelativeTime = (value: string) => {
   const date = new Date(value);
@@ -28,16 +35,58 @@ const formatRelativeTime = (value: string) => {
 
 export function NotificationBell() {
   const { data, isLoading, isError } = useNotifications();
-  const { markAsRead, markAllAsRead } = useNotificationMutations();
+  const { markAsRead, markAllAsRead, dismissNotification } =
+    useNotificationMutations();
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [exitingIds, setExitingIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
-  const notifications = data?.notifications || [];
-  const unreadCount = data?.unreadCount || 0;
+  const allNotifications = data?.notifications || [];
+  const notifications = allNotifications.filter((notification) => {
+    const id = getNotificationId(notification);
+    return !dismissedIds.has(id) || exitingIds.has(id);
+  });
+
+  const dismissedUnreadCount = allNotifications.filter((notification) => {
+    const id = getNotificationId(notification);
+    return dismissedIds.has(id) && !notification.isRead;
+  }).length;
+  const unreadCount = Math.max(
+    0,
+    (data?.unreadCount || 0) - dismissedUnreadCount,
+  );
 
   const handleNotificationClick = (id: string, isRead: boolean) => {
     if (!isRead) {
       markAsRead.mutate(id);
     }
   };
+
+  const handleDismiss = useCallback(
+    (event: MouseEvent, notification: Notification) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const id = getNotificationId(notification);
+      if (!id || exitingIds.has(id) || dismissedIds.has(id)) return;
+
+      setExitingIds((prev) => new Set(prev).add(id));
+
+      window.setTimeout(() => {
+        setDismissedIds((prev) => new Set(prev).add(id));
+        setExitingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        dismissNotification(id, notification.isRead);
+      }, DISMISS_ANIMATION_MS);
+    },
+    [dismissNotification, dismissedIds, exitingIds],
+  );
 
   return (
     <DropdownMenu>
@@ -89,48 +138,76 @@ export function NotificationBell() {
               Failed to load notifications.
             </div>
           ) : notifications.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-gray-500">
-              No notifications available.
+            <div className="flex flex-col items-center justify-center gap-1 px-4 py-10 text-center">
+              <span className="text-2xl" aria-hidden="true">
+                🔔
+              </span>
+              <p className="text-sm font-medium text-gray-900">
+                No notifications
+              </p>
+              <p className="text-xs text-gray-500">You're all caught up!</p>
             </div>
           ) : (
-            notifications.map((notification) => (
-              <button
-                key={notification.id || notification._id}
-                type="button"
-                onClick={() =>
-                  handleNotificationClick(
-                    notification.id || notification._id || "",
-                    notification.isRead,
-                  )
-                }
-                className={cn(
-                  "w-full border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-gray-50",
-                  !notification.isRead && "bg-blue-50/60",
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {notification.title}
-                    </p>
-                    <p className="mt-1 text-sm text-gray-600">
-                      {notification.description}
-                    </p>
-                    {notification.relatedId && (
-                      <p className="mt-1 truncate text-xs text-gray-400">
-                        Related: {notification.relatedId}
-                      </p>
-                    )}
-                  </div>
-                  {!notification.isRead && (
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+            notifications.map((notification) => {
+              const id = getNotificationId(notification);
+              const isExiting = exitingIds.has(id);
+
+              return (
+                <div
+                  key={id}
+                  className={cn(
+                    "group relative border-b border-gray-100 transition-all duration-200 ease-out",
+                    isExiting &&
+                      "pointer-events-none -translate-x-2 opacity-0",
+                    !notification.isRead && "bg-blue-50/60",
                   )}
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleNotificationClick(id, notification.isRead)
+                    }
+                    className="w-full px-4 py-3 pr-10 text-left transition-colors hover:bg-gray-50"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {notification.title}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {notification.description}
+                      </p>
+                      {notification.relatedId && (
+                        <p className="mt-1 truncate text-xs text-gray-400">
+                          Related: {notification.relatedId}
+                        </p>
+                      )}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <p className="text-xs text-gray-400">
+                        {formatRelativeTime(notification.createdAt)}
+                      </p>
+                      {!notification.isRead && (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600">
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+                          Unread
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Dismiss notification"
+                    onClick={(event) => handleDismiss(event, notification)}
+                    className={cn(
+                      "absolute top-2.5 right-2 flex h-7 w-7 items-center justify-center rounded-md text-gray-400 transition-opacity hover:bg-gray-100 hover:text-gray-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                      "opacity-100 md:opacity-0 md:group-hover:opacity-100",
+                    )}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
                 </div>
-                <p className="mt-2 text-xs text-gray-400">
-                  {formatRelativeTime(notification.createdAt)}
-                </p>
-              </button>
-            ))
+              );
+            })
           )}
         </div>
       </DropdownMenuContent>

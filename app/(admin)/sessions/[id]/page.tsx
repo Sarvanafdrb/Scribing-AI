@@ -216,7 +216,12 @@ export default function SessionDetailsPage() {
           {recordingStatusLabel(session.status, hasAudio)}
         </p>
         {hasAudio ? (
-          <AudioPlayback sessionId={sessionId} />
+          <AudioPlayback
+            sessionId={sessionId}
+            audioUrl={session.audioUrl}
+            audioPlaybackUrl={session.audioPlaybackUrl}
+            knownDuration={session.duration}
+          />
         ) : (
           <p className="text-sm text-muted-foreground">
             {session.status === "created"

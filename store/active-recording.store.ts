@@ -36,9 +36,13 @@ export const useActiveRecordingStore = create<ActiveRecordingState>(
     },
 
     registerStopHandler: (sessionId, handler) => {
+      const current = get();
       set({
         sessionId,
         stopAndCompleteHandler: handler,
+        // Keep recording flag when re-registering for the same session.
+        isLocallyRecording:
+          current.sessionId === sessionId ? current.isLocallyRecording : false,
       });
     },
 

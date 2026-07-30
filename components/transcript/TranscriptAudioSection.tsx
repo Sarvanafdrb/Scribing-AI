@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Calendar,
   Clock,
   Headphones,
-  Loader2,
   Stethoscope,
   UserRound,
 } from "lucide-react";
@@ -16,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { recordingService, resolveAudioUrl } from "@/services/recording.service";
+import { DoctorAudioPlayer } from "@/components/doctor/DoctorAudioPlayer";
 import { Session, SessionUser } from "@/types/session.types";
 import type { Patient } from "@/types/patient.types";
 import { getPatientFullName } from "@/utils/patient.utils";
@@ -55,11 +54,6 @@ export function TranscriptAudioSection({
   session,
   sessionId,
 }: TranscriptAudioSectionProps) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [playbackError, setPlaybackError] = useState<string | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-
   const playbackSource = getSessionPlaybackSource(session);
   const hasRecording = Boolean(playbackSource);
 
@@ -86,63 +80,6 @@ export function TranscriptAudioSection({
   const recordingDateTime = formatDateTime(
     session.completedAt || session.startedAt || session.createdAt,
   );
-
-  useEffect(() => {
-    let active = true;
-
-    const loadPlaybackUrl = async () => {
-      setLoadFailed(false);
-      setPlaybackError(null);
-
-      if (!hasRecording) {
-        setSrc(null);
-        return;
-      }
-
-      if (session.audioPlaybackUrl) {
-        setSrc(resolveAudioUrl(session.audioPlaybackUrl));
-        return;
-      }
-
-      setIsLoading(true);
-
-      try {
-        const result = await recordingService.getPlaybackUrl(sessionId);
-        if (active) {
-          setSrc(resolveAudioUrl(result.playbackUrl));
-        }
-      } catch (error: unknown) {
-        if (playbackSource && active) {
-          setSrc(resolveAudioUrl(playbackSource));
-          return;
-        }
-
-        if (active) {
-          const message =
-            error &&
-            typeof error === "object" &&
-            "response" in error
-              ? (error as { response?: { data?: { message?: string } } }).response
-                  ?.data?.message
-              : undefined;
-          setPlaybackError(message || "Failed to load audio");
-        }
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadPlaybackUrl();
-
-    return () => {
-      active = false;
-    };
-  }, [sessionId, playbackSource, hasRecording, session.audioPlaybackUrl]);
-
-  const showUnavailable =
-    !hasRecording || loadFailed || Boolean(playbackError);
 
   return (
     <Card className="border-blue-100">
@@ -195,27 +132,18 @@ export function TranscriptAudioSection({
           </div>
         </dl>
 
-        {showUnavailable ? (
+        {!hasRecording ? (
           <div className="rounded-lg border border-dashed bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
             No recording available.
           </div>
-        ) : isLoading ? (
-          <div className="flex items-center justify-center gap-2 rounded-lg border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Loading audio...
-          </div>
-        ) : src ? (
-          <audio
-            key={src}
-            controls
-            className="w-full"
-            src={src}
-            preload="metadata"
-            onError={() => setLoadFailed(true)}
-          >
-            Your browser does not support audio playback.
-          </audio>
-        ) : null}
+        ) : (
+          <DoctorAudioPlayer
+            sessionId={sessionId}
+            audioUrl={session.audioUrl}
+            audioPlaybackUrl={session.audioPlaybackUrl}
+            knownDuration={session.duration}
+          />
+        )}
       </CardContent>
     </Card>
   );

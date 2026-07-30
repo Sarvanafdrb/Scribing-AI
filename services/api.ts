@@ -1,7 +1,8 @@
 // services/api.ts
-import axios from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useWorkspaceStore } from "@/store/workspace.store";
+import { tokenService } from "@/services/token.service";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/backend";
@@ -14,6 +15,10 @@ const PUBLIC_AUTH_PATHS = [
   "/auth/forgot-password",
   "/auth/reset-password",
 ];
+
+type RetriableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+};
 
 const getRequestPath = (url?: string) => {
   if (!url) return "";
@@ -69,13 +74,25 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response interceptor for token refresh
+const forceLogoutToLogin = () => {
+  useAuthStore.getState().logout();
+
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
+};
+
+// Response interceptor — single-flight refresh via tokenService, then retry.
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetriableRequestConfig | undefined;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
       if (isPublicAuthRequest(originalRequest.url)) {
         return Promise.reject(error);
       }
@@ -83,33 +100,24 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = useAuthStore.getState().refreshToken;
-
-        if (!refreshToken) {
-          return Promise.reject(error);
-        }
-
-        const response = await axios.post(
-          `${API_BASE_URL}/auth/refresh-token`,
-          { refreshToken },
-          { withCredentials: false },
-        );
-
-        const { accessToken, refreshToken: newRefreshToken } =
-          response.data.data;
-
-        const { user } = useAuthStore.getState();
-        useAuthStore.getState().setAuth(user, accessToken, newRefreshToken);
-
+        const accessToken = await tokenService.refreshAccessToken();
+        originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        useAuthStore.getState().logout();
-
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
+        // If another request refreshed successfully, retry with the latest token.
+        const latestToken = useAuthStore.getState().token;
+        if (latestToken) {
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${latestToken}`;
+          try {
+            return await api(originalRequest);
+          } catch {
+            // fall through to logout
+          }
         }
 
+        forceLogoutToLogin();
         return Promise.reject(refreshError);
       }
     }

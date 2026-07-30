@@ -20,6 +20,7 @@ import { AudioFileUpload } from "@/components/recording/AudioFileUpload";
 import { TranscriptSegmentList } from "@/components/transcript/TranscriptSegmentList";
 import { SessionStatusBadge } from "@/app/(admin)/sessions/components/SessionStatusBadge";
 import { useMediaRecorder } from "@/hooks/recording/useMediaRecorder";
+import { mrDiag } from "@/hooks/recording/mediaRecorderDiagnostics";
 import { useSession } from "@/hooks/sessions/useSession";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
@@ -70,6 +71,28 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
   const [isUploading, setIsUploading] = useState(false);
   const [showExternalUpload, setShowExternalUpload] = useState(false);
   const [workflow, setWorkflow] = useState<WorkflowPhase>("ready");
+
+  useEffect(() => {
+    mrDiag("RecordingStudio.mount", {
+      sessionId,
+      sessionStatus: session?.status ?? null,
+    });
+    return () => {
+      mrDiag(
+        "RecordingStudio.unmount",
+        {
+          sessionId,
+          sessionStatus: session?.status ?? null,
+          recorderState: recorder.state,
+          elapsedSeconds: recorder.elapsedSeconds,
+          workflow,
+          note: "Unmount will trigger useMediaRecorder cleanup → stopStream()",
+        },
+        { trace: true },
+      );
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   useEffect(() => {
     setWorkflow("ready");
@@ -186,6 +209,17 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
   };
 
   const handleStop = async () => {
+    mrDiag(
+      "RecordingStudio.handleStop",
+      {
+        sessionId,
+        recorderState: recorder.state,
+        sessionStatus: session?.status ?? null,
+        elapsedSeconds: recorder.elapsedSeconds,
+        workflow,
+      },
+      { trace: true },
+    );
     try {
       const result = await recorder.stop();
       await uploadBlob(
@@ -323,7 +357,12 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
             <CardDescription>Listen to the saved recording</CardDescription>
           </CardHeader>
           <CardContent>
-            <AudioPlayback sessionId={sessionId} />
+            <AudioPlayback
+              sessionId={sessionId}
+              audioUrl={session.audioUrl}
+              audioPlaybackUrl={session.audioPlaybackUrl}
+              knownDuration={session.duration}
+            />
           </CardContent>
         </Card>
       )}

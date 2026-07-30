@@ -94,6 +94,13 @@ export function useConsultationNavigationGuard({
   }, [isSwitching]);
 
   const stopRecordingAndSwitch = useCallback(async () => {
+    console.log("[MR-DIAG]", "useConsultationNavigationGuard.stopRecordingAndSwitch", {
+      t: new Date().toISOString(),
+      currentSessionId,
+      pendingTarget,
+    });
+    console.trace("[MR-DIAG] TRACE → stopRecordingAndSwitch");
+
     if (!pendingTarget || isSwitching) return;
 
     setIsSwitching(true);
@@ -111,7 +118,13 @@ export function useConsultationNavigationGuard({
     } finally {
       setIsSwitching(false);
     }
-  }, [isSwitching, pendingTarget, performNavigate, stopAndComplete]);
+  }, [
+    currentSessionId,
+    isSwitching,
+    pendingTarget,
+    performNavigate,
+    stopAndComplete,
+  ]);
 
   return {
     isBlocked,

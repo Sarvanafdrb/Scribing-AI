@@ -11,16 +11,25 @@ interface DoctorAudioPlayerProps {
   sessionId: string;
   audioUrl?: string;
   audioPlaybackUrl?: string | null;
-  /** Server-recorded length in seconds; used when the browser cannot read metadata yet. */
+  /** Server-recorded length in seconds — source of truth for display/seek. */
   knownDuration?: number | null;
 }
 
-function isValidDuration(seconds: number): boolean {
-  return Number.isFinite(seconds) && seconds >= 0;
+/** Backend duration is usable when finite and greater than zero. */
+function isTrustedKnownDuration(
+  seconds: number | null | undefined,
+): seconds is number {
+  return seconds != null && Number.isFinite(seconds) && seconds > 0;
+}
+
+function isValidBrowserDuration(seconds: number): boolean {
+  return Number.isFinite(seconds) && seconds > 0;
 }
 
 function formatPlaybackTime(seconds: number | null) {
-  if (seconds === null || !isValidDuration(seconds)) return "--:--";
+  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) {
+    return "--:--";
+  }
 
   const total = Math.floor(seconds);
   const hours = Math.floor(total / 3600);
@@ -34,12 +43,6 @@ function formatPlaybackTime(seconds: number | null) {
   return `${mins}:${secs}`;
 }
 
-function readAudioDuration(audio: HTMLAudioElement): number | null {
-  const { duration } = audio;
-  if (!isValidDuration(duration)) return null;
-  return duration;
-}
-
 export function DoctorAudioPlayer({
   sessionId,
   audioUrl,
@@ -47,37 +50,32 @@ export function DoctorAudioPlayer({
   knownDuration,
 }: DoctorAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const durationProbeRef = useRef(false);
-  const hasDurationRef = useRef(false);
+  const trustedKnownRef = useRef(isTrustedKnownDuration(knownDuration));
   const [src, setSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState<number | null>(null);
+  const [duration, setDuration] = useState<number | null>(
+    isTrustedKnownDuration(knownDuration) ? knownDuration : null,
+  );
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] =
     useState<(typeof PLAYBACK_SPEEDS)[number]>(1);
 
-  const applyDuration = useCallback((next: number | null) => {
-    if (next === null || !isValidDuration(next)) return;
-    hasDurationRef.current = true;
-    setDuration((prev) =>
-      prev !== null && Math.abs(prev - next) < 0.05 ? prev : next,
-    );
-  }, []);
+  trustedKnownRef.current = isTrustedKnownDuration(knownDuration);
 
   useEffect(() => {
     let active = true;
 
     setSrc(null);
     setCurrentTime(0);
-    hasDurationRef.current = false;
-    durationProbeRef.current = false;
-    setDuration(null);
     setIsPlaying(false);
     setError(null);
+    setDuration(
+      isTrustedKnownDuration(knownDuration) ? knownDuration : null,
+    );
 
     const loadPlaybackUrl = async () => {
       if (!audioUrl && !audioPlaybackUrl) return;
@@ -125,70 +123,32 @@ export function DoctorAudioPlayer({
     return () => {
       active = false;
     };
+    // knownDuration intentionally omitted — applied in its own effect as source of truth
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, audioUrl, audioPlaybackUrl]);
 
+  // Backend duration is the source of truth whenever present.
   useEffect(() => {
-    // Seed duration from the session record when the browser has not resolved it yet.
-    if (hasDurationRef.current) return;
-    if (knownDuration == null || !isValidDuration(knownDuration) || knownDuration <= 0) {
-      return;
-    }
-    applyDuration(knownDuration);
-  }, [knownDuration, applyDuration, src]);
+    if (!isTrustedKnownDuration(knownDuration)) return;
+    setDuration(knownDuration);
+  }, [knownDuration]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !src) return;
 
-    const syncDurationFromElement = () => {
-      const resolved = readAudioDuration(audio);
-      if (resolved !== null) {
-        applyDuration(resolved);
-        return true;
-      }
-      return false;
-    };
-
     /**
-     * MediaRecorder WebM often reports Infinity until the browser seeks near EOF.
-     * Force a one-shot probe so duration is available before the user presses Play.
+     * Only adopt browser metadata when we have no trusted backend duration.
+     * Never overwrite session.duration with Infinity / NaN / 0 / wrong WebM values.
      */
-    const probeUnknownDuration = () => {
-      if (durationProbeRef.current) return;
-      if (syncDurationFromElement()) return;
-      if (audio.duration !== Infinity) return;
-
-      durationProbeRef.current = true;
-      const wasPaused = audio.paused;
-      const previousTime = audio.currentTime;
-
-      const onTimeUpdate = () => {
-        if (!isValidDuration(audio.duration)) return;
-
-        audio.removeEventListener("timeupdate", onTimeUpdate);
-        applyDuration(audio.duration);
-
-        if (wasPaused) {
-          audio.currentTime = 0;
-        } else {
-          audio.currentTime = previousTime;
-        }
-      };
-
-      audio.addEventListener("timeupdate", onTimeUpdate);
-
-      try {
-        audio.currentTime = 1e101;
-      } catch {
-        audio.removeEventListener("timeupdate", onTimeUpdate);
-        durationProbeRef.current = false;
-      }
+    const syncDurationFromElement = () => {
+      if (trustedKnownRef.current) return;
+      if (!isValidBrowserDuration(audio.duration)) return;
+      setDuration(audio.duration);
     };
 
     const handleLoadedMetadata = () => {
-      if (!syncDurationFromElement()) {
-        probeUnknownDuration();
-      }
+      syncDurationFromElement();
     };
 
     const handleDurationChange = () => {
@@ -197,9 +157,7 @@ export function DoctorAudioPlayer({
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime || 0);
-      if (!hasDurationRef.current) {
-        syncDurationFromElement();
-      }
+      syncDurationFromElement();
     };
 
     const handlePlay = () => setIsPlaying(true);
@@ -218,7 +176,6 @@ export function DoctorAudioPlayer({
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
 
-    // Cached media may already have metadata before listeners attach.
     if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) {
       handleLoadedMetadata();
     } else {
@@ -234,7 +191,7 @@ export function DoctorAudioPlayer({
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
     };
-  }, [src, applyDuration]);
+  }, [src]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -330,7 +287,7 @@ export function DoctorAudioPlayer({
             min={0}
             max={seekMax}
             step={0.1}
-            value={Math.min(currentTime, seekMax)}
+            value={Math.min(currentTime, seekMax || currentTime)}
             onChange={(e) => handleSeek(Number(e.target.value))}
             aria-label="Seek"
             disabled={seekMax <= 0}

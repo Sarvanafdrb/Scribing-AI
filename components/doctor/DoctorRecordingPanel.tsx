@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Mic, Pause, Play, Square } from "lucide-react";
 import { useMediaRecorder } from "@/hooks/recording/useMediaRecorder";
+import { mrDiag } from "@/hooks/recording/mediaRecorderDiagnostics";
 import { useSession } from "@/hooks/sessions/useSession";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
@@ -71,6 +72,29 @@ export function DoctorRecordingPanel({
   const hasActiveLocalRecording = useActiveRecordingStore(
     (state) => state.hasActiveLocalRecording,
   );
+
+  useEffect(() => {
+    mrDiag("DoctorRecordingPanel.mount", {
+      sessionId,
+      sessionStatus: session?.status ?? null,
+    });
+    return () => {
+      mrDiag(
+        "DoctorRecordingPanel.unmount",
+        {
+          sessionId,
+          sessionStatus: session?.status ?? null,
+          recorderState,
+          elapsedSeconds,
+          workflow,
+          note: "Unmount will trigger useMediaRecorder cleanup → stopStream()",
+        },
+        { trace: true },
+      );
+    };
+    // Intentionally mount/unmount only for this session instance
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   useEffect(() => {
     setWorkflow("ready");
@@ -188,6 +212,18 @@ export function DoctorRecordingPanel({
   );
 
   const handleStop = useCallback(async () => {
+    mrDiag(
+      "DoctorRecordingPanel.handleStop",
+      {
+        sessionId,
+        recorderState,
+        sessionStatus: session?.status ?? null,
+        elapsedSeconds,
+        workflow,
+      },
+      { trace: true },
+    );
+
     if (recorderState !== "recording" && recorderState !== "paused") {
       // Orphaned "recording" status (e.g. after refresh) — nothing to upload.
       if (session?.status === "recording" && !session.audioUrl) {
@@ -205,6 +241,7 @@ export function DoctorRecordingPanel({
       result.mimeType,
     );
   }, [
+    elapsedSeconds,
     invalidateSessionData,
     recorderState,
     session?.audioUrl,
@@ -212,14 +249,19 @@ export function DoctorRecordingPanel({
     sessionId,
     stopRecorder,
     uploadBlob,
+    workflow,
   ]);
 
+  // Keep a stable handler ref so polling/refetches do not clear recording state.
+  const handleStopRef = useRef(handleStop);
+  handleStopRef.current = handleStop;
+
   useEffect(() => {
-    registerStopHandler(sessionId, handleStop);
+    registerStopHandler(sessionId, () => handleStopRef.current());
     return () => {
       clearSession(sessionId);
     };
-  }, [clearSession, handleStop, registerStopHandler, sessionId]);
+  }, [clearSession, registerStopHandler, sessionId]);
 
   const hasOtherServerRecording = sessions.some((item) => {
     const id = getSessionId(item);
@@ -281,7 +323,7 @@ export function DoctorRecordingPanel({
     return "READY";
   };
 
-  if (isLoading) {
+  if (isLoading && !session) {
     return (
       <div className="flex justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-teal-600" />

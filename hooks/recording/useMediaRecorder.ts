@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RecordingState } from "@/types/recording.types";
 import { mrDiag, mrDiagStopCall } from "@/hooks/recording/mediaRecorderDiagnostics";
+import {
+  notifyRecorderStateChange,
+  setRecordingDiagContext,
+} from "@/hooks/recording/recordingFailureDiagnostics";
 
 const FILE = "hooks/recording/useMediaRecorder.ts";
 
@@ -63,6 +67,30 @@ export const useMediaRecorder = () => {
       recorderState: mediaRecorderRef.current?.state ?? null,
     });
   }
+
+  // Diagnostics only — track React recorder state for unexpected idle dump.
+  useEffect(() => {
+    setRecordingDiagContext({
+      recorderState: state,
+      elapsedRecordingSeconds: elapsedSeconds,
+      file: FILE,
+      fn: "useMediaRecorder",
+    });
+    notifyRecorderStateChange(state, {
+      file: FILE,
+      fn: "useEffect[state]",
+      details: {
+        mountId: mountIdRef.current,
+        mediaRecorderState: mediaRecorderRef.current?.state ?? null,
+        elapsedSeconds,
+        stopReason: stopReasonRef.current,
+      },
+    });
+  }, [state]);
+
+  useEffect(() => {
+    setRecordingDiagContext({ elapsedRecordingSeconds: elapsedSeconds });
+  }, [elapsedSeconds]);
 
   const clearTimer = () => {
     if (timerRef.current) {

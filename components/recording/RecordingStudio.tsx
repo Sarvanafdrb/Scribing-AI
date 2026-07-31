@@ -21,6 +21,10 @@ import { TranscriptSegmentList } from "@/components/transcript/TranscriptSegment
 import { SessionStatusBadge } from "@/app/(admin)/sessions/components/SessionStatusBadge";
 import { useMediaRecorder } from "@/hooks/recording/useMediaRecorder";
 import { mrDiag } from "@/hooks/recording/mediaRecorderDiagnostics";
+import {
+  recordDiagEvent,
+  setRecordingDiagContext,
+} from "@/hooks/recording/recordingFailureDiagnostics";
 import { useSession } from "@/hooks/sessions/useSession";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
@@ -77,6 +81,12 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
       sessionId,
       sessionStatus: session?.status ?? null,
     });
+    recordDiagEvent("RecordingStudio.mount", {
+      file: "components/recording/RecordingStudio.tsx",
+      fn: "mount",
+      sessionStatus: session?.status ?? null,
+      details: { sessionId },
+    });
     return () => {
       mrDiag(
         "RecordingStudio.unmount",
@@ -90,9 +100,42 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
         },
         { trace: true },
       );
+      recordDiagEvent("RecordingStudio.unmount", {
+        file: "components/recording/RecordingStudio.tsx",
+        fn: "unmount",
+        recorderState: recorder.state,
+        workflowState: workflow,
+        sessionStatus: session?.status ?? null,
+        elapsedRecordingSeconds: recorder.elapsedSeconds,
+        details: { sessionId },
+        includeStack: true,
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  useEffect(() => {
+    setRecordingDiagContext({
+      workflowState: workflow,
+      sessionStatus: session?.status ?? null,
+      recorderState: recorder.state,
+      elapsedRecordingSeconds: recorder.elapsedSeconds,
+      file: "components/recording/RecordingStudio.tsx",
+      fn: "RecordingStudio",
+    });
+  }, [workflow, session?.status, recorder.state, recorder.elapsedSeconds]);
+
+  useEffect(() => {
+    recordDiagEvent("RecordingStudio.workflow.changed", {
+      file: "components/recording/RecordingStudio.tsx",
+      fn: "workflow",
+      workflowState: workflow,
+      recorderState: recorder.state,
+      sessionStatus: session?.status ?? null,
+      elapsedRecordingSeconds: recorder.elapsedSeconds,
+      details: { sessionId },
+    });
+  }, [workflow]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setWorkflow("ready");
@@ -198,6 +241,17 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
   };
 
   const handleStart = async () => {
+    recordDiagEvent("RecordingStudio.handleStart", {
+      file: "components/recording/RecordingStudio.tsx",
+      fn: "handleStart",
+      recorderState: recorder.state,
+      workflowState: workflow,
+      sessionStatus: session?.status ?? null,
+      elapsedRecordingSeconds: recorder.elapsedSeconds,
+      details: { sessionId },
+      includeStack: true,
+    });
+
     try {
       await recordingService.start(sessionId);
       await recorder.start();
@@ -220,6 +274,16 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
       },
       { trace: true },
     );
+    recordDiagEvent("RecordingStudio.handleStop", {
+      file: "components/recording/RecordingStudio.tsx",
+      fn: "handleStop",
+      recorderState: recorder.state,
+      workflowState: workflow,
+      sessionStatus: session?.status ?? null,
+      elapsedRecordingSeconds: recorder.elapsedSeconds,
+      details: { sessionId },
+      includeStack: true,
+    });
     try {
       const result = await recorder.stop();
       await uploadBlob(

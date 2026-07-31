@@ -6,6 +6,10 @@ import { toast } from "sonner";
 import { Loader2, Mic, Pause, Play, Square } from "lucide-react";
 import { useMediaRecorder } from "@/hooks/recording/useMediaRecorder";
 import { mrDiag } from "@/hooks/recording/mediaRecorderDiagnostics";
+import {
+  recordDiagEvent,
+  setRecordingDiagContext,
+} from "@/hooks/recording/recordingFailureDiagnostics";
 import { useSession } from "@/hooks/sessions/useSession";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
@@ -78,6 +82,12 @@ export function DoctorRecordingPanel({
       sessionId,
       sessionStatus: session?.status ?? null,
     });
+    recordDiagEvent("DoctorRecordingPanel.mount", {
+      file: "components/doctor/DoctorRecordingPanel.tsx",
+      fn: "mount",
+      sessionStatus: session?.status ?? null,
+      details: { sessionId },
+    });
     return () => {
       mrDiag(
         "DoctorRecordingPanel.unmount",
@@ -91,10 +101,43 @@ export function DoctorRecordingPanel({
         },
         { trace: true },
       );
+      recordDiagEvent("DoctorRecordingPanel.unmount", {
+        file: "components/doctor/DoctorRecordingPanel.tsx",
+        fn: "unmount",
+        recorderState,
+        workflowState: workflow,
+        sessionStatus: session?.status ?? null,
+        elapsedRecordingSeconds: elapsedSeconds,
+        details: { sessionId },
+        includeStack: true,
+      });
     };
     // Intentionally mount/unmount only for this session instance
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  useEffect(() => {
+    setRecordingDiagContext({
+      workflowState: workflow,
+      sessionStatus: session?.status ?? null,
+      recorderState,
+      elapsedRecordingSeconds: elapsedSeconds,
+      file: "components/doctor/DoctorRecordingPanel.tsx",
+      fn: "DoctorRecordingPanel",
+    });
+  }, [workflow, session?.status, recorderState, elapsedSeconds]);
+
+  useEffect(() => {
+    recordDiagEvent("DoctorRecordingPanel.workflow.changed", {
+      file: "components/doctor/DoctorRecordingPanel.tsx",
+      fn: "workflow",
+      workflowState: workflow,
+      recorderState,
+      sessionStatus: session?.status ?? null,
+      elapsedRecordingSeconds: elapsedSeconds,
+      details: { sessionId },
+    });
+  }, [workflow]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setWorkflow("ready");
@@ -223,6 +266,16 @@ export function DoctorRecordingPanel({
       },
       { trace: true },
     );
+    recordDiagEvent("DoctorRecordingPanel.handleStop", {
+      file: "components/doctor/DoctorRecordingPanel.tsx",
+      fn: "handleStop",
+      recorderState,
+      workflowState: workflow,
+      sessionStatus: session?.status ?? null,
+      elapsedRecordingSeconds: elapsedSeconds,
+      details: { sessionId },
+      includeStack: true,
+    });
 
     if (recorderState !== "recording" && recorderState !== "paused") {
       // Orphaned "recording" status (e.g. after refresh) — nothing to upload.
@@ -269,6 +322,17 @@ export function DoctorRecordingPanel({
   });
 
   const handleStart = async () => {
+    recordDiagEvent("DoctorRecordingPanel.handleStart", {
+      file: "components/doctor/DoctorRecordingPanel.tsx",
+      fn: "handleStart",
+      recorderState,
+      workflowState: workflow,
+      sessionStatus: session?.status ?? null,
+      elapsedRecordingSeconds: elapsedSeconds,
+      details: { sessionId },
+      includeStack: true,
+    });
+
     if (hasActiveLocalRecording(sessionId) || hasOtherServerRecording) {
       toast.error(
         "Another consultation recording is already in progress. Stop it before starting a new one.",

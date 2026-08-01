@@ -9,7 +9,9 @@ import { DoctorPatientPanel } from "@/components/doctor/DoctorPatientPanel";
 import { DoctorRecordingPanel } from "@/components/doctor/DoctorRecordingPanel";
 import { DoctorLiveTranscript } from "@/components/doctor/DoctorLiveTranscript";
 import { DoctorAiNotesPanel } from "@/components/doctor/DoctorAiNotesPanel";
+import { DispositionPanel } from "@/components/doctor/DispositionPanel";
 import { DoctorWorkspaceFooter } from "@/components/doctor/DoctorWorkspaceFooter";
+import { useEncounterUiStore } from "@/store/encounter-ui.store";
 
 interface DoctorWorkspaceProps {
   sessionId: string;
@@ -17,15 +19,20 @@ interface DoctorWorkspaceProps {
 
 export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
   const { data: session, isLoading } = useSession(sessionId);
+  const resetEncounterUi = useEncounterUiStore((s) => s.reset);
   const [recordingState, setRecordingState] = useState({
     isRecording: false,
     elapsedSeconds: 0,
   });
 
-  // Never leak the previous consultation's timer into a new session.
+  // Never leak the previous consultation's timer / modal overlays.
   useEffect(() => {
     setRecordingState({ isRecording: false, elapsedSeconds: 0 });
-  }, [sessionId]);
+    resetEncounterUi();
+    // Clear any leftover dialog scroll/pointer locks from a stuck overlay.
+    document.body.style.removeProperty("pointer-events");
+    document.body.style.removeProperty("overflow");
+  }, [sessionId, resetEncounterUi]);
 
   const handleRecordingStateChange = useCallback(
     (state: { isRecording: boolean; elapsedSeconds: number }) => {
@@ -77,8 +84,16 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
                 <DoctorLiveTranscript key={`transcript-${sessionId}`} sessionId={sessionId} />
               </div>
 
-              <div className="min-h-0 overflow-hidden">
-                <DoctorAiNotesPanel key={`notes-${sessionId}`} sessionId={sessionId} />
+              <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  <DoctorAiNotesPanel
+                    key={`notes-${sessionId}`}
+                    sessionId={sessionId}
+                  />
+                </div>
+                <div className="shrink-0 overflow-y-auto">
+                  <DispositionPanel sessionId={sessionId} />
+                </div>
               </div>
             </div>
           </main>

@@ -24,6 +24,17 @@ export const transcriptService = {
     return response.data.data;
   },
 
+  reassignSpeakers: async (
+    sessionId: string,
+    mode: "auto" | "flip" = "auto",
+  ): Promise<TranscriptData> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/transcript/reassign-speakers`,
+      { mode },
+    );
+    return response.data.data;
+  },
+
   translate: async (
     sessionId: string,
     targetLanguage: string,

@@ -56,9 +56,26 @@ export const useTranscriptMutations = (sessionId: string) => {
     },
   });
 
+  const reassignSpeakers = useMutation({
+    mutationFn: (mode: "auto" | "flip" = "auto") =>
+      transcriptService.reassignSpeakers(sessionId, mode),
+    onSuccess: (_data, mode) => {
+      invalidate();
+      toast.success(
+        mode === "flip" ? "Doctor / Patient labels swapped" : "Speakers fixed",
+      );
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to reassign speakers",
+      );
+    },
+  });
+
   return {
     generateTranscript,
     updateTranscript,
     translateTranscript,
+    reassignSpeakers,
   };
 };

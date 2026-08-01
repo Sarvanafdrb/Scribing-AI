@@ -515,23 +515,33 @@ export function DoctorRecordingPanel({
     isTranscriptAvailable(session?.status) &&
     !isUploading;
   const showPipeline = inPostStopFlow && !showPlayback;
+  // Backend says live recording but this tab has no active mic (refresh / mic
+  // permission fail after start API). Must still show Start/Resume — otherwise
+  // the panel is a dead 00:00 "READY" screen with no controls.
+  const orphanedServerLiveStatus =
+    recorderState === "idle" &&
+    (session?.status === "recording" ||
+      session?.status === "paused" ||
+      session?.status === "resumed");
   const showStart =
     workflow === "ready" &&
     recorderState === "idle" &&
     !showRecoveryDialog &&
     !shouldClearRecoveryForStatus(session?.status) &&
-    !isResumableRecording(session?.status) &&
     !hasAudio &&
-    canStartRecording(session?.status);
-  // Continue/resume mic only after an unexpected interrupt was confirmed via dialog,
-  // or while still in an unexpected-interrupt backend status with recovery shown handled.
+    canStartRecording(session?.status) &&
+    (!isResumableRecording(session?.status) ||
+      (orphanedServerLiveStatus && previousDurationSeconds === 0));
+  // Continue/resume mic after interrupt, or when server still has a live status
+  // with prior audio/duration but the local mic is gone.
   const showContinue =
     workflow === "ready" &&
     recorderState === "idle" &&
     !showRecoveryDialog &&
     !shouldClearRecoveryForStatus(session?.status) &&
     isUnexpectedInterruptStatus(session?.status) &&
-    previousDurationSeconds > 0 &&
+    (previousDurationSeconds > 0 || hasAudio || orphanedServerLiveStatus) &&
+    !showStart &&
     canStartRecording(session?.status) &&
     !inPostStopFlow;
   const controlsLocked = inPostStopFlow;
@@ -820,6 +830,18 @@ export function DoctorRecordingPanel({
       await refetch();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
+      // If the server flipped to "recording" but the mic never started, reset
+      // so the Start button remains available (previous flow).
+      try {
+        await sessionService.updateStatus(sessionId, "created");
+      } catch {
+        // ignore rollback errors
+      }
+      await queryClient.invalidateQueries({
+        queryKey: sessionKeys.detail(sessionId),
+      });
+      await queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
+      await refetch();
       toast.error(err?.response?.data?.message || "Failed to start recording");
     }
   };
@@ -1042,10 +1064,19 @@ export function DoctorRecordingPanel({
 
       <ConsultationRecoveryBanner variant={banner} className="mb-4" />
 
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-          Recording
-        </h3>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+            Recording
+          </h3>
+          <p className="truncate text-sm font-medium text-gray-800">
+            {session.roundLabel ||
+              (session.visitType === "inpatient" ||
+              session.encounter?.encounterType === "IP"
+                ? "Doctor Round"
+                : "Consultation Recording")}
+          </p>
+        </div>
         <span
           className={cn(
             "rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide",

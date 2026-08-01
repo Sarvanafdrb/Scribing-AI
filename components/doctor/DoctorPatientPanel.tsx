@@ -19,6 +19,14 @@ import {
 } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
 import type { LastVisit, SessionVitals } from "@/types/session.types";
+import {
+  formatAdmissionDate,
+  getAdmissionDay,
+  getAttendingDoctorName,
+  getBed,
+  getEncounterType,
+  getWard,
+} from "@/utils/encounter.utils";
 import { cn } from "@/lib/utils";
 
 interface DoctorPatientPanelProps {
@@ -81,6 +89,9 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
   const heartRateValue = formatHeartRate(vitals?.heartRate);
   const spo2Value = formatSpo2(vitals?.spo2);
   const weightValue = formatWeight(vitals?.weight);
+  const isIp = getEncounterType(session) === "IP";
+  const admissionDate =
+    session?.encounter?.admission?.admittedAt || session?.admittedDate;
 
   return (
     <div className="space-y-4">
@@ -124,6 +135,47 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
               {formatLastVisit(session?.lastVisit)}
             </dd>
           </div>
+
+          {isIp && (
+            <>
+              <div className="my-1 border-t border-gray-100 pt-2" />
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-sky-500" />
+                <dt className="text-gray-500">Admission Date</dt>
+                <dd className="ml-auto font-medium text-gray-800">
+                  {formatAdmissionDate(admissionDate)}
+                </dd>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-sky-500" />
+                <dt className="text-gray-500">Admission Day</dt>
+                <dd className="ml-auto font-medium text-gray-800">
+                  Day {getAdmissionDay(session)}
+                </dd>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-sky-500" />
+                <dt className="text-gray-500">Ward</dt>
+                <dd className="ml-auto font-medium text-gray-800">
+                  {getWard(session) || "—"}
+                </dd>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-sky-500" />
+                <dt className="text-gray-500">Bed</dt>
+                <dd className="ml-auto font-medium text-gray-800">
+                  {getBed(session) || "—"}
+                </dd>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-sky-500" />
+                <dt className="text-gray-500">Attending Doctor</dt>
+                <dd className="ml-auto font-medium text-gray-800">
+                  {getAttendingDoctorName(session) || "—"}
+                </dd>
+              </div>
+            </>
+          )}
         </dl>
       </section>
 

@@ -14,6 +14,11 @@ import { sessionKeys } from "@/services/session.queries";
 import type { Session, SessionStatus } from "@/types/session.types";
 import { cn } from "@/lib/utils";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
+import {
+  getAdmissionDay,
+  getEncounterType,
+  getWard,
+} from "@/utils/encounter.utils";
 
 const AVATAR_COLORS = [
   "bg-teal-100 text-teal-700",
@@ -251,16 +256,34 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        "truncate text-sm font-medium",
-                        isActive ? "text-teal-800" : "text-gray-800",
+                    <div className="flex items-center gap-1.5">
+                      <p
+                        className={cn(
+                          "truncate text-sm font-medium",
+                          isActive ? "text-teal-800" : "text-gray-800",
+                        )}
+                      >
+                        {getPatientFullName(patient)}
+                      </p>
+                      {getEncounterType(session) === "OP" ? (
+                        <span className="shrink-0 rounded bg-emerald-50 px-1 py-px text-[9px] font-semibold text-emerald-700">
+                          OP
+                        </span>
+                      ) : (
+                        <span className="shrink-0 rounded bg-sky-50 px-1 py-px text-[9px] font-semibold text-sky-700">
+                          IP
+                        </span>
                       )}
-                    >
-                      {getPatientFullName(patient)}
-                    </p>
+                    </div>
                     <p className="text-xs text-gray-500">
                       {formatQueueDuration(session, liveRecording)}
+                      {getEncounterType(session) === "IP" && (
+                        <span className="text-sky-600">
+                          {" "}
+                          · Day {getAdmissionDay(session)}
+                          {getWard(session) ? ` · ${getWard(session)}` : ""}
+                        </span>
+                      )}
                     </p>
                   </div>
 

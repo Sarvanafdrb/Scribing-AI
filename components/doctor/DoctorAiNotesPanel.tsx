@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronUp,
@@ -17,6 +18,9 @@ import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
 import type { PreviousHistoryItem } from "@/types/session.types";
+import type { AdmissionTimelineItem } from "@/types/encounter.types";
+import { getEncounterType } from "@/utils/encounter.utils";
+import { cn } from "@/lib/utils";
 
 interface DoctorAiNotesPanelProps {
   sessionId: string;
@@ -102,7 +106,10 @@ const getMedicationNames = (medications?: AiNotesMedication[]) =>
     .filter(Boolean)
     .join(", ");
 
-const formatPreviousHistory = (items?: PreviousHistoryItem[]) => {
+const formatPreviousHistory = (
+  items: PreviousHistoryItem[] | undefined,
+  onSelect?: (sessionId: string) => void,
+) => {
   if (!items?.length) {
     return (
       <p className="text-sm text-gray-400 italic">
@@ -121,7 +128,19 @@ const formatPreviousHistory = (items?: PreviousHistoryItem[]) => {
         return (
           <article
             key={item.sessionId}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2.5"
+            role={onSelect ? "button" : undefined}
+            tabIndex={onSelect ? 0 : undefined}
+            onClick={() => onSelect?.(item.sessionId)}
+            onKeyDown={(event) => {
+              if (onSelect && (event.key === "Enter" || event.key === " ")) {
+                event.preventDefault();
+                onSelect(item.sessionId);
+              }
+            }}
+            className={cn(
+              "rounded-lg border border-gray-200 bg-white px-3 py-2.5",
+              onSelect && "cursor-pointer hover:border-teal-200 hover:bg-teal-50/40",
+            )}
           >
             <p className="text-[11px] font-semibold tracking-wide text-teal-700 uppercase">
               {formatConsultationDate(item.completedAt)}
@@ -162,21 +181,68 @@ const formatPreviousHistory = (items?: PreviousHistoryItem[]) => {
   );
 };
 
+const formatAdmissionTimeline = (
+  items: AdmissionTimelineItem[] | undefined,
+  onSelect?: (sessionId: string) => void,
+) => {
+  if (!items?.length) {
+    return (
+      <p className="text-sm text-gray-400 italic">
+        No admission timeline yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className="mb-2 text-[11px] font-semibold tracking-wide text-sky-700 uppercase">
+        Admission Timeline
+      </p>
+      {items.map((item) => (
+        <button
+          key={item.sessionId}
+          type="button"
+          onClick={() => onSelect?.(item.sessionId)}
+          className={cn(
+            "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+            item.isCurrent
+              ? "border-sky-200 bg-sky-50 text-sky-800"
+              : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+          )}
+        >
+          <span className="font-medium">{item.label}</span>
+          <span className="text-[11px] text-gray-400 capitalize">
+            {item.status.replace(/_/g, " ")}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
 export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
+  const router = useRouter();
   const { data: session } = useSession(sessionId);
   const {
     aiNotes,
     isLoading,
     isGenerating,
     isCompleted,
+    isFailed,
     transcriptReady,
     generate,
   } = useAiNotes(sessionId);
+  const isIp = getEncounterType(session) === "IP";
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     previous_history: true,
     prescription: true,
   });
+
+  const openConsultation = (targetSessionId: string) => {
+    if (!targetSessionId || targetSessionId === sessionId) return;
+    router.push(`/doctor/workspace/${targetSessionId}`);
+  };
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -197,7 +263,9 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
     },
     {
       key: "previous_history",
-      label: "Previous History (Last 3 Visits)",
+      label: isIp
+        ? "Previous History / Admission Timeline"
+        : "Previous History (Last 3 Visits)",
       icon: History,
       defaultOpen: true,
     },
@@ -275,6 +343,24 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
           </p>
         )}
 
+        {transcriptReady && isFailed && (
+          <div className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+            <p className="font-medium">AI notes generation failed</p>
+            <p className="mt-0.5 text-xs text-amber-700">
+              {aiNotes?.error ||
+                "Gemini API quota/error. Click Regenerate, or use Edit Notes to fill manually."}
+            </p>
+            <button
+              type="button"
+              onClick={() => generate(true)}
+              disabled={isGenerating}
+              className="mt-2 rounded-lg bg-amber-700 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-800 disabled:opacity-50"
+            >
+              Retry generate
+            </button>
+          </div>
+        )}
+
         {transcriptReady && isGenerating && !isCompleted && (
           <div className="flex items-center gap-2 px-2 py-4 text-sm text-gray-500">
             <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
@@ -314,7 +400,23 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
                   {section.key === "prescription"
                     ? formatMedications(aiNotes?.medications)
                     : section.key === "previous_history"
-                      ? formatPreviousHistory(session?.previousHistory)
+                      ? isIp
+                        ? (
+                            <div className="space-y-4">
+                              {formatAdmissionTimeline(
+                                session?.admissionTimeline,
+                                openConsultation,
+                              )}
+                              {formatPreviousHistory(
+                                session?.previousHistory,
+                                openConsultation,
+                              )}
+                            </div>
+                          )
+                        : formatPreviousHistory(
+                            session?.previousHistory,
+                            openConsultation,
+                          )
                       : renderContent(section.content)}
                 </div>
               )}

@@ -11,11 +11,15 @@ import {
   Pencil,
   Printer,
   Save,
+  Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import { AiNotesPreviewModal } from "@/components/ai-notes/AiNotesPreviewModal";
+import { RoundsDrawer } from "@/components/doctor/RoundsDrawer";
+import { SaveConsultationDialog } from "@/components/doctor/SaveConsultationDialog";
+import { useEncounterUiStore } from "@/store/encounter-ui.store";
 import { sessionService } from "@/services/session.service";
 import { recordingService } from "@/services/recording.service";
 import { sessionKeys } from "@/services/session.queries";
@@ -29,10 +33,23 @@ import {
   isConsultationCompleted,
   isReviewReady,
   isResumableRecording,
+  isTranscriptAvailable,
 } from "@/utils/session-status.utils";
 import { getPatientFullName } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
+import type { AiNotes } from "@/types/ai-notes.types";
 import { cn } from "@/lib/utils";
+
+const EMPTY_AI_NOTES: AiNotes = {
+  status: "completed",
+  summary: "",
+  subjective: "",
+  objective: "",
+  assessment: "",
+  plan: "",
+  remarks: "",
+  medications: [],
+};
 
 interface DoctorWorkspaceFooterProps {
   sessionId: string;
@@ -50,6 +67,10 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
   >(undefined);
   const [previewAutoVoiceEdit, setPreviewAutoVoiceEdit] = useState(false);
   const [previewAutoManualEdit, setPreviewAutoManualEdit] = useState(false);
+  const roundsOpen = useEncounterUiStore((s) => s.roundsDrawerOpen);
+  const setRoundsOpen = useEncounterUiStore((s) => s.setRoundsDrawerOpen);
+  const saveDialogOpen = useEncounterUiStore((s) => s.saveDialogOpen);
+  const setSaveDialogOpen = useEncounterUiStore((s) => s.setSaveDialogOpen);
 
   const patient =
     session && typeof session.patientId === "object"
@@ -57,19 +78,27 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
       : null;
 
   const patientName = getPatientFullName(patient);
+  const hasRecording =
+    (session?.recordingSegments?.length || 0) > 0 || Boolean(session?.audioUrl);
+  const transcriptReady = isTranscriptAvailable(session?.status);
+  const notesFailed = aiNotes?.status === "failed";
   const canExport = Boolean(session && hasExportableAiNotes(aiNotes));
+  // Allow manual edit/preview once transcript exists — even if Gemini notes failed.
+  const canOpenNotes = Boolean(session) && (canExport || transcriptReady);
   const isCompleted = isConsultationCompleted(session?.status);
   const canSave =
     Boolean(session) &&
     !isCompleted &&
     (canExport ||
       isReviewReady(session?.status) ||
-      (isResumableRecording(session?.status) &&
-        ((session?.recordingSegments?.length || 0) > 0 ||
-          Boolean(session?.audioUrl))));
+      transcriptReady ||
+      (isResumableRecording(session?.status) && hasRecording));
   const exportContent =
-    session && aiNotes && canExport
-      ? buildAiNotesExportContent(aiNotes, session)
+    session && canOpenNotes
+      ? buildAiNotesExportContent(
+          canExport && aiNotes ? aiNotes : { ...EMPTY_AI_NOTES, ...aiNotes, status: "completed" },
+          session,
+        )
       : null;
 
   const statusLabel = (() => {
@@ -92,8 +121,17 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
     options?: { voiceEdit?: boolean; manualEdit?: boolean },
   ) => {
     if (!exportContent || !session) {
-      toast.error("This action is available after AI notes are generated.");
+      toast.error(
+        notesFailed
+          ? "AI notes failed to generate. Use Regenerate, or Edit Notes to fill manually."
+          : "Complete recording / wait for transcript first.",
+      );
       return;
+    }
+    if (!canExport && notesFailed) {
+      toast.message("AI notes failed — opening blank notes for manual edit.");
+    } else if (!canExport && transcriptReady) {
+      toast.message("AI notes still generating — you can edit manually now.");
     }
     setPreviewAutoAction(action);
     setPreviewAutoVoiceEdit(Boolean(options?.voiceEdit));
@@ -103,7 +141,11 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
 
   const handleVoiceEdit = () => {
     if (!canExport) {
-      toast.error("Voice Edit is available after AI notes are generated.");
+      toast.error(
+        notesFailed
+          ? "AI notes failed (API quota). Regenerate notes, then use Voice Edit."
+          : "Voice Edit is available after AI notes are generated.",
+      );
       return;
     }
     if (!isCompleted) {
@@ -147,7 +189,8 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
         return;
       }
 
-      if (exportContent) {
+      // Only persist notes payload when there is real content (avoid wiping failed/empty).
+      if (exportContent && canExport) {
         await saveExportContent(exportContent);
       }
 
@@ -166,6 +209,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
       await refetch();
 
       toast.success("Consultation saved and marked as completed.");
+      setSaveDialogOpen(true);
     } catch (error: unknown) {
       const err = error as {
         response?: { data?: { message?: string } };
@@ -183,7 +227,11 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
 
   const handleExportPdf = async () => {
     if (!exportContent || !session) {
-      toast.error("PDF is available after AI notes are generated.");
+      toast.error(
+        notesFailed
+          ? "AI notes failed. Regenerate or Edit Notes before PDF."
+          : "PDF is available after AI notes are ready.",
+      );
       return;
     }
 
@@ -215,6 +263,12 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
 
           <div className="flex flex-wrap items-center gap-2">
             <FooterButton
+              icon={Stethoscope}
+              label="Rounds"
+              variant="outline"
+              onClick={() => setRoundsOpen(true)}
+            />
+            <FooterButton
               icon={Mic}
               label="Voice Edit"
               variant="teal"
@@ -226,28 +280,28 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
               label="Edit Notes"
               variant="blue"
               onClick={handleEditNotes}
-              disabled={!canExport}
+              disabled={!canOpenNotes}
             />
             <FooterButton
               icon={Eye}
               label="Preview"
               variant="outline"
               onClick={() => openPreview()}
-              disabled={!canExport}
+              disabled={!canOpenNotes}
             />
             <FooterButton
               icon={FileDown}
               label="Generate PDF"
               variant="outline"
               onClick={handleExportPdf}
-              disabled={!canExport || isGeneratingPdf}
+              disabled={!canOpenNotes || isGeneratingPdf}
             />
             <FooterButton
               icon={Printer}
               label="Print"
               variant="outline"
               onClick={handlePrint}
-              disabled={!canExport}
+              disabled={!canOpenNotes}
             />
             <button
               type="button"
@@ -307,6 +361,21 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
           autoAction={previewAutoAction}
           autoVoiceEdit={previewAutoVoiceEdit}
           autoManualEdit={previewAutoManualEdit}
+        />
+      )}
+
+      <RoundsDrawer
+        sessionId={sessionId}
+        open={roundsOpen}
+        onOpenChange={setRoundsOpen}
+      />
+
+      {session && (
+        <SaveConsultationDialog
+          open={saveDialogOpen}
+          onOpenChange={setSaveDialogOpen}
+          session={session}
+          sessionId={sessionId}
         />
       )}
     </>

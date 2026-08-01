@@ -1,6 +1,13 @@
 import type { TranscriptData } from "@/types/transcript.types";
 import type { Patient } from "@/types/patient.types";
 import type { AiNotes } from "@/types/ai-notes.types";
+import type {
+  AdmissionTimelineItem,
+  DispositionType,
+  Encounter,
+  EncounterRound,
+  RoundType,
+} from "@/types/encounter.types";
 
 export type SessionType = "consultation" | "follow_up" | "diagnostic" | "other";
 
@@ -65,6 +72,10 @@ export interface PreviousHistoryItem {
   completedAt?: string | null;
   title: string;
   aiNotes: PreviousHistoryAiNotes;
+  admissionDay?: number;
+  roundType?: RoundType | string;
+  roundLabel?: string;
+  timelineLabel?: string;
 }
 
 export interface SessionVitals {
@@ -90,6 +101,13 @@ export interface Session {
   sessionType: SessionType;
   visitType?: VisitType;
   admittedDate?: string;
+  encounterId?: string;
+  roundType?: RoundType;
+  roundLabel?: string;
+  admissionDay?: number;
+  ward?: string;
+  bed?: string;
+  disposition?: DispositionType | null;
   status: SessionStatus;
   audioUrl?: string;
   audioPlaybackUrl?: string | null;
@@ -107,6 +125,10 @@ export interface Session {
   updatedAt?: string;
   lastVisit?: LastVisit | null;
   previousHistory?: PreviousHistoryItem[];
+  encounter?: Encounter | null;
+  rounds?: EncounterRound[];
+  todayRounds?: EncounterRound[];
+  admissionTimeline?: AdmissionTimelineItem[];
 }
 
 export interface CreateSessionData {

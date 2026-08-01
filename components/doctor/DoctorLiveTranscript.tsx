@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ArrowLeftRight, Loader2 } from "lucide-react";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
 import { TranscriptSegment } from "@/types/transcript.types";
@@ -20,7 +20,8 @@ const getSpeakerLabel = (speaker?: string, doctorName = "DR. CHEN") => {
 export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
   const { session, transcript, isLoading, isProcessing } =
     useTranscript(sessionId);
-  const { updateTranscript } = useTranscriptMutations(sessionId);
+  const { updateTranscript, reassignSpeakers } =
+    useTranscriptMutations(sessionId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
@@ -65,11 +66,29 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
 
   return (
     <section className="flex min-h-[320px] flex-1 flex-col rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
+      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-5 py-3">
         <h3 className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
           Live Transcript
         </h3>
-        <span className="text-[10px] text-gray-400">Inline editing enabled</span>
+        <div className="flex items-center gap-2">
+          {segments.length > 0 && (
+            <button
+              type="button"
+              onClick={() => reassignSpeakers.mutate("flip")}
+              disabled={reassignSpeakers.isPending}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-[10px] font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              title="Swap Doctor and Patient labels"
+            >
+              {reassignSpeakers.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <ArrowLeftRight className="h-3 w-3" />
+              )}
+              Swap speakers
+            </button>
+          )}
+          <span className="text-[10px] text-gray-400">Inline editing enabled</span>
+        </div>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">

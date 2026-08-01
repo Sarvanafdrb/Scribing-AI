@@ -15,6 +15,18 @@ const statusConfig: Record<
     label: "Recording",
     className: "bg-red-100 text-red-700 hover:bg-red-200",
   },
+  paused: {
+    label: "Paused",
+    className: "bg-amber-100 text-amber-800 hover:bg-amber-200",
+  },
+  interrupted: {
+    label: "Interrupted",
+    className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
+  },
+  resumed: {
+    label: "Resumed",
+    className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
+  },
   uploading: {
     label: "Uploading",
     className: "bg-blue-100 text-blue-700 hover:bg-blue-200",
@@ -55,6 +67,9 @@ export const SESSION_STATUS_OPTIONS: { value: SessionStatus; label: string }[] =
   [
     { value: "created", label: "Created" },
     { value: "recording", label: "Recording" },
+    { value: "paused", label: "Paused" },
+    { value: "interrupted", label: "Interrupted" },
+    { value: "resumed", label: "Resumed" },
     { value: "uploading", label: "Uploading" },
     { value: "processing", label: "Processing Transcript" },
     { value: "transcript_ready", label: "Transcript Ready" },

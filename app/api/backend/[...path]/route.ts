@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+/** Long audio uploads + proxy hops need more than the default. */
+export const maxDuration = 300;
+
 const getApiProxyTarget = () =>
   (process.env.API_PROXY_TARGET || "http://localhost:5000/api").replace(
     /\/$/,
@@ -73,18 +77,41 @@ const buildResponseHeaders = (response: Response) => {
   return headers;
 };
 
+const isBackendUnreachable = (error: unknown) => {
+  if (!(error instanceof Error)) return false;
+
+  const cause = (error as Error & { cause?: { code?: string } }).cause;
+  const code = cause?.code;
+  if (
+    code === "ECONNREFUSED" ||
+    code === "ENOTFOUND" ||
+    code === "ECONNRESET" ||
+    code === "UND_ERR_CONNECT_TIMEOUT"
+  ) {
+    return true;
+  }
+
+  return (
+    error instanceof TypeError &&
+    /fetch failed|failed to fetch|network/i.test(error.message)
+  );
+};
+
 async function proxyRequest(request: NextRequest, path: string[]) {
   const url = buildTargetUrl(request, path);
   const headers = buildForwardHeaders(request);
 
-  const init: RequestInit = {
+  const init: RequestInit & { duplex?: "half" } = {
     method: request.method,
     headers,
     redirect: "manual",
   };
 
   if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.arrayBuffer();
+    // Stream the body through — buffering multi‑hundred‑MB audio OOMs the
+    // Next process and makes the API look "unreachable".
+    init.body = request.body;
+    init.duplex = "half";
   }
 
   try {
@@ -98,21 +125,14 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     });
   } catch (error) {
     const target = getApiProxyTarget();
-    const isConnectionRefused =
-      error instanceof TypeError ||
-      (error instanceof Error &&
-        "cause" in error &&
-        typeof error.cause === "object" &&
-        error.cause !== null &&
-        "code" in error.cause &&
-        error.cause.code === "ECONNREFUSED");
+    const unreachable = isBackendUnreachable(error);
 
     console.error(`API proxy failed for ${url.toString()}:`, error);
 
     return NextResponse.json(
       {
         success: false,
-        message: isConnectionRefused
+        message: unreachable
           ? `Cannot reach the API server at ${target}. Start the backend with "npm run dev" in the scribing-ai-api folder.`
           : "The API server is temporarily unavailable. Please try again.",
       },

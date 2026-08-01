@@ -10,6 +10,7 @@ import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
 import { useWorkspaceBootstrap } from "@/hooks/useWorkspaceBootstrap";
 import { recordDiagEvent } from "@/hooks/recording/recordingFailureDiagnostics";
+import { useActiveRecordingStore } from "@/store/active-recording.store";
 
 const FILE = "app/(doctor)/layout.tsx";
 const PREFIX = "[LAYOUT-DIAG]";
@@ -54,8 +55,15 @@ export default function DoctorLayout({
   useAutoLogin();
   useSessionExpiry();
 
+  const isLocallyRecording = useActiveRecordingStore(
+    (state) => state.isLocallyRecording,
+  );
+
+  // Never unmount doctor workspace (killing MediaRecorder) while a consultation
+  // is actively recording — otherwise long recordings get false "Resume" popups.
   const shouldShowLoading =
-    !_hasHydrated || isLoading || isValidating || workspaceGuardLoading;
+    !isLocallyRecording &&
+    (!_hasHydrated || isLoading || isValidating || workspaceGuardLoading);
 
   const prevRef = useRef<{
     _hasHydrated: boolean;

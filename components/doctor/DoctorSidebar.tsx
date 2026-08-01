@@ -13,6 +13,7 @@ import { getUserOrganizationName } from "@/types/auth.types";
 import { sessionKeys } from "@/services/session.queries";
 import type { Session, SessionStatus } from "@/types/session.types";
 import { cn } from "@/lib/utils";
+import { useActiveRecordingStore } from "@/store/active-recording.store";
 
 const AVATAR_COLORS = [
   "bg-teal-100 text-teal-700",
@@ -28,14 +29,47 @@ const getInitials = (firstName?: string, lastName?: string) => {
   return (first + last).toUpperCase() || "?";
 };
 
-const formatQueueTime = (session: Session) => {
-  const dateStr = session.startedAt || session.createdAt;
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+const formatQueueDuration = (
+  session: Session,
+  liveElapsedBySessionId: { sessionId: string | null; elapsedSeconds: number; isLocallyRecording: boolean },
+) => {
+  const sessionId = String(session._id || session.id || "");
+  const isLiveLocal =
+    liveElapsedBySessionId.isLocallyRecording &&
+    liveElapsedBySessionId.sessionId === sessionId;
+
+  // Prefer the live local timer for the consultation currently being recorded.
+  if (isLiveLocal) {
+    const seconds = Math.max(0, Math.floor(liveElapsedBySessionId.elapsedSeconds));
+    const mins = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const secs = (seconds % 60).toString().padStart(2, "0");
+    return `${mins}:${secs}`;
+  }
+
+  // WAIT / not started — never show createdAt clock time as a "duration".
+  if (
+    session.status === "created" ||
+    (!session.audioUrl &&
+      !(session.recordingSegments?.length) &&
+      session.status !== "recording" &&
+      session.status !== "paused" &&
+      session.status !== "interrupted" &&
+      session.status !== "resumed")
+  ) {
+    return "00:00";
+  }
+
+  const seconds = Math.max(
+    0,
+    Math.floor(session.totalDuration || session.duration || 0),
+  );
+  const mins = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const secs = (seconds % 60).toString().padStart(2, "0");
+  return `${mins}:${secs}`;
 };
 
 const QUEUE_STATUS_STYLES: Partial<
@@ -44,6 +78,18 @@ const QUEUE_STATUS_STYLES: Partial<
   recording: {
     label: "Recording",
     className: "bg-red-50 text-red-700",
+  },
+  paused: {
+    label: "Paused",
+    className: "bg-amber-50 text-amber-800",
+  },
+  interrupted: {
+    label: "Interrupted",
+    className: "bg-yellow-50 text-yellow-800",
+  },
+  resumed: {
+    label: "Resumed",
+    className: "bg-emerald-50 text-emerald-800",
   },
   uploading: {
     label: "Uploading",
@@ -88,6 +134,18 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const { user } = useAuthStore();
   const { data: activeSession } = useSession(activeSessionId);
   const { sessions, getSessionId, getPatientFromSession } = useDoctorQueue();
+  const liveSessionId = useActiveRecordingStore((state) => state.sessionId);
+  const liveElapsedSeconds = useActiveRecordingStore(
+    (state) => state.elapsedSeconds,
+  );
+  const isLocallyRecording = useActiveRecordingStore(
+    (state) => state.isLocallyRecording,
+  );
+  const liveRecording = {
+    sessionId: liveSessionId,
+    elapsedSeconds: liveElapsedSeconds,
+    isLocallyRecording,
+  };
   const {
     requestNavigateToSession,
     requestNavigateToHref,
@@ -202,7 +260,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                       {getPatientFullName(patient)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatQueueTime(session)}
+                      {formatQueueDuration(session, liveRecording)}
                     </p>
                   </div>
 

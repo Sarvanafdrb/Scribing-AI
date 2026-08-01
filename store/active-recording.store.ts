@@ -7,10 +7,13 @@ type StopAndCompleteHandler = () => Promise<void>;
 interface ActiveRecordingState {
   sessionId: string | null;
   isLocallyRecording: boolean;
+  /** Live elapsed seconds for the active local recording (sidebar sync). */
+  elapsedSeconds: number;
   stopAndCompleteHandler: StopAndCompleteHandler | null;
   setLocalRecordingState: (
     sessionId: string,
     isLocallyRecording: boolean,
+    elapsedSeconds?: number,
   ) => void;
   registerStopHandler: (
     sessionId: string,
@@ -26,12 +29,19 @@ export const useActiveRecordingStore = create<ActiveRecordingState>(
   (set, get) => ({
     sessionId: null,
     isLocallyRecording: false,
+    elapsedSeconds: 0,
     stopAndCompleteHandler: null,
 
-    setLocalRecordingState: (sessionId, isLocallyRecording) => {
+    setLocalRecordingState: (sessionId, isLocallyRecording, elapsedSeconds) => {
       set({
         sessionId,
         isLocallyRecording,
+        elapsedSeconds:
+          typeof elapsedSeconds === "number"
+            ? elapsedSeconds
+            : get().sessionId === sessionId
+              ? get().elapsedSeconds
+              : 0,
       });
     },
 
@@ -43,6 +53,8 @@ export const useActiveRecordingStore = create<ActiveRecordingState>(
         // Keep recording flag when re-registering for the same session.
         isLocallyRecording:
           current.sessionId === sessionId ? current.isLocallyRecording : false,
+        elapsedSeconds:
+          current.sessionId === sessionId ? current.elapsedSeconds : 0,
       });
     },
 
@@ -52,6 +64,7 @@ export const useActiveRecordingStore = create<ActiveRecordingState>(
       set({
         sessionId: null,
         isLocallyRecording: false,
+        elapsedSeconds: 0,
         stopAndCompleteHandler: null,
       });
     },

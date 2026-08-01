@@ -7,6 +7,11 @@ import {
   notifyRecorderStateChange,
   setRecordingDiagContext,
 } from "@/hooks/recording/recordingFailureDiagnostics";
+import {
+  clearParkedMediaRecorder,
+  parkMediaRecorder,
+  takeParkedMediaRecorder,
+} from "@/hooks/recording/mediaRecorderPark";
 
 const FILE = "hooks/recording/useMediaRecorder.ts";
 
@@ -33,7 +38,14 @@ const getExtensionForMime = (mimeType: string): string => {
   return "webm";
 };
 
-export const useMediaRecorder = () => {
+export const useMediaRecorder = (options?: {
+  sessionId?: string;
+  onDataChunk?: (
+    chunk: Blob,
+    meta: { chunkIndex: number; mimeType: string },
+  ) => void;
+}) => {
+  const sessionId = options?.sessionId;
   const [state, setState] = useState<RecordingState>("idle");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +63,16 @@ export const useMediaRecorder = () => {
   const previewUrlRef = useRef<string | null>(null);
   const stopReasonRef = useRef<string>("unknown");
   const chunkCountRef = useRef(0);
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
+  const onDataChunkRef = useRef(options?.onDataChunk);
+  onDataChunkRef.current = options?.onDataChunk;
   const mountIdRef = useRef(
     `mr-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
   );
   const lastLoggedStateRef = useRef<string>("");
+  const stateRef = useRef<RecordingState>(state);
+  stateRef.current = state;
 
   // Log only when recorder state identity changes (avoid 1Hz spam from timer).
   const stateKey = `${state}|${mediaRecorderRef.current?.state ?? "none"}`;
@@ -158,6 +176,9 @@ export const useMediaRecorder = () => {
   const reset = useCallback(() => {
     mrDiag("reset.called", { mountId: mountIdRef.current }, { trace: true });
     stopReasonRef.current = "reset()";
+    if (sessionIdRef.current) {
+      clearParkedMediaRecorder(sessionIdRef.current);
+    }
     clearTimer();
     stopStream("reset()");
     mediaRecorderRef.current = null;
@@ -266,6 +287,10 @@ export const useMediaRecorder = () => {
         }
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
+          onDataChunkRef.current?.(event.data, {
+            chunkIndex: chunkCountRef.current,
+            mimeType: mimeTypeRef.current,
+          });
         }
       };
 
@@ -446,10 +471,38 @@ export const useMediaRecorder = () => {
     fileName: string;
     mimeType: string;
   }> => {
-    const recorder = mediaRecorderRef.current;
+    // Prefer live ref; if remount left the recorder parked, reclaim it.
+    let recorder = mediaRecorderRef.current;
+    if (!recorder && sessionIdRef.current) {
+      const parked = takeParkedMediaRecorder(sessionIdRef.current);
+      if (parked) {
+        mediaRecorderRef.current = parked.mediaRecorder;
+        streamRef.current = parked.stream;
+        chunksRef.current = parked.chunks;
+        mimeTypeRef.current = parked.mimeType;
+        startedAtRef.current = parked.startedAt;
+        pausedTotalRef.current = parked.pausedTotal;
+        pauseStartedAtRef.current = parked.pauseStartedAt;
+        isPausedRef.current = parked.isPaused;
+        chunkCountRef.current = parked.chunkCount;
+        recorder = parked.mediaRecorder;
+      }
+    }
 
     if (!recorder) {
       throw new Error("No active recording");
+    }
+
+    if (sessionIdRef.current) {
+      // Drop any stale park entry without stopping the live recorder we are about to stop.
+      const parked = takeParkedMediaRecorder(sessionIdRef.current);
+      if (parked && parked.mediaRecorder !== recorder) {
+        try {
+          parked.stream.getTracks().forEach((t) => t.stop());
+        } catch {
+          // ignore
+        }
+      }
     }
 
     stopReasonRef.current = "user/stop() explicit call";
@@ -460,30 +513,91 @@ export const useMediaRecorder = () => {
       elapsedSecondsSinceStart: startedAtRef.current
         ? Math.floor((Date.now() - startedAtRef.current) / 1000)
         : null,
+      chunkCount: chunkCountRef.current,
     });
 
     clearTimer();
 
+    // Browsers can drop the final stop if we call stop() while paused.
     if (recorder.state === "paused") {
       pausedTotalRef.current += Date.now() - pauseStartedAtRef.current;
       isPausedRef.current = false;
-      recorder.resume();
+      try {
+        recorder.resume();
+      } catch {
+        // continue to stop anyway
+      }
+      await new Promise((r) => window.setTimeout(r, 50));
+    }
+
+    // Flush the current timeslice so the last audio is in chunks before stop.
+    try {
+      if (recorder.state === "recording") {
+        recorder.requestData();
+      }
+    } catch {
+      // ignore
     }
 
     const blob = await new Promise<Blob>((resolve, reject) => {
-      const previousOnStop = recorder.onstop;
-      recorder.onstop = (event) => {
-        previousOnStop?.call(recorder, event);
-        const mimeType = mimeTypeRef.current || "audio/webm";
-        const finalBlob = new Blob(chunksRef.current, { type: mimeType });
+      let settled = false;
+      const finish = (finalBlob: Blob) => {
+        if (settled) return;
+        settled = true;
         resolve(finalBlob);
       };
 
-      recorder.onerror = () => {
-        reject(new Error("Failed to stop recording"));
+      const fail = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        reject(error);
       };
 
-      recorder.stop();
+      const timeoutId = window.setTimeout(() => {
+        // Don't hang forever on long recordings — assemble whatever we have.
+        const mimeType = mimeTypeRef.current || "audio/webm";
+        finish(new Blob(chunksRef.current, { type: mimeType }));
+      }, 15000);
+
+      const previousOnStop = recorder.onstop;
+      recorder.onstop = (event) => {
+        window.clearTimeout(timeoutId);
+        try {
+          previousOnStop?.call(recorder, event);
+        } catch {
+          // ignore previous handler errors
+        }
+        const mimeType = mimeTypeRef.current || "audio/webm";
+        finish(new Blob(chunksRef.current, { type: mimeType }));
+      };
+
+      recorder.onerror = () => {
+        window.clearTimeout(timeoutId);
+        fail(new Error("Failed to stop recording"));
+      };
+
+      try {
+        if (recorder.state === "inactive") {
+          window.clearTimeout(timeoutId);
+          const mimeType = mimeTypeRef.current || "audio/webm";
+          finish(new Blob(chunksRef.current, { type: mimeType }));
+          return;
+        }
+        recorder.stop();
+      } catch (error) {
+        window.clearTimeout(timeoutId);
+        // Fall back to buffered chunks if stop() throws.
+        const mimeType = mimeTypeRef.current || "audio/webm";
+        if (chunksRef.current.length > 0) {
+          finish(new Blob(chunksRef.current, { type: mimeType }));
+        } else {
+          fail(
+            error instanceof Error
+              ? error
+              : new Error("Failed to stop recording"),
+          );
+        }
+      }
     });
 
     stopStream("stop() after recorder.stop()");
@@ -510,13 +624,96 @@ export const useMediaRecorder = () => {
     return { blob, duration, fileName, mimeType };
   }, []);
 
-  // Cleanup only on true unmount — do not stop the recorder on re-renders
-  // (e.g. previewUrl changes). Release mic tracks when the component leaves.
+  // Cleanup / reclaim: park active recorder on remount instead of killing the mic.
   useEffect(() => {
     const mountId = mountIdRef.current;
-    mrDiag("useMediaRecorder.mount", { mountId });
+    const reclaimSessionId = sessionIdRef.current;
+    mrDiag("useMediaRecorder.mount", { mountId, sessionId: reclaimSessionId });
+
+    if (reclaimSessionId) {
+      const parked = takeParkedMediaRecorder(reclaimSessionId);
+      if (parked) {
+        mediaRecorderRef.current = parked.mediaRecorder;
+        streamRef.current = parked.stream;
+        chunksRef.current = parked.chunks;
+        mimeTypeRef.current = parked.mimeType;
+        startedAtRef.current = parked.startedAt;
+        pausedTotalRef.current = parked.pausedTotal;
+        pauseStartedAtRef.current = parked.pauseStartedAt;
+        isPausedRef.current = parked.isPaused;
+        chunkCountRef.current = parked.chunkCount;
+        setState(parked.state);
+        setError(null);
+
+        // Re-bind chunk handler after remount.
+        parked.mediaRecorder.ondataavailable = (event) => {
+          chunkCountRef.current += 1;
+          if (event.data.size > 0) {
+            chunksRef.current.push(event.data);
+            onDataChunkRef.current?.(event.data, {
+              chunkIndex: chunkCountRef.current,
+              mimeType: mimeTypeRef.current,
+            });
+          }
+        };
+
+        clearTimer();
+        timerRef.current = window.setInterval(updateElapsed, 1000);
+        updateElapsed();
+
+        mrDiag("useMediaRecorder.reclaimedParked", {
+          mountId,
+          sessionId: reclaimSessionId,
+          state: parked.state,
+          chunkCount: parked.chunkCount,
+        });
+      }
+    }
 
     return () => {
+      const activeState = stateRef.current;
+      const recorder = mediaRecorderRef.current;
+      const stream = streamRef.current;
+      const sid = sessionIdRef.current;
+      const canPark =
+        Boolean(sid) &&
+        Boolean(recorder) &&
+        Boolean(stream) &&
+        (activeState === "recording" || activeState === "paused") &&
+        recorder!.state !== "inactive";
+
+      if (canPark && sid && recorder && stream) {
+        clearTimer();
+        parkMediaRecorder({
+          sessionId: sid,
+          mediaRecorder: recorder,
+          stream,
+          chunks: [...chunksRef.current],
+          mimeType: mimeTypeRef.current,
+          startedAt: startedAtRef.current,
+          pausedTotal: pausedTotalRef.current,
+          pauseStartedAt: pauseStartedAtRef.current,
+          isPaused: isPausedRef.current,
+          chunkCount: chunkCountRef.current,
+          state: activeState,
+          parkedAt: Date.now(),
+        });
+        // Detach React refs without stopping tracks.
+        mediaRecorderRef.current = null;
+        streamRef.current = null;
+        mrDiag(
+          "useMediaRecorder.unmount.parked",
+          {
+            mountId,
+            sessionId: sid,
+            state: activeState,
+            note: "Active recording parked — mic kept alive across remount",
+          },
+          { trace: true },
+        );
+        return;
+      }
+
       stopReasonRef.current = "useMediaRecorder unmount cleanup";
       mrDiag(
         "useMediaRecorder.unmount.cleanup",
@@ -536,6 +733,7 @@ export const useMediaRecorder = () => {
       mediaRecorderRef.current = null;
       revokePreviewUrl();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

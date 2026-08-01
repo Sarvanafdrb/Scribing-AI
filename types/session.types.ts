@@ -9,6 +9,9 @@ export type VisitType = "outpatient" | "inpatient";
 export type SessionStatus =
   | "created"
   | "recording"
+  | "paused"
+  | "interrupted"
+  | "resumed"
   | "uploading"
   | "processing"
   | "transcript_ready"
@@ -16,6 +19,14 @@ export type SessionStatus =
   | "ready_for_review"
   | "completed"
   | "failed";
+
+export interface RecordingSegment {
+  url: string;
+  duration: number;
+  fileName?: string;
+  transcriptText?: string;
+  uploadedAt?: string;
+}
 
 export interface SessionUser {
   _id?: string;
@@ -82,6 +93,8 @@ export interface Session {
   status: SessionStatus;
   audioUrl?: string;
   audioPlaybackUrl?: string | null;
+  recordingSegments?: RecordingSegment[];
+  totalDuration?: number;
   transcript?: string;
   transcriptData?: TranscriptData;
   aiNotes?: AiNotes;
@@ -121,6 +134,9 @@ export interface UpdateSessionData {
 export interface SessionStatusCounts {
   created: number;
   recording: number;
+  paused?: number;
+  interrupted?: number;
+  resumed?: number;
   uploading: number;
   processing: number;
   transcript_ready: number;

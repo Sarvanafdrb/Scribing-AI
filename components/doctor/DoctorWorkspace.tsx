@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useSession } from "@/hooks/sessions/useSession";
 import { DoctorSidebar } from "@/components/doctor/DoctorSidebar";
@@ -21,6 +21,11 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
     isRecording: false,
     elapsedSeconds: 0,
   });
+
+  // Never leak the previous consultation's timer into a new session.
+  useEffect(() => {
+    setRecordingState({ isRecording: false, elapsedSeconds: 0 });
+  }, [sessionId]);
 
   const handleRecordingStateChange = useCallback(
     (state: { isRecording: boolean; elapsedSeconds: number }) => {
@@ -65,14 +70,15 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
 
               <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
                 <DoctorRecordingPanel
+                  key={sessionId}
                   sessionId={sessionId}
                   onRecordingStateChange={handleRecordingStateChange}
                 />
-                <DoctorLiveTranscript sessionId={sessionId} />
+                <DoctorLiveTranscript key={`transcript-${sessionId}`} sessionId={sessionId} />
               </div>
 
               <div className="min-h-0 overflow-hidden">
-                <DoctorAiNotesPanel sessionId={sessionId} />
+                <DoctorAiNotesPanel key={`notes-${sessionId}`} sessionId={sessionId} />
               </div>
             </div>
           </main>

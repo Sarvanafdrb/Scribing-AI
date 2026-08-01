@@ -17,6 +17,7 @@ import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import { AiNotesPreviewModal } from "@/components/ai-notes/AiNotesPreviewModal";
 import { sessionService } from "@/services/session.service";
+import { recordingService } from "@/services/recording.service";
 import { sessionKeys } from "@/services/session.queries";
 import { aiNotesKeys } from "@/services/ai-notes.queries";
 import {
@@ -27,6 +28,7 @@ import {
 import {
   isConsultationCompleted,
   isReviewReady,
+  isResumableRecording,
 } from "@/utils/session-status.utils";
 import { getPatientFullName } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
@@ -60,7 +62,11 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
   const canSave =
     Boolean(session) &&
     !isCompleted &&
-    (canExport || isReviewReady(session?.status));
+    (canExport ||
+      isReviewReady(session?.status) ||
+      (isResumableRecording(session?.status) &&
+        ((session?.recordingSegments?.length || 0) > 0 ||
+          Boolean(session?.audioUrl))));
   const exportContent =
     session && aiNotes && canExport
       ? buildAiNotesExportContent(aiNotes, session)
@@ -74,6 +80,9 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
     if (session.status === "transcript_ready") return "Transcript Ready";
     if (session.status === "processing") return "Processing Transcript";
     if (session.status === "uploading") return "Uploading";
+    if (session.status === "interrupted") return "Interrupted";
+    if (session.status === "paused") return "Paused";
+    if (session.status === "resumed") return "Resumed";
     if (session.status === "recording") return "Recording";
     return "In Progress";
   })();
@@ -120,6 +129,24 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
 
     setIsSaving(true);
     try {
+      // If audio segments exist but pipeline never finalized, merge + generate first.
+      if (
+        isResumableRecording(session.status) &&
+        ((session.recordingSegments?.length || 0) > 0 || session.audioUrl)
+      ) {
+        await recordingService.finalize(sessionId);
+        toast.info("Merging segments and generating transcript / AI notes…");
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: sessionKeys.detail(sessionId),
+          }),
+          queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
+        ]);
+        await refetch();
+        setIsSaving(false);
+        return;
+      }
+
       if (exportContent) {
         await saveExportContent(exportContent);
       }

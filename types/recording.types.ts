@@ -18,4 +18,16 @@ export interface CompleteRecordingData {
   audioUrl?: string;
   duration: number;
   contentType?: string;
+  fileName?: string;
+  finalize?: boolean;
+  statusAfter?: string;
+}
+
+export interface RecordingAutosaveData {
+  elapsedSeconds?: number;
+  recordingStatus?: string;
+  recordingStartedAt?: string | null;
+  transcriptDraft?: string;
+  aiNotesDraft?: Record<string, unknown>;
+  audioChunkUploadStatus?: string;
 }

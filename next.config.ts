@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Allow long consultation audio to pass through the /api/backend proxy.
+  experimental: {
+    proxyClientMaxBodySize: "500mb",
+  },
   async rewrites() {
     return [
       {

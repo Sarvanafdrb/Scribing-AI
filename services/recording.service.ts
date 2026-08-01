@@ -2,6 +2,7 @@ import { api } from "@/services/api";
 import {
   CompleteRecordingData,
   PlaybackUrlResponse,
+  RecordingAutosaveData,
   UploadUrlResponse,
 } from "@/types/recording.types";
 import { Session } from "@/types/session.types";
@@ -39,6 +40,50 @@ export const recordingService = {
     return response.data.data;
   },
 
+  pause: async (sessionId: string): Promise<Session> => {
+    const response = await api.post(`/sessions/${sessionId}/recording/pause`);
+    return response.data.data;
+  },
+
+  resume: async (sessionId: string): Promise<Session> => {
+    const response = await api.post(`/sessions/${sessionId}/recording/resume`);
+    return response.data.data;
+  },
+
+  interrupt: async (
+    sessionId: string,
+    data?: { elapsedSeconds?: number },
+  ): Promise<Session> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/recording/interrupt`,
+      data || {},
+    );
+    return response.data.data;
+  },
+
+  discard: async (sessionId: string): Promise<Session> => {
+    const response = await api.post(`/sessions/${sessionId}/recording/discard`);
+    return response.data.data;
+  },
+
+  autosave: async (
+    sessionId: string,
+    data: RecordingAutosaveData,
+  ): Promise<Session> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/recording/autosave`,
+      data,
+    );
+    return response.data.data;
+  },
+
+  finalize: async (sessionId: string): Promise<Session> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/recording/finalize`,
+    );
+    return response.data.data;
+  },
+
   getUploadUrl: async (
     sessionId: string,
     fileName: string,
@@ -62,18 +107,61 @@ export const recordingService = {
     return response.data.data;
   },
 
+  completeSegment: async (
+    sessionId: string,
+    data: CompleteRecordingData,
+  ): Promise<Session> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/recording/segment/complete`,
+      data,
+    );
+    return response.data.data;
+  },
+
   uploadFile: async (
     sessionId: string,
     file: File | Blob,
     duration: number,
     fileName = "recording.webm",
+    options?: { finalize?: boolean; statusAfter?: string },
   ): Promise<Session> => {
     const formData = new FormData();
     formData.append("audio", file, fileName);
     formData.append("duration", String(Math.round(duration)));
+    if (options?.finalize === false) {
+      formData.append("finalize", "false");
+    }
+    if (options?.statusAfter) {
+      formData.append("statusAfter", options.statusAfter);
+    }
 
     const response = await api.post(
       `/sessions/${sessionId}/recording/upload`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    return response.data.data;
+  },
+
+  uploadSegment: async (
+    sessionId: string,
+    file: File | Blob,
+    duration: number,
+    fileName: string,
+    statusAfter = "interrupted",
+  ): Promise<Session> => {
+    const formData = new FormData();
+    formData.append("audio", file, fileName);
+    formData.append("duration", String(Math.round(duration)));
+    formData.append("statusAfter", statusAfter);
+
+    const response = await api.post(
+      `/sessions/${sessionId}/recording/segment/upload`,
       formData,
       {
         headers: {

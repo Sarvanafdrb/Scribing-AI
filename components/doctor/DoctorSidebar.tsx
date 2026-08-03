@@ -1,24 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { History, UserRound } from "lucide-react";
+import { History, Loader2, UserRound } from "lucide-react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useSession } from "@/hooks/sessions/useSession";
-import { useDoctorQueue } from "@/hooks/doctor/useDoctorQueue";
+import {
+  getQueueItemKey,
+  useDoctorQueue,
+} from "@/hooks/doctor/useDoctorQueue";
 import { useConsultationNavigationGuard } from "@/hooks/doctor/useConsultationNavigationGuard";
 import { RecordingSwitchDialog } from "@/components/doctor/RecordingSwitchDialog";
 import { getPatientFullName } from "@/utils/patient.utils";
 import { getUserOrganizationName } from "@/types/auth.types";
 import { sessionKeys } from "@/services/session.queries";
+import { encounterService } from "@/services/encounter.service";
+import type { DoctorQueueItem } from "@/types/encounter.types";
 import type { Session, SessionStatus } from "@/types/session.types";
 import { cn } from "@/lib/utils";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
-import {
-  getAdmissionDay,
-  getEncounterType,
-  getWard,
-} from "@/utils/encounter.utils";
 
 const AVATAR_COLORS = [
   "bg-teal-100 text-teal-700",
@@ -35,15 +36,20 @@ const getInitials = (firstName?: string, lastName?: string) => {
 };
 
 const formatQueueDuration = (
-  session: Session,
-  liveElapsedBySessionId: { sessionId: string | null; elapsedSeconds: number; isLocallyRecording: boolean },
+  session: Session | null | undefined,
+  liveElapsedBySessionId: {
+    sessionId: string | null;
+    elapsedSeconds: number;
+    isLocallyRecording: boolean;
+  },
 ) => {
+  if (!session) return "00:00";
+
   const sessionId = String(session._id || session.id || "");
   const isLiveLocal =
     liveElapsedBySessionId.isLocallyRecording &&
     liveElapsedBySessionId.sessionId === sessionId;
 
-  // Prefer the live local timer for the consultation currently being recorded.
   if (isLiveLocal) {
     const seconds = Math.max(0, Math.floor(liveElapsedBySessionId.elapsedSeconds));
     const mins = Math.floor(seconds / 60)
@@ -53,7 +59,6 @@ const formatQueueDuration = (
     return `${mins}:${secs}`;
   }
 
-  // WAIT / not started — never show createdAt clock time as a "duration".
   if (
     session.status === "created" ||
     (!session.audioUrl &&
@@ -138,7 +143,8 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { data: activeSession } = useSession(activeSessionId);
-  const { sessions, getSessionId, getPatientFromSession } = useDoctorQueue();
+  const { items } = useDoctorQueue();
+  const [openingKey, setOpeningKey] = useState<string | null>(null);
   const liveSessionId = useActiveRecordingStore((state) => state.sessionId);
   const liveElapsedSeconds = useActiveRecordingStore(
     (state) => state.elapsedSeconds,
@@ -163,7 +169,6 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
     currentSessionStatus: activeSession?.status,
   });
 
-  // Keep the patient list in sync with the active session's latest status.
   useEffect(() => {
     if (!activeSession?.status) return;
 
@@ -171,7 +176,23 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
       { queryKey: sessionKeys.lists() },
       (current: unknown) => {
         if (!current || typeof current !== "object") return current;
-        const data = current as { sessions?: Session[] };
+        const data = current as { sessions?: Session[]; items?: DoctorQueueItem[] };
+        if (Array.isArray(data.items)) {
+          let changed = false;
+          const nextItems = data.items.map((item) => {
+            if (item.sessionId !== activeSessionId) return item;
+            if (item.session?.status === activeSession.status) return item;
+            changed = true;
+            return {
+              ...item,
+              status: activeSession.status,
+              session: item.session
+                ? { ...item.session, status: activeSession.status }
+                : item.session,
+            };
+          });
+          return changed ? { ...data, items: nextItems } : current;
+        }
         if (!Array.isArray(data.sessions)) return current;
 
         let changed = false;
@@ -191,6 +212,41 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const doctorName = user ? `Dr. ${user.firstName} ${user.lastName}` : "Doctor";
   const organizationName = getUserOrganizationName(user) || "Organization";
   const organizationLogo = user?.organization?.logo;
+
+  const openQueueItem = async (item: DoctorQueueItem) => {
+    const key = getQueueItemKey(item);
+
+    if (item.sessionId) {
+      requestNavigateToSession(item.sessionId);
+      return;
+    }
+
+    if (item.kind === "ip_encounter" && item.encounterId) {
+      if (item.allRoundsCompletedToday) {
+        toast.info("All rounds for today are completed.");
+        return;
+      }
+      try {
+        setOpeningKey(key);
+        const data = await encounterService.startRoundForEncounter(
+          item.encounterId,
+          { roundScheduleId: item.nextRoundScheduleId || undefined },
+        );
+        const nextId = String(data.session?._id || data.session?.id || "");
+        await queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
+        if (nextId) {
+          requestNavigateToSession(nextId);
+        }
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { message?: string } } };
+        toast.error(
+          err?.response?.data?.message || "Failed to open today's round",
+        );
+      } finally {
+        setOpeningKey(null);
+      }
+    }
+  };
 
   return (
     <>
@@ -215,25 +271,33 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
 
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <p className="mb-3 px-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-            Today — {sessions.length} patient
-            {sessions.length !== 1 ? "s" : ""}
+            Today — {items.length} patient
+            {items.length !== 1 ? "s" : ""}
           </p>
 
           <nav className="space-y-1">
-            {sessions.map((session, index) => {
-              const sessionId = getSessionId(session);
-              const patient = getPatientFromSession(session);
-              const isActive = sessionId === activeSessionId;
-              const statusStyle = QUEUE_STATUS_STYLES[session.status];
+            {items.map((item, index) => {
+              const key = getQueueItemKey(item);
+              const patient = item.patient;
+              const sessionId = item.sessionId || "";
+              const isActive =
+                Boolean(sessionId) && sessionId === activeSessionId;
+              const sessionStatus = (item.session?.status ||
+                item.status) as SessionStatus | undefined;
+              const statusStyle = sessionStatus
+                ? QUEUE_STATUS_STYLES[sessionStatus]
+                : undefined;
               const showStatusBadge =
                 Boolean(statusStyle) &&
-                (session.status !== "created" || !isActive);
+                (sessionStatus !== "created" || !isActive);
+              const isOpening = openingKey === key;
 
               return (
                 <button
-                  key={sessionId}
+                  key={key}
                   type="button"
-                  onClick={() => requestNavigateToSession(sessionId)}
+                  onClick={() => openQueueItem(item)}
+                  disabled={isOpening}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
                     isActive
@@ -265,7 +329,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                       >
                         {getPatientFullName(patient)}
                       </p>
-                      {getEncounterType(session) === "OP" ? (
+                      {item.encounterType === "OP" ? (
                         <span className="shrink-0 rounded bg-emerald-50 px-1 py-px text-[9px] font-semibold text-emerald-700">
                           OP
                         </span>
@@ -276,33 +340,44 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
-                      {formatQueueDuration(session, liveRecording)}
-                      {getEncounterType(session) === "IP" && (
+                      {item.encounterType === "IP" ? (
                         <span className="text-sky-600">
-                          {" "}
-                          · Day {getAdmissionDay(session)}
-                          {getWard(session) ? ` · ${getWard(session)}` : ""}
+                          Day {item.admissionDay || 1}
+                          {item.ward ? ` · ${item.ward}` : ""}
+                          {item.nextRoundLabel
+                            ? ` · ${item.nextRoundLabel}`
+                            : ""}
                         </span>
+                      ) : (
+                        formatQueueDuration(
+                          item.session as Session | null,
+                          liveRecording,
+                        )
                       )}
                     </p>
                   </div>
 
-                  {showStatusBadge && statusStyle && (
-                    <span
-                      className={cn(
-                        "rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
-                        statusStyle.className,
-                      )}
-                    >
-                      {statusStyle.label}
-                    </span>
+                  {isOpening ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
+                  ) : (
+                    showStatusBadge &&
+                    statusStyle && (
+                      <span
+                        className={cn(
+                          "rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
+                          statusStyle.className,
+                        )}
+                      >
+                        {statusStyle.label}
+                      </span>
+                    )
                   )}
                 </button>
               );
             })}
           </nav>
 
-          {sessions.length === 0 && (
+          {items.length === 0 && (
             <p className="px-2 text-sm text-gray-500">
               No consultations scheduled for today.
             </p>

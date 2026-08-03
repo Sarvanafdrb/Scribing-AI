@@ -3,6 +3,7 @@ import type {
   AdmitPatientData,
   CreateRoundData,
   DispositionType,
+  DoctorQueueItem,
   EncounterBundle,
 } from "@/types/encounter.types";
 import type { Session } from "@/types/session.types";
@@ -32,13 +33,34 @@ export const encounterService = {
     return response.data.data;
   },
 
+  startRoundForEncounter: async (
+    encounterId: string,
+    data: { roundScheduleId?: string } = {},
+  ): Promise<{ session: Session } & EncounterBundle> => {
+    const response = await api.post(
+      `/sessions/encounters/${encounterId}/rounds/start`,
+      data,
+    );
+    return response.data.data;
+  },
+
   setDisposition: async (
     sessionId: string,
     disposition: DispositionType,
-  ): Promise<Session> => {
+    options?: { followUpDate?: string },
+  ): Promise<{ session: Session; encounter?: unknown }> => {
     const response = await api.post(`/sessions/${sessionId}/disposition`, {
       disposition,
+      followUpDate: options?.followUpDate,
     });
+    return response.data.data;
+  },
+
+  getDoctorQueue: async (params: {
+    organizationId: string;
+    doctorId?: string;
+  }): Promise<{ items: DoctorQueueItem[]; dateKey: string }> => {
+    const response = await api.get("/sessions/doctor-queue", { params });
     return response.data.data;
   },
 };

@@ -6,6 +6,7 @@ import type {
   DispositionType,
   Encounter,
   EncounterRound,
+  RoundSchedule,
   RoundType,
 } from "@/types/encounter.types";
 
@@ -128,6 +129,10 @@ export interface Session {
   encounter?: Encounter | null;
   rounds?: EncounterRound[];
   todayRounds?: EncounterRound[];
+  todaySchedule?: RoundSchedule[];
+  nextPendingRound?: RoundSchedule | null;
+  hasNextRoundToday?: boolean;
+  allRoundsCompletedToday?: boolean;
   admissionTimeline?: AdmissionTimelineItem[];
 }
 

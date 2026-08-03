@@ -206,9 +206,13 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
           queryKey: aiNotesKeys.detail(sessionId),
         }),
       ]);
-      await refetch();
+      // Refresh encounter bundle (round schedule / next-round flags) before dialog.
+      const refreshed = await refetch();
+      void refreshed;
 
-      toast.success("Consultation saved and marked as completed.");
+      toast.success(
+        "Consultation saved and marked as completed.",
+      );
       setSaveDialogOpen(true);
     } catch (error: unknown) {
       const err = error as {
@@ -262,12 +266,15 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
-            <FooterButton
-              icon={Stethoscope}
-              label="Rounds"
-              variant="outline"
-              onClick={() => setRoundsOpen(true)}
-            />
+            {session?.visitType === "inpatient" ||
+            session?.encounter?.encounterType === "IP" ? (
+              <FooterButton
+                icon={Stethoscope}
+                label="Rounds"
+                variant="outline"
+                onClick={() => setRoundsOpen(true)}
+              />
+            ) : null}
             <FooterButton
               icon={Mic}
               label="Voice Edit"

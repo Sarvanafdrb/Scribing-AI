@@ -91,14 +91,13 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
                     sessionId={sessionId}
                   />
                 </div>
-                <div className="shrink-0 overflow-y-auto">
-                  <DispositionPanel sessionId={sessionId} />
-                </div>
               </div>
             </div>
           </main>
 
           <DoctorWorkspaceFooter sessionId={sessionId} />
+          {/* Admit modal host — disposition is chosen after Save Consultation */}
+          <DispositionPanel sessionId={sessionId} />
         </div>
       </div>
     </div>

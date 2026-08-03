@@ -96,3 +96,23 @@ export const nextSuggestedRoundType = (): RoundType => {
   if (hour < 17) return "afternoon";
   return "night";
 };
+
+/** Next same-day round after the current one (null after night). */
+export const nextSameDayRoundType = (
+  current?: RoundType | string | null,
+): RoundType | null => {
+  if (current === "morning") return "afternoon";
+  if (current === "afternoon") return "night";
+  if (current === "night") return null;
+  return "afternoon";
+};
+
+export const canStartNextRoundToday = (session?: Session | null): boolean => {
+  if (getEncounterType(session) !== "IP") return false;
+  if (session?.allRoundsCompletedToday) return false;
+  if (typeof session?.hasNextRoundToday === "boolean") {
+    return session.hasNextRoundToday;
+  }
+  const schedule = session?.todaySchedule || [];
+  return schedule.some((r) => r.status === "pending");
+};

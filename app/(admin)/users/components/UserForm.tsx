@@ -346,7 +346,7 @@ export function UserForm({
             name="roleId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Role</FormLabel>
+                <FormLabel>Designation</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   value={field.value || undefined}

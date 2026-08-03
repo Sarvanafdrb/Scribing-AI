@@ -222,7 +222,7 @@ export default function OrganizationUsersPage() {
                   <TableRow>
                     <TableHead>User</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead>Designation</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -235,56 +235,58 @@ export default function OrganizationUsersPage() {
                       "Unknown";
 
                     return (
-                    <TableRow key={memberId || user.email}>
-                      <TableCell>
-                        {memberId ? (
-                          <LinkCell
-                            href={`/users/${memberId}`}
-                            className="flex items-center gap-3 no-underline hover:underline"
-                          >
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-blue-100 text-blue-600">
-                                {user.firstName?.charAt(0)?.toUpperCase() || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{memberName}</span>
-                          </LinkCell>
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-blue-100 text-blue-600">
-                                {user.firstName?.charAt(0)?.toUpperCase() || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{memberName}</span>
+                      <TableRow key={memberId || user.email}>
+                        <TableCell>
+                          {memberId ? (
+                            <LinkCell
+                              href={`/users/${memberId}`}
+                              className="flex items-center gap-3 no-underline hover:underline"
+                            >
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-blue-100 text-blue-600">
+                                  {user.firstName?.charAt(0)?.toUpperCase() ||
+                                    "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{memberName}</span>
+                            </LinkCell>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-blue-100 text-blue-600">
+                                  {user.firstName?.charAt(0)?.toUpperCase() ||
+                                    "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{memberName}</span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            {user.email || "No email"}
                           </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          {user.email || "No email"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-blue-50">
-                          {user.roleId?.name || "Member"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {user.createdAt
-                            ? new Date(user.createdAt).toLocaleDateString()
-                            : "N/A"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          Manage
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-blue-50">
+                            {user.roleId?.name || "Member"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {user.createdAt
+                              ? new Date(user.createdAt).toLocaleDateString()
+                              : "N/A"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm">
+                            Manage
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
                 </TableBody>

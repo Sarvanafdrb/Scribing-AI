@@ -56,9 +56,12 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "Total Organizations",
-      value: orgCountLoading && !organizationId ? "..." : String(organizationCount),
+      value:
+        orgCountLoading && !organizationId ? "..." : String(organizationCount),
       icon: Building2,
-      change: isAllOrganizations ? "All organizations" : "Selected organization",
+      change: isAllOrganizations
+        ? "All organizations"
+        : "Selected organization",
       color: "bg-blue-500",
     },
     {
@@ -76,7 +79,7 @@ export default function DashboardPage() {
       color: "bg-blue-400",
     },
     {
-      title: "Active Sessions",
+      title: "Active Consultations",
       value: sessionStatsLoading
         ? "..."
         : String(sessionStats?.activeCount || 0),
@@ -92,7 +95,9 @@ export default function DashboardPage() {
               ? "..."
               : String(doctorsReport?.totalDoctors ?? 0),
             icon: Stethoscope,
-            change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
+            change: isAllOrganizations
+              ? "Platform-wide"
+              : "Organization scoped",
             color: "bg-teal-600",
           },
           {
@@ -232,7 +237,7 @@ export default function DashboardPage() {
                 href="/sessions/create"
                 className="block w-full bg-white border border-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left"
               >
-                + Start New Session
+                + Start New Consultation
               </Link>
             </CardContent>
           </Card>

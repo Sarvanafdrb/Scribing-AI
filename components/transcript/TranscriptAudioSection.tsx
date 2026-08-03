@@ -128,7 +128,9 @@ export function TranscriptAudioSection({
               <Clock className="h-3.5 w-3.5" />
               Duration
             </dt>
-            <dd className="text-slate-800">{formatDuration(session.duration)}</dd>
+            <dd className="text-slate-800">
+              {formatDuration(session.duration)}
+            </dd>
           </div>
         </dl>
 

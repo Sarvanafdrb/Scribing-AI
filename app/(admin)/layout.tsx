@@ -73,7 +73,7 @@ const menuItems = [
   },
   {
     path: "/sessions",
-    label: "Sessions",
+    label: "Consultation",
     icon: Mic,
     permission: "SESSION_VIEW",
   },

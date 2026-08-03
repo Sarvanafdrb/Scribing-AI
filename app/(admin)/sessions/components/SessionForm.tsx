@@ -60,7 +60,9 @@ const parseOptionalNumber = (
   if (normalized === undefined) return undefined;
 
   const num =
-    typeof normalized === "number" ? normalized : Number(String(normalized).trim());
+    typeof normalized === "number"
+      ? normalized
+      : Number(String(normalized).trim());
 
   if (Number.isNaN(num) || !Number.isFinite(num)) {
     ctx.addIssue({ code: "custom", message });
@@ -70,12 +72,15 @@ const parseOptionalNumber = (
   return num;
 };
 
-const optionalDecimalField = z.custom<number | undefined>().transform(
-  (value, ctx) => parseOptionalNumber(value, ctx, "Temperature must be a number"),
-);
+const optionalDecimalField = z
+  .custom<number | undefined>()
+  .transform((value, ctx) =>
+    parseOptionalNumber(value, ctx, "Temperature must be a number"),
+  );
 
-const optionalPositiveIntField = z.custom<number | undefined>().transform(
-  (value, ctx) => {
+const optionalPositiveIntField = z
+  .custom<number | undefined>()
+  .transform((value, ctx) => {
     const num = parseOptionalNumber(value, ctx, "Must be a number");
     if (num === undefined) return undefined;
     if (!Number.isInteger(num)) {
@@ -87,33 +92,37 @@ const optionalPositiveIntField = z.custom<number | undefined>().transform(
       return z.NEVER;
     }
     return num;
-  },
-);
+  });
 
-const optionalSpo2Field = z.custom<number | undefined>().transform((value, ctx) => {
-  const num = parseOptionalNumber(value, ctx, "SpO₂ must be a number");
-  if (num === undefined) return undefined;
-  if (num < 0 || num > 100) {
-    ctx.addIssue({
-      code: "custom",
-      message: "SpO₂ must be between 0 and 100",
-    });
-    return z.NEVER;
-  }
-  return num;
-});
-
-const optionalWeightField = z.custom<number | undefined>().transform(
-  (value, ctx) => {
-    const num = parseOptionalNumber(value, ctx, "Weight must be a number");
+const optionalSpo2Field = z
+  .custom<number | undefined>()
+  .transform((value, ctx) => {
+    const num = parseOptionalNumber(value, ctx, "SpO₂ must be a number");
     if (num === undefined) return undefined;
-    if (num <= 0) {
-      ctx.addIssue({ code: "custom", message: "Weight must be a positive number" });
+    if (num < 0 || num > 100) {
+      ctx.addIssue({
+        code: "custom",
+        message: "SpO₂ must be between 0 and 100",
+      });
       return z.NEVER;
     }
     return num;
-  },
-);
+  });
+
+const optionalWeightField = z
+  .custom<number | undefined>()
+  .transform((value, ctx) => {
+    const num = parseOptionalNumber(value, ctx, "Weight must be a number");
+    if (num === undefined) return undefined;
+    if (num <= 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Weight must be a positive number",
+      });
+      return z.NEVER;
+    }
+    return num;
+  });
 
 const createSchema = z
   .object({
@@ -180,7 +189,9 @@ const getOrgId = (session?: Session) => {
   return session.organizationId;
 };
 
-const buildVitalsPayload = (data: CreateFormData): SessionVitals | undefined => {
+const buildVitalsPayload = (
+  data: CreateFormData,
+): SessionVitals | undefined => {
   const vitals: SessionVitals = {};
 
   if (data.temperature !== undefined) {
@@ -268,12 +279,7 @@ export function SessionForm({
   }, [rolesData]);
 
   const { data: doctorsData } = useQuery({
-    queryKey: [
-      "users",
-      "session-form-doctors",
-      selectedOrgId,
-      doctorRoleId,
-    ],
+    queryKey: ["users", "session-form-doctors", selectedOrgId, doctorRoleId],
     queryFn: () =>
       userService.getAll({
         organizationId: selectedOrgId,
@@ -427,7 +433,7 @@ export function SessionForm({
             name="sessionType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Session Type *</FormLabel>
+                <FormLabel>Consultation Type *</FormLabel>
                 <FormControl>
                   <SearchableCombobox
                     value={field.value}

@@ -50,15 +50,15 @@ export default function SessionsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Sessions</h1>
+          <h1 className="text-3xl font-bold">Consultations</h1>
           <p className="text-muted-foreground">
-            Manage scribing sessions • {total} total
+            Manage scribing consultations • {total} total
           </p>
         </div>
         <Link href="/sessions/create">
           <Button className="bg-blue-600 hover:bg-blue-700">
             <Plus className="mr-2 h-4 w-4" />
-            New Session
+            New Consultation
           </Button>
         </Link>
       </div>
@@ -77,7 +77,9 @@ export default function SessionsPage() {
             <CardTitle className="text-sm font-medium">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{activeCount}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {activeCount}
+            </div>
           </CardContent>
         </Card>
         <Card>

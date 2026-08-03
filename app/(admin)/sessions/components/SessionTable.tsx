@@ -83,14 +83,16 @@ export function SessionTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-semibold">Session Code</TableHead>
+              <TableHead className="font-semibold">Consultation Code</TableHead>
               <TableHead className="font-semibold">Patient Name</TableHead>
               <TableHead className="font-semibold">Patient Code</TableHead>
               <TableHead className="font-semibold">Doctor</TableHead>
-              <TableHead className="font-semibold">Session Type</TableHead>
+              <TableHead className="font-semibold">Consultation Type</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Created Date</TableHead>
-              <TableHead className="text-right font-semibold">Actions</TableHead>
+              <TableHead className="text-right font-semibold">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

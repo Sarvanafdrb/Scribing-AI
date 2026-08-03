@@ -30,9 +30,12 @@ export default function CreateSessionPage() {
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <Link href="/sessions">
-          <Button variant="ghost" className={cn("rounded-xl pl-0", healthcareGlass.button)}>
+          <Button
+            variant="ghost"
+            className={cn("rounded-xl pl-0", healthcareGlass.button)}
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Sessions
+            Back to Consultations
           </Button>
         </Link>
       </div>
@@ -44,10 +47,10 @@ export default function CreateSessionPage() {
               <Mic className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <CardTitle>Schedule Session</CardTitle>
+              <CardTitle>Schedule Consultation</CardTitle>
               <CardDescription>
-                Select patient, doctor, and session type. Session code and title
-                are generated automatically.
+                Select patient, doctor, and consultation type. Consultation code
+                and title are generated automatically.
               </CardDescription>
             </div>
           </div>
@@ -56,7 +59,7 @@ export default function CreateSessionPage() {
           <SessionForm
             onSubmit={handleSubmit}
             isLoading={createSession.isPending}
-            submitLabel="Create Session"
+            submitLabel="Create Consultation"
           />
         </CardContent>
       </Card>

@@ -368,9 +368,12 @@ export function UserForm({
                   <SelectContent>
                     {roles.map((role) => {
                       const id = role._id || role.id || "";
+                      const label = role.name.replace(/\b\w/g, (char) =>
+                        char.toUpperCase(),
+                      );
                       return (
                         <SelectItem key={id} value={id}>
-                          {role.name}
+                          {label}
                         </SelectItem>
                       );
                     })}

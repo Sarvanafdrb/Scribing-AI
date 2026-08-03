@@ -149,6 +149,9 @@ const editSchema = z.object({
   status: z.enum([
     "created",
     "recording",
+    "paused",
+    "interrupted",
+    "resumed",
     "uploading",
     "processing",
     "transcript_ready",

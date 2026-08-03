@@ -361,7 +361,7 @@ export function UserForm({
                             ? "Loading roles..."
                             : roles.length === 0
                               ? "No roles available"
-                              : "Select role (optional)"
+                              : "Select role"
                       }
                     />
                   </SelectTrigger>

@@ -20,7 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceEditDialog } from "@/components/ai-notes/VoiceEditDialog";
 import { VoiceEditReview } from "@/components/ai-notes/VoiceEditReview";
-import type { AiNotes, AiNotesMedication, VoiceEditPreviewResult } from "@/types/ai-notes.types";
+import type {
+  AiNotes,
+  AiNotesMedication,
+  VoiceEditPreviewResult,
+} from "@/types/ai-notes.types";
 import type { Session } from "@/types/session.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import {
@@ -73,9 +77,8 @@ export function AiNotesPrescriptionPreview({
   const [paperHeight, setPaperHeight] = useState(0);
   const [isVoiceEditOpen, setIsVoiceEditOpen] = useState(false);
   const [isVoiceReviewOpen, setIsVoiceReviewOpen] = useState(false);
-  const [voicePreview, setVoicePreview] = useState<VoiceEditPreviewResult | null>(
-    null,
-  );
+  const [voicePreview, setVoicePreview] =
+    useState<VoiceEditPreviewResult | null>(null);
   const hasAutoActionRun = useRef(false);
   const hasAutoVoiceEditRun = useRef(false);
   const hasAutoManualEditRun = useRef(Boolean(autoManualEdit));
@@ -133,7 +136,9 @@ export function AiNotesPrescriptionPreview({
   const removeMedication = (index: number) => {
     setContent((current) => ({
       ...current,
-      medications: current.medications.filter((_, medIndex) => medIndex !== index),
+      medications: current.medications.filter(
+        (_, medIndex) => medIndex !== index,
+      ),
     }));
   };
 
@@ -248,7 +253,9 @@ export function AiNotesPrescriptionPreview({
 
   const handleOpenVoiceEdit = () => {
     if (!canVoiceEdit) {
-      toast.info("Voice Edit is available after the consultation is saved as Completed.");
+      toast.info(
+        "Voice Edit is available after the consultation is saved as Completed.",
+      );
       return;
     }
     if (isEditing) {
@@ -445,7 +452,12 @@ export function AiNotesPrescriptionPreview({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label>Medications</Label>
-          <Button type="button" variant="outline" size="sm" onClick={addMedication}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addMedication}
+          >
             Add Medicine
           </Button>
         </div>
@@ -551,7 +563,9 @@ export function AiNotesPrescriptionPreview({
                   Consultation Preview
                 </h2>
                 <p className="mt-0.5 truncate text-xs text-gray-500 sm:text-sm">
-                  <span className="font-medium text-gray-700">{patientName}</span>
+                  <span className="font-medium text-gray-700">
+                    {patientName}
+                  </span>
                   <span className="mx-1.5 text-gray-300">·</span>
                   <span>{sessionDate}</span>
                 </p>
@@ -598,7 +612,12 @@ export function AiNotesPrescriptionPreview({
   const pageActionButtons = (
     <div className="flex shrink-0 flex-wrap items-center gap-1">
       {isEditing ? (
-        <Button type="button" size="sm" onClick={handleSave} disabled={isSaving}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={handleSave}
+          disabled={isSaving}
+        >
           {isSaving ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (

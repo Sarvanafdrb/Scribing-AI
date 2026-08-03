@@ -55,7 +55,9 @@ interface DoctorWorkspaceFooterProps {
   sessionId: string;
 }
 
-export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps) {
+export function DoctorWorkspaceFooter({
+  sessionId,
+}: DoctorWorkspaceFooterProps) {
   const queryClient = useQueryClient();
   const { data: session, refetch } = useSession(sessionId);
   const { aiNotes, saveExportContent } = useAiNotes(sessionId);
@@ -96,7 +98,9 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
   const exportContent =
     session && canOpenNotes
       ? buildAiNotesExportContent(
-          canExport && aiNotes ? aiNotes : { ...EMPTY_AI_NOTES, ...aiNotes, status: "completed" },
+          canExport && aiNotes
+            ? aiNotes
+            : { ...EMPTY_AI_NOTES, ...aiNotes, status: "completed" },
           session,
         )
       : null;
@@ -210,9 +214,7 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
       const refreshed = await refetch();
       void refreshed;
 
-      toast.success(
-        "Consultation saved and marked as completed.",
-      );
+      toast.success("Consultation saved and marked as completed.");
       setSaveDialogOpen(true);
     } catch (error: unknown) {
       const err = error as {
@@ -275,20 +277,20 @@ export function DoctorWorkspaceFooter({ sessionId }: DoctorWorkspaceFooterProps)
                 onClick={() => setRoundsOpen(true)}
               />
             ) : null}
-            <FooterButton
+            {/* <FooterButton
               icon={Mic}
               label="Voice Edit"
               variant="teal"
               onClick={handleVoiceEdit}
               disabled={!canExport || !isCompleted}
-            />
-            <FooterButton
+            /> */}
+            {/* <FooterButton
               icon={Pencil}
               label="Edit Notes"
               variant="blue"
               onClick={handleEditNotes}
               disabled={!canOpenNotes}
-            />
+            /> */}
             <FooterButton
               icon={Eye}
               label="Preview"
@@ -409,10 +411,8 @@ function FooterButton({
       disabled={disabled}
       className={cn(
         "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium disabled:opacity-50",
-        variant === "teal" &&
-          "border-teal-200 text-teal-700 hover:bg-teal-50",
-        variant === "blue" &&
-          "border-blue-200 text-blue-700 hover:bg-blue-50",
+        variant === "teal" && "border-teal-200 text-teal-700 hover:bg-teal-50",
+        variant === "blue" && "border-blue-200 text-blue-700 hover:bg-blue-50",
         variant === "outline" &&
           "border-gray-200 text-gray-600 hover:bg-gray-50",
       )}

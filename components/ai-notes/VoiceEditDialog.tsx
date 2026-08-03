@@ -37,14 +37,8 @@ export function VoiceEditDialog({
   onOpenChange,
   onPreviewReady,
 }: VoiceEditDialogProps) {
-  const {
-    state,
-    elapsedSeconds,
-    error,
-    start,
-    stop,
-    reset,
-  } = useMediaRecorder();
+  const { state, elapsedSeconds, error, start, stop, reset } =
+    useMediaRecorder();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const isRecording = state === "recording" || state === "paused";
@@ -95,8 +89,12 @@ export function VoiceEditDialog({
       onPreviewReady(preview);
     } catch (err: unknown) {
       const message =
-        (err as { response?: { data?: { message?: string } }; message?: string })
-          ?.response?.data?.message ||
+        (
+          err as {
+            response?: { data?: { message?: string } };
+            message?: string;
+          }
+        )?.response?.data?.message ||
         (err as { message?: string })?.message ||
         "Unable to process the voice instruction.";
       toast.error(message);
@@ -106,7 +104,10 @@ export function VoiceEditDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !isProcessing && onOpenChange(next)}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => !isProcessing && onOpenChange(next)}
+    >
       <DialogContent className="max-w-md rounded-2xl p-0 sm:max-w-md">
         <DialogHeader className="border-b border-gray-100 px-6 py-4">
           <DialogTitle>Voice Edit</DialogTitle>
@@ -165,9 +166,7 @@ export function VoiceEditDialog({
             )}
           </div>
 
-          {error && (
-            <p className="text-center text-sm text-red-600">{error}</p>
-          )}
+          {error && <p className="text-center text-sm text-red-600">{error}</p>}
 
           <div className="flex flex-wrap justify-center gap-2">
             {!isRecording && !isProcessing && (

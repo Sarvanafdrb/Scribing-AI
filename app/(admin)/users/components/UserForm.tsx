@@ -416,6 +416,40 @@ export function UserForm({
             </FormItem>
           )}
         />
+
+        {isEditing && initialData?.userCode ? (
+          <FormItem>
+            <FormLabel>User ID</FormLabel>
+            <FormControl>
+              <Input
+                readOnly
+                disabled
+                value={initialData.userCode}
+                className="bg-slate-50 font-mono"
+              />
+            </FormControl>
+            <p className="text-xs text-muted-foreground">
+              Auto-generated and cannot be changed
+            </p>
+          </FormItem>
+        ) : !isEditing ? (
+          <FormItem>
+            <FormLabel>User ID</FormLabel>
+            <FormControl>
+              <Input
+                readOnly
+                disabled
+                value="Auto-generated on create"
+                className="bg-slate-50 font-mono text-muted-foreground"
+              />
+            </FormControl>
+            <p className="text-xs text-muted-foreground">
+              An alphanumeric User ID (e.g. USR-A1B2C3D4) will be created
+              automatically
+            </p>
+          </FormItem>
+        ) : null}
+
         <Button
           type="submit"
           className="w-full bg-blue-600 hover:bg-blue-700"

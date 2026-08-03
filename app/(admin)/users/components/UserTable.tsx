@@ -124,6 +124,11 @@ export function UserTable({
                           <p className="font-medium">
                             {user.firstName} {user.lastName}
                           </p>
+                          {user.userCode && (
+                            <p className="text-xs font-normal text-muted-foreground no-underline">
+                              ID: {user.userCode}
+                            </p>
+                          )}
                         </div>
                       </LinkCell>
                     </TableCell>

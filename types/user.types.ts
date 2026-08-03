@@ -15,6 +15,7 @@ export interface UserRole {
 export interface User {
   id?: string;
   _id?: string;
+  userCode?: string;
   firstName: string;
   lastName: string;
   email: string;

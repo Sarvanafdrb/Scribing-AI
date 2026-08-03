@@ -115,6 +115,12 @@ export default function UserDetailsPage() {
           <CardContent>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">User ID</dt>
+                <dd className="font-mono font-medium">
+                  {user.userCode || "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Full Name</dt>
                 <dd className="font-medium">{fullName || "—"}</dd>
               </div>

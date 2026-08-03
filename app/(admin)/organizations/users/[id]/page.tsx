@@ -248,7 +248,14 @@ export default function OrganizationUsersPage() {
                                     "U"}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{memberName}</span>
+                              <div>
+                                <p className="font-medium">{memberName}</p>
+                                {user.userCode && (
+                                  <p className="text-xs font-normal text-muted-foreground no-underline">
+                                    ID: {user.userCode}
+                                  </p>
+                                )}
+                              </div>
                             </LinkCell>
                           ) : (
                             <div className="flex items-center gap-3">
@@ -258,7 +265,14 @@ export default function OrganizationUsersPage() {
                                     "U"}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="font-medium">{memberName}</span>
+                              <div>
+                                <p className="font-medium">{memberName}</p>
+                                {user.userCode && (
+                                  <p className="text-xs text-muted-foreground">
+                                    ID: {user.userCode}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           )}
                         </TableCell>

@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LinkCell } from "@/components/shared/LinkCell";
 import { UserActions } from "./UserActions";
 import { User } from "@/types/user.types";
 import { Building2, Calendar, Mail, ChevronLeft, ChevronRight } from "lucide-react";
@@ -34,11 +35,25 @@ const getOrgName = (user: User) => {
   return user.organizationName || "—";
 };
 
+const getOrgId = (user: User) => {
+  if (typeof user.organizationId === "object") {
+    return user.organizationId.id || user.organizationId._id;
+  }
+  return typeof user.organizationId === "string" ? user.organizationId : undefined;
+};
+
 const getRoleName = (user: User) => {
   if (typeof user.roleId === "object" && user.roleId?.name) {
     return user.roleId.name;
   }
   return "—";
+};
+
+const getRoleId = (user: User) => {
+  if (typeof user.roleId === "object") {
+    return user.roleId.id || user.roleId._id;
+  }
+  return typeof user.roleId === "string" ? user.roleId : undefined;
 };
 
 export function UserTable({
@@ -87,11 +102,18 @@ export function UserTable({
               users.map((user) => {
                 const userId = getUserId(user);
                 const isActive = user.isActive !== false;
+                const orgName = getOrgName(user);
+                const orgId = getOrgId(user);
+                const roleName = getRoleName(user);
+                const roleId = getRoleId(user);
 
                 return (
                   <TableRow key={userId}>
                     <TableCell>
-                      <div className="flex items-center gap-3">
+                      <LinkCell
+                        href={`/users/${userId}`}
+                        className="flex items-center gap-3 no-underline hover:underline"
+                      >
                         <Avatar className="h-10 w-10 bg-primary/10">
                           <AvatarFallback className="text-primary">
                             {user.firstName?.charAt(0)}
@@ -103,7 +125,7 @@ export function UserTable({
                             {user.firstName} {user.lastName}
                           </p>
                         </div>
-                      </div>
+                      </LinkCell>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
@@ -115,16 +137,29 @@ export function UserTable({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
-                        <Building2 className="h-3 w-3 text-muted-foreground" />
-                        <span className="truncate max-w-[140px]">
-                          {getOrgName(user)}
-                        </span>
+                        <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        {orgId && orgName !== "—" ? (
+                          <LinkCell
+                            href={`/organizations/${orgId}`}
+                            className="max-w-[140px] truncate"
+                          >
+                            {orgName}
+                          </LinkCell>
+                        ) : (
+                          <span className="truncate max-w-[140px]">
+                            {orgName}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                        {getRoleName(user)}
-                      </Badge>
+                      {roleId && roleName !== "—" ? (
+                        <LinkCell href={`/roles/${roleId}`}>{roleName}</LinkCell>
+                      ) : (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                          {roleName}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge

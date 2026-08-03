@@ -30,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LinkCell } from "@/components/shared/LinkCell";
 
 import { useOrganization } from "@/hooks/organizations/useOrganization";
 import { useOrganizationUsers } from "@/hooks/organizations/useOrganizationUsers";
@@ -227,20 +228,37 @@ export default function OrganizationUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {memberList.map((user) => (
-                    <TableRow key={user.id}>
+                  {memberList.map((user) => {
+                    const memberId = user.id || (user as { _id?: string })._id;
+                    const memberName =
+                      `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+                      "Unknown";
+
+                    return (
+                    <TableRow key={memberId || user.email}>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-blue-100 text-blue-600">
-                              {user.firstName?.charAt(0)?.toUpperCase() || "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">
-                            {`${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-                              "Unknown"}
-                          </span>
-                        </div>
+                        {memberId ? (
+                          <LinkCell
+                            href={`/users/${memberId}`}
+                            className="flex items-center gap-3 no-underline hover:underline"
+                          >
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-blue-100 text-blue-600">
+                                {user.firstName?.charAt(0)?.toUpperCase() || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{memberName}</span>
+                          </LinkCell>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-blue-100 text-blue-600">
+                                {user.firstName?.charAt(0)?.toUpperCase() || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{memberName}</span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -267,7 +285,8 @@ export default function OrganizationUsersPage() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

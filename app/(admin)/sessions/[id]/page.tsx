@@ -27,6 +27,7 @@ import {
 } from "@/utils/patient.utils";
 import { healthcareGlass, healthcareSolid } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
+import { LinkCell } from "@/components/shared/LinkCell";
 
 const formatDateTime = (value?: string) => {
   if (!value) return "—";
@@ -97,11 +98,22 @@ export default function SessionDetailsPage() {
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Name</dt>
-              <dd className="font-medium">{getPatientFullName(patient)}</dd>
+              <dd>
+                <LinkCell href={`/patients/${patient.id || patient._id}`}>
+                  {getPatientFullName(patient)}
+                </LinkCell>
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Patient Code</dt>
-              <dd className="font-mono">{patient.patientCode}</dd>
+              <dd>
+                <LinkCell
+                  href={`/patients/${patient.id || patient._id}`}
+                  mono
+                >
+                  {patient.patientCode}
+                </LinkCell>
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Age</dt>
@@ -114,14 +126,6 @@ export default function SessionDetailsPage() {
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Phone</dt>
               <dd>{patient.phoneNumber}</dd>
-            </div>
-            <div className="pt-2">
-              <Link
-                href={`/patients/${patient.id || patient._id}`}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                View patient record →
-              </Link>
             </div>
           </dl>
         ) : (
@@ -138,8 +142,16 @@ export default function SessionDetailsPage() {
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Name</dt>
-              <dd className="font-medium">
-                {doctor.firstName} {doctor.lastName}
+              <dd>
+                {doctor.id || doctor._id ? (
+                  <LinkCell href={`/users/${doctor.id || doctor._id}`}>
+                    {doctor.firstName} {doctor.lastName}
+                  </LinkCell>
+                ) : (
+                  <span className="font-medium">
+                    {doctor.firstName} {doctor.lastName}
+                  </span>
+                )}
               </dd>
             </div>
             <div className="flex justify-between gap-4">

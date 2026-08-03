@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LinkCell } from "@/components/shared/LinkCell";
 import { PatientActions } from "./PatientActions";
 import { Patient } from "@/types/patient.types";
 import { getPatientAge, getPatientFullName } from "@/utils/patient.utils";
@@ -80,15 +80,14 @@ export function PatientTable({
                 return (
                   <TableRow key={patientId}>
                     <TableCell>
-                      <Link
-                        href={`/patients/${patientId}`}
-                        className="font-mono text-sm font-medium text-blue-600 hover:underline"
-                      >
+                      <LinkCell href={`/patients/${patientId}`} mono>
                         {patient.patientCode}
-                      </Link>
+                      </LinkCell>
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {getPatientFullName(patient)}
+                    <TableCell>
+                      <LinkCell href={`/patients/${patientId}`}>
+                        {getPatientFullName(patient)}
+                      </LinkCell>
                     </TableCell>
                     <TableCell>{age !== null ? age : "—"}</TableCell>
                     <TableCell>{formatGender(patient.gender)}</TableCell>

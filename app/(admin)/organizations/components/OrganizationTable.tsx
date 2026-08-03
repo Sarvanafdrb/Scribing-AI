@@ -1,7 +1,6 @@
 // app/(admin)/organizations/components/OrganizationTable.tsx
 "use client";
 
-import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -13,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LinkCell } from "@/components/shared/LinkCell";
 import { OrganizationActions } from "./OrganizationActions";
 import { Organization } from "@/types/organization.types";
 import { Calendar, Mail, Phone, ChevronLeft, ChevronRight } from "lucide-react";
@@ -94,9 +94,9 @@ export function OrganizationTable({
                 return (
                   <TableRow key={orgId}>
                     <TableCell>
-                      <Link
+                      <LinkCell
                         href={`/organizations/${orgId}`}
-                        className="flex items-center gap-3 hover:text-primary"
+                        className="flex items-center gap-3 no-underline hover:underline"
                       >
                         <Avatar className="h-10 w-10 bg-primary/10">
                           <AvatarFallback className="text-primary">
@@ -106,17 +106,33 @@ export function OrganizationTable({
                         <div>
                           <p className="font-medium">{org.name}</p>
                           {org.organizationCode && (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs font-normal text-muted-foreground no-underline">
                               ID: {org.organizationCode}
                             </p>
                           )}
                         </div>
-                      </Link>
+                      </LinkCell>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {org.parentOrganization?.name || "—"}
-                      </span>
+                      {(() => {
+                        const parent = org.parentOrganization;
+                        const parentId = parent?.id || parent?._id;
+                        if (parentId && parent?.name) {
+                          return (
+                            <LinkCell
+                              href={`/organizations/${parentId}`}
+                              className="text-sm"
+                            >
+                              {parent.name}
+                            </LinkCell>
+                          );
+                        }
+                        return (
+                          <span className="text-sm text-muted-foreground">
+                            {parent?.name || "—"}
+                          </span>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">

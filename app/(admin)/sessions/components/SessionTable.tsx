@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LinkCell } from "@/components/shared/LinkCell";
 import { SessionActions } from "./SessionActions";
 import { SessionStatusBadge } from "./SessionStatusBadge";
 import { Session, SessionUser } from "@/types/session.types";
@@ -48,13 +48,25 @@ const getDoctorName = (userId: string | SessionUser) => {
 
 const getPatientDisplay = (patientId: string | Patient | undefined) => {
   if (!patientId || typeof patientId === "string") {
-    return { name: "—", code: "—" };
+    return {
+      name: "—",
+      code: "—",
+      id: typeof patientId === "string" ? patientId : undefined,
+    };
   }
 
   return {
     name: getPatientFullName(patientId),
     code: patientId.patientCode || "—",
+    id: patientId.id || patientId._id,
   };
+};
+
+const getDoctorId = (userId: string | SessionUser) => {
+  if (typeof userId === "object") {
+    return userId.id || userId._id;
+  }
+  return typeof userId === "string" ? userId : undefined;
 };
 
 const formatSessionType = (type: string) =>
@@ -110,36 +122,63 @@ export function SessionTable({
                 const sessionId = getSessionId(session);
                 const isActive = session.isActive !== false;
                 const patient = getPatientDisplay(session.patientId);
+                const doctorName = getDoctorName(session.userId);
+                const doctorId = getDoctorId(session.userId);
 
                 return (
                   <TableRow key={sessionId}>
                     <TableCell>
-                      <Link
-                        href={`/sessions/${sessionId}`}
-                        className="font-mono text-sm font-medium text-blue-600 hover:underline"
-                      >
+                      <LinkCell href={`/sessions/${sessionId}`} mono>
                         {session.sessionCode}
-                      </Link>
+                      </LinkCell>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
-                        <User className="h-3 w-3 text-muted-foreground" />
-                        <span className="max-w-[140px] truncate">
-                          {patient.name}
-                        </span>
+                        <User className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        {patient.id && patient.name !== "—" ? (
+                          <LinkCell
+                            href={`/patients/${patient.id}`}
+                            className="max-w-[140px] truncate"
+                          >
+                            {patient.name}
+                          </LinkCell>
+                        ) : (
+                          <span className="max-w-[140px] truncate">
+                            {patient.name}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-mono text-sm text-muted-foreground">
-                        {patient.code}
-                      </span>
+                      {patient.id && patient.code !== "—" ? (
+                        <LinkCell
+                          href={`/patients/${patient.id}`}
+                          mono
+                          className="text-muted-foreground"
+                        >
+                          {patient.code}
+                        </LinkCell>
+                      ) : (
+                        <span className="font-mono text-sm text-muted-foreground">
+                          {patient.code}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
-                        <Stethoscope className="h-3 w-3 text-muted-foreground" />
-                        <span className="max-w-[140px] truncate">
-                          {getDoctorName(session.userId)}
-                        </span>
+                        <Stethoscope className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        {doctorId && doctorName !== "—" ? (
+                          <LinkCell
+                            href={`/users/${doctorId}`}
+                            className="max-w-[140px] truncate"
+                          >
+                            {doctorName}
+                          </LinkCell>
+                        ) : (
+                          <span className="max-w-[140px] truncate">
+                            {doctorName}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { LinkCell } from "@/components/shared/LinkCell";
 import { RoleActions } from "./RoleActions";
 import { Role } from "@/types/role.types";
 
@@ -72,7 +73,7 @@ export function RoleTable({
                 return (
                   <TableRow key={roleId}>
                     <TableCell>
-                      <p className="font-medium">{role.name}</p>
+                      <LinkCell href={`/roles/${roleId}`}>{role.name}</LinkCell>
                     </TableCell>
                     <TableCell>
                       <p className="max-w-[420px] truncate text-sm text-muted-foreground">

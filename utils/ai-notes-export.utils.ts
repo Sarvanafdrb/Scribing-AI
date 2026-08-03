@@ -1,9 +1,24 @@
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import { Document, HeadingLevel, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from "docx";
+import {
+  Document,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+} from "docx";
 import type { AiNotes, AiNotesMedication } from "@/types/ai-notes.types";
 import type { Patient } from "@/types/patient.types";
-import type { Session, SessionOrganization, SessionUser, VisitType } from "@/types/session.types";
+import type {
+  Session,
+  SessionOrganization,
+  SessionUser,
+  VisitType,
+} from "@/types/session.types";
 import { resolveUploadUrl } from "@/utils/media-url.utils";
 import { getPatientAge, getPatientFullName } from "@/utils/patient.utils";
 
@@ -36,10 +51,26 @@ export const PRESCRIPTION_SECTIONS = [
 ] as const;
 
 export const SOAP_EXPORT_SECTIONS = [
-  { key: "subjective" as const, label: "Subjective", description: "Patient-reported information" },
-  { key: "objective" as const, label: "Objective", description: "Observable clinical findings" },
-  { key: "assessment" as const, label: "Assessment", description: "Clinical impression" },
-  { key: "plan" as const, label: "Plan", description: "Treatment and follow-up" },
+  {
+    key: "subjective" as const,
+    label: "Subjective",
+    description: "Patient-reported information",
+  },
+  {
+    key: "objective" as const,
+    label: "Objective",
+    description: "Observable clinical findings",
+  },
+  {
+    key: "assessment" as const,
+    label: "Assessment",
+    description: "Clinical impression",
+  },
+  {
+    key: "plan" as const,
+    label: "Plan",
+    description: "Treatment and follow-up",
+  },
 ];
 
 export interface AiNotesExportMetadata {
@@ -200,12 +231,12 @@ export const hasExportableAiNotes = (aiNotes?: AiNotes) => {
 
   return Boolean(
     aiNotes.summary?.trim() ||
-      aiNotes.subjective?.trim() ||
-      aiNotes.objective?.trim() ||
-      aiNotes.assessment?.trim() ||
-      aiNotes.plan?.trim() ||
-      aiNotes.remarks?.trim() ||
-      aiNotes.medications?.length,
+    aiNotes.subjective?.trim() ||
+    aiNotes.objective?.trim() ||
+    aiNotes.assessment?.trim() ||
+    aiNotes.plan?.trim() ||
+    aiNotes.remarks?.trim() ||
+    aiNotes.medications?.length,
   );
 };
 
@@ -240,7 +271,7 @@ const escapeHtml = (value: string) =>
 export const PRESCRIPTION_DOCUMENT_STYLES = `
   * { box-sizing: border-box; }
   body {
-    font-family: Georgia, "Times New Roman", serif;
+    font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     color: #111827;
     margin: 0;
     padding: 24px;
@@ -462,7 +493,9 @@ const renderSignatureHtml = (metadata: AiNotesExportMetadata) => {
   `;
 };
 
-export const buildAiNotesPrescriptionBodyHtml = (content: AiNotesExportContent) => {
+export const buildAiNotesPrescriptionBodyHtml = (
+  content: AiNotesExportContent,
+) => {
   const { metadata } = content;
   const logoHtml = metadata.organizationLogo
     ? `<img src="${escapeHtml(metadata.organizationLogo)}" alt="Organization Logo" />`
@@ -752,7 +785,11 @@ const renderHtmlToPdf = async (html: string): Promise<jsPDF> => {
       scrollY: 0,
     });
 
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pdf = new jsPDF({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+    });
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const margin = 10;
@@ -859,7 +896,9 @@ export const downloadAiNotesDocx = async (
   const { metadata } = content;
   const metadataParagraphs = [
     new Paragraph({
-      children: [new TextRun({ text: metadata.organizationName, bold: true, size: 28 })],
+      children: [
+        new TextRun({ text: metadata.organizationName, bold: true, size: 28 }),
+      ],
       spacing: { after: 80 },
     }),
     new Paragraph({
@@ -935,7 +974,9 @@ export const downloadAiNotesDocx = async (
                     new TableCell({
                       children: [
                         new Paragraph({
-                          children: [new TextRun({ text: heading, bold: true })],
+                          children: [
+                            new TextRun({ text: heading, bold: true }),
+                          ],
                         }),
                       ],
                     }),
@@ -983,7 +1024,12 @@ export const downloadAiNotesDocx = async (
             ? [
                 new Paragraph({ spacing: { before: 400 } }),
                 new Paragraph({
-                  children: [new TextRun({ text: `Dr. ${metadata.doctorName}`, bold: true })],
+                  children: [
+                    new TextRun({
+                      text: `Dr. ${metadata.doctorName}`,
+                      bold: true,
+                    }),
+                  ],
                   alignment: "right",
                 }),
                 new Paragraph({
@@ -992,7 +1038,10 @@ export const downloadAiNotesDocx = async (
                 }),
                 new Paragraph({
                   children: [
-                    new TextRun({ text: "Authorised Signatory", italics: true }),
+                    new TextRun({
+                      text: "Authorised Signatory",
+                      italics: true,
+                    }),
                   ],
                   alignment: "right",
                 }),

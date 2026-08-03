@@ -47,8 +47,12 @@ export function TopOrganizationsTable({
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Organization Name</TableHead>
-                  <TableHead className="text-right">Total Sessions</TableHead>
-                  <TableHead className="text-right">Total Transcripts</TableHead>
+                  <TableHead className="text-right">
+                    Total Consultations
+                  </TableHead>
+                  <TableHead className="text-right">
+                    Total Transcripts
+                  </TableHead>
                   <TableHead className="text-right">Total AI Notes</TableHead>
                 </TableRow>
               </TableHeader>

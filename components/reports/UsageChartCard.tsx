@@ -85,7 +85,7 @@ export function UsageChartCard({
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <MetricChip label="Sessions" value={data?.sessions ?? 0} />
+              <MetricChip label="Consultations" value={data?.sessions ?? 0} />
               <MetricChip
                 label="Audio Uploaded"
                 value={data?.audioUploads ?? 0}
@@ -104,7 +104,7 @@ export function UsageChartCard({
                   <Line
                     type="monotone"
                     dataKey="sessions"
-                    name="Sessions"
+                    name="Consultations"
                     stroke="#2563eb"
                     strokeWidth={2}
                     dot={false}

@@ -250,27 +250,27 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
 
   return (
     <>
-      <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-gray-200 bg-white">
-        <div className="border-b border-gray-200 px-5 py-5">
+      <aside className="glass flex h-full w-[260px] shrink-0 flex-col border-r border-border/50">
+        <div className="border-b border-border/50 px-5 py-5">
           <div className="flex items-center gap-3">
             {organizationLogo ? (
               <img
                 src={organizationLogo}
                 alt={`${organizationName} logo`}
-                className="h-9 w-9 shrink-0 rounded-lg object-contain"
+                className="h-9 w-9 shrink-0 rounded-xl object-contain"
               />
             ) : null}
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold text-teal-600">
+              <h1 className="truncate text-xl font-bold text-primary">
                 {organizationName}
               </h1>
-              <p className="text-xs text-gray-500">AI Medical Scribe</p>
+              <p className="text-xs text-muted-foreground">AI Medical Scribe</p>
             </div>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="mb-3 px-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+          <p className="mb-3 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
             Today — {items.length} patient
             {items.length !== 1 ? "s" : ""}
           </p>
@@ -299,10 +299,10 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   onClick={() => openQueueItem(item)}
                   disabled={isOpening}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+                    "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors",
                     isActive
-                      ? "bg-teal-50 ring-1 ring-teal-100"
-                      : "hover:bg-gray-50",
+                      ? "bg-accent/80 ring-1 ring-primary/20 shadow-glow"
+                      : "hover:bg-muted/50",
                   )}
                 >
                   <div className="relative">
@@ -315,7 +315,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                       {getInitials(patient?.firstName, patient?.lastName)}
                     </div>
                     {isActive && (
-                      <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500" />
+                      <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" />
                     )}
                   </div>
 
@@ -324,31 +324,31 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                       <p
                         className={cn(
                           "truncate text-sm font-medium",
-                          isActive ? "text-teal-800" : "text-gray-800",
+                          isActive ? "text-primary" : "text-foreground",
                         )}
                       >
                         {getPatientFullName(patient)}
                       </p>
                       {item.encounterType === "OP" ? (
-                        <span className="shrink-0 rounded bg-emerald-50 px-1 py-px text-[9px] font-semibold text-emerald-700">
+                        <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-px text-[9px] font-semibold text-emerald-700 dark:text-emerald-300">
                           OP
                         </span>
                       ) : (
                         <>
                           {item.isEmergency && (
-                            <span className="shrink-0 rounded bg-red-50 px-1 py-px text-[9px] font-semibold text-red-700">
+                            <span className="shrink-0 rounded-full bg-red-500/15 px-1.5 py-px text-[9px] font-semibold text-red-700 dark:text-red-300">
                               EM
                             </span>
                           )}
-                          <span className="shrink-0 rounded bg-sky-50 px-1 py-px text-[9px] font-semibold text-sky-700">
+                          <span className="shrink-0 rounded-full bg-sky-500/15 px-1.5 py-px text-[9px] font-semibold text-sky-700 dark:text-sky-300">
                             IP
                           </span>
                         </>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {item.encounterType === "IP" ? (
-                        <span className="text-sky-600">
+                        <span className="text-primary/80">
                           Day {item.admissionDay || 1}
                           {item.ward ? ` · ${item.ward}` : ""}
                           {item.nextRoundLabel

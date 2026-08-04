@@ -82,7 +82,7 @@ export function UserProfileDropdown({
             {profilePicture ? (
               <AvatarImage src={profilePicture} alt={displayName} />
             ) : null}
-            <AvatarFallback className="bg-teal-600 text-xs font-semibold text-white">
+            <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">
               {getInitials(user)}
             </AvatarFallback>
           </Avatar>
@@ -92,43 +92,43 @@ export function UserProfileDropdown({
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-64 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
+        className="glass-strong w-64 rounded-2xl border-border/50 p-1.5"
       >
         <DropdownMenuLabel className="px-2.5 py-2.5 font-normal">
           <div className="space-y-0.5">
-            <p className="truncate text-sm font-semibold text-gray-900">
+            <p className="truncate text-sm font-semibold text-foreground">
               {displayName}
             </p>
-            <p className="truncate text-xs text-gray-500">{user.email}</p>
-            <p className="truncate text-xs font-medium text-teal-700">
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <p className="truncate text-xs font-medium text-primary">
               {roleLabel}
             </p>
           </div>
         </DropdownMenuLabel>
 
-        <DropdownMenuSeparator className="my-1.5 bg-gray-100" />
+        <DropdownMenuSeparator className="my-1.5 bg-border" />
 
         <DropdownMenuItem
           asChild
-          className="cursor-pointer rounded-lg px-2.5 py-2 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
+          className="cursor-pointer rounded-xl px-2.5 py-2 text-foreground focus:bg-muted focus:text-foreground"
         >
           <Link href={profileHref}>
-            <User className="h-4 w-4 text-gray-500" />
+            <User className="h-4 w-4 text-muted-foreground" />
             My Profile
           </Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem
           asChild
-          className="cursor-pointer rounded-lg px-2.5 py-2 text-gray-700 focus:bg-gray-50 focus:text-gray-900"
+          className="cursor-pointer rounded-xl px-2.5 py-2 text-foreground focus:bg-muted focus:text-foreground"
         >
           <Link href={changePasswordHref}>
-            <KeyRound className="h-4 w-4 text-gray-500" />
+            <KeyRound className="h-4 w-4 text-muted-foreground" />
             Change Password
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator className="my-1.5 bg-gray-100" />
+        <DropdownMenuSeparator className="my-1.5 bg-border" />
 
         <DropdownMenuItem
           variant="destructive"

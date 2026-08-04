@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useState } from "react";
 import { recordDiagEvent } from "@/hooks/recording/recordingFailureDiagnostics";
 import { sessionKeys } from "@/services/session.queries";
+import { ThemeProvider } from "@/components/shared/ThemeProvider";
 
 /** Diagnostics-only: observe session / doctor-queue refetch + invalidation. */
 function RecordingDiagQueryObserver() {
@@ -98,7 +99,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
+            staleTime: 60 * 1000,
             refetchOnWindowFocus: false,
             retry: 1,
           },
@@ -107,10 +108,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <RecordingDiagQueryObserver />
-      {children}
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <RecordingDiagQueryObserver />
+        {children}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

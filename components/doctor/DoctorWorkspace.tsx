@@ -43,22 +43,22 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
 
   if (isLoading && !session) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">Session not found</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Session not found</p>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-transparent">
       <div className="flex min-h-0 flex-1">
         <DoctorSidebar activeSessionId={sessionId} />
 

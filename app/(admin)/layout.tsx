@@ -154,10 +154,10 @@ export default function AdminLayout({
 
   if (shouldShowLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -170,9 +170,9 @@ export default function AdminLayout({
     return null;
   }
   return (
-    <div className="min-h-screen bg-blue-50/50">
+    <div className="min-h-screen bg-transparent">
       {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="fixed top-4 left-4 z-50 lg:hidden">
         <Button
           variant="outline"
           size="icon"
@@ -188,32 +188,32 @@ export default function AdminLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${
+        className={`glass fixed top-0 left-0 z-40 h-screen w-64 border-r border-sidebar-border transform transition-transform duration-200 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-              Scribing AI
+          <div className="border-b border-sidebar-border p-4">
+            <h1 className="bg-gradient-to-r from-primary to-[var(--glow)] bg-clip-text text-xl font-bold text-transparent">
+              Scribblr AI
             </h1>
-            <p className="text-xs text-gray-500 mt-1">Admin Panel</p>
+            <p className="mt-1 text-xs text-muted-foreground">Admin Panel</p>
           </div>
 
           {/* User Info */}
-          <div className="p-4 border-b border-gray-200 bg-blue-50">
-            <p className="font-medium text-gray-900">
+          <div className="border-b border-sidebar-border bg-sidebar-accent/50 p-4">
+            <p className="font-medium text-foreground">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-xs text-gray-500 mt-1">{user?.email}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{user?.email}</p>
             {isSuperAdmin ? (
-              <p className="text-xs text-blue-600 mt-1 font-medium">
+              <p className="mt-1 text-xs font-medium text-primary">
                 Super Admin
               </p>
             ) : (
               user?.organizationName && (
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="mt-1 text-xs text-primary">
                   {user.organizationName}
                 </p>
               )
@@ -221,7 +221,7 @@ export default function AdminLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 space-y-1 p-4">
             {menuItems
               .filter((item) => {
                 if (item.path === "/settings") {
@@ -239,10 +239,10 @@ export default function AdminLayout({
                     key={item.path}
                     href={item.path}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    className={`flex items-center gap-3 rounded-full px-3 py-2 transition-colors ${
                       isActive
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700 hover:bg-gray-100"
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
+                        : "text-sidebar-foreground hover:bg-muted/60"
                     }`}
                   >
                     <Icon className="h-5 w-5" />
@@ -253,10 +253,10 @@ export default function AdminLayout({
           </nav>
 
           {/* Logout Button */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="border-t border-sidebar-border p-4">
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+              className="flex w-full items-center gap-3 rounded-full px-3 py-2 text-destructive transition-colors hover:bg-destructive/10"
             >
               <LogOut className="h-5 w-5" />
               <span>Logout</span>

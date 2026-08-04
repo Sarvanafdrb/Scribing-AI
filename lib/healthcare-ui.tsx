@@ -3,29 +3,31 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Light glass — headers, search bars, dialogs, secondary actions */
+/** Light / dark glass — headers, search bars, dialogs, secondary actions */
 export const healthcareGlass = {
-  bar: "rounded-xl border border-white/70 bg-white/65 backdrop-blur-md shadow-sm",
+  bar: "glass rounded-2xl",
   button:
-    "rounded-xl border border-slate-200/80 bg-white/75 backdrop-blur-sm shadow-sm hover:bg-white/90",
-  dialog: "rounded-2xl border border-white/60 bg-white/85 backdrop-blur-xl",
-  header:
-    "rounded-2xl border border-white/50 bg-white/60 backdrop-blur-md px-6 py-5 shadow-sm",
+    "glass rounded-2xl hover:bg-muted/80 transition-colors",
+  dialog: "glass-strong rounded-3xl",
+  header: "glass rounded-3xl px-6 py-5",
 };
 
-/** Solid surfaces — forms and clinical data for readability */
+/** Surfaces — clinical data with glass readability */
 export const healthcareSolid = {
-  card: "rounded-xl border border-slate-200 bg-white shadow-sm",
-  formCard: "rounded-xl border border-slate-200 bg-white shadow-sm",
-  section: "rounded-xl border border-slate-100 bg-white p-5 shadow-sm",
-  statCard: "rounded-xl border border-slate-200 bg-white shadow-sm",
+  card: "glass rounded-2xl",
+  formCard: "glass-strong rounded-2xl",
+  section: "glass rounded-2xl p-5",
+  statCard: "glass rounded-2xl",
 };
 
 export const healthcareSearchInput =
-  "rounded-xl border border-slate-200/80 bg-white/75 backdrop-blur-sm pl-9 shadow-sm focus-visible:ring-blue-500/25";
+  "rounded-2xl border-border/60 bg-input/80 backdrop-blur-md pl-9 shadow-sm focus-visible:ring-ring/30";
 
 export const healthcarePrimaryButton =
-  "rounded-xl bg-blue-600 shadow-sm hover:bg-blue-700";
+  "rounded-full bg-primary text-primary-foreground shadow-glow hover:bg-primary/90";
+
+export const healthcareCtaButton =
+  "rounded-full bg-cta text-cta-foreground shadow-cta hover:opacity-95";
 
 export function HealthcarePageHeader({
   title,
@@ -47,11 +49,11 @@ export function HealthcarePageHeader({
       )}
     >
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           {title}
         </h1>
         {description && (
-          <p className="mt-1 text-sm text-slate-600">{description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {children}

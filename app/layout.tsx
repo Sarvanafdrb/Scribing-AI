@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/app/providers/Providers";
 
 export const metadata: Metadata = {
@@ -15,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-sans">
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <body className="relative flex min-h-full flex-col font-sans">
         <Providers>
           {children}
           <Toaster richColors position="top-right" />

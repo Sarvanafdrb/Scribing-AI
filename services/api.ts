@@ -62,6 +62,11 @@ api.interceptors.request.use(
       delete config.headers.Authorization;
     }
 
+    // Let the browser set multipart boundary — a bare Content-Type breaks multer.
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     // "all" means platform-wide — do not send a workspace header.
     if (workspaceId && workspaceId !== "all") {
       config.headers["X-Workspace-Id"] = workspaceId;

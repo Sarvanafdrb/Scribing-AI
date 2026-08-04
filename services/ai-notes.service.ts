@@ -40,15 +40,25 @@ export const aiNotesService = {
     audioBlob: Blob,
     fileName: string,
   ): Promise<VoiceEditPreviewResult> => {
+    const mimeType =
+      audioBlob.type && audioBlob.type.startsWith("audio/")
+        ? audioBlob.type
+        : "audio/webm";
+    const typedBlob =
+      audioBlob.type === mimeType
+        ? audioBlob
+        : new Blob([audioBlob], { type: mimeType });
+    const safeName =
+      fileName && /\.(webm|m4a|ogg|mp3|wav)$/i.test(fileName)
+        ? fileName
+        : `voice-edit-${Date.now()}.webm`;
+
     const formData = new FormData();
-    formData.append("audio", audioBlob, fileName);
+    formData.append("audio", typedBlob, safeName);
 
     const response = await api.post(
       `/sessions/${sessionId}/ai-notes/voice-edit/preview`,
       formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      },
     );
     return response.data.data;
   },

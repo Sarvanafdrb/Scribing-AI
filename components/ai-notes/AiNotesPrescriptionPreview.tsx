@@ -50,6 +50,8 @@ interface AiNotesPrescriptionPreviewProps {
   autoAction?: "print" | "pdf";
   autoVoiceEdit?: boolean;
   autoManualEdit?: boolean;
+  /** Parent Preview modal must stay open while Voice Edit / Review is active. */
+  onVoiceFlowActiveChange?: (active: boolean) => void;
 }
 
 const ZOOM_MIN = 0.75;
@@ -67,6 +69,7 @@ export function AiNotesPrescriptionPreview({
   autoAction,
   autoVoiceEdit = false,
   autoManualEdit = false,
+  onVoiceFlowActiveChange,
 }: AiNotesPrescriptionPreviewProps) {
   const [content, setContent] = useState(initialContent);
   const [isEditing, setIsEditing] = useState(Boolean(autoManualEdit));
@@ -268,6 +271,7 @@ export function AiNotesPrescriptionPreview({
   const handleVoicePreviewReady = (preview: VoiceEditPreviewResult) => {
     setVoicePreview(preview);
     setIsVoiceReviewOpen(true);
+    setIsVoiceEditOpen(false);
   };
 
   const handleVoiceAccepted = (aiNotes: AiNotes) => {
@@ -279,6 +283,14 @@ export function AiNotesPrescriptionPreview({
     setVoicePreview(null);
     onNotesUpdated?.(aiNotes);
   };
+
+  useEffect(() => {
+    onVoiceFlowActiveChange?.(isVoiceEditOpen || isVoiceReviewOpen);
+  }, [isVoiceEditOpen, isVoiceReviewOpen, onVoiceFlowActiveChange]);
+
+  useEffect(() => {
+    return () => onVoiceFlowActiveChange?.(false);
+  }, [onVoiceFlowActiveChange]);
 
   const voiceEditOverlays = (
     <>

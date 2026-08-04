@@ -79,7 +79,18 @@ export function VoiceEditReview({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] w-[min(96vw,820px)] max-w-none flex-col gap-0 overflow-hidden rounded-2xl p-0">
+      <DialogContent
+        showCloseButton={false}
+        data-voice-review=""
+        overlayClassName="z-[70]"
+        className="z-[80] flex max-h-[90vh] w-[min(96vw,820px)] max-w-none flex-col gap-0 overflow-hidden rounded-2xl p-0"
+        onPointerDownOutside={(event) => {
+          if (isAccepting) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          if (isAccepting) event.preventDefault();
+        }}
+      >
         <DialogHeader className="border-b border-gray-100 px-6 py-4">
           <DialogTitle>Changes Detected</DialogTitle>
           <DialogDescription>

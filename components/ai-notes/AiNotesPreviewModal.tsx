@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,12 +35,31 @@ export function AiNotesPreviewModal({
   autoVoiceEdit,
   autoManualEdit,
 }: AiNotesPreviewModalProps) {
+  const [voiceFlowActive, setVoiceFlowActive] = useState(false);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        // Nested Voice Edit / Review dialogs can bubble a false close to the
+        // parent Preview — keep Preview open until that flow finishes.
+        if (!next && voiceFlowActive) return;
+        onOpenChange(next);
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         aria-describedby={undefined}
-        className="flex h-[95vh] w-[95vw] max-w-none translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 shadow-2xl ring-0 sm:max-w-none"
+        className="flex h-[95vh] w-[95vw] max-w-none translate-x-[-50%] translate-y-[-50%] flex-col gap-0 overflow-hidden rounded-2xl border border-border p-0 shadow-2xl ring-0 sm:max-w-none"
+        onPointerDownOutside={(event) => {
+          if (voiceFlowActive) event.preventDefault();
+        }}
+        onInteractOutside={(event) => {
+          if (voiceFlowActive) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          if (voiceFlowActive) event.preventDefault();
+        }}
       >
         <DialogTitle className="sr-only">Consultation Preview</DialogTitle>
         <DialogDescription className="sr-only">
@@ -53,10 +73,13 @@ export function AiNotesPreviewModal({
             session={session}
             onSave={onSave}
             onNotesUpdated={onNotesUpdated}
-            onClose={() => onOpenChange(false)}
+            onClose={() => {
+              if (!voiceFlowActive) onOpenChange(false);
+            }}
             autoAction={autoAction}
             autoVoiceEdit={autoVoiceEdit}
             autoManualEdit={autoManualEdit}
+            onVoiceFlowActiveChange={setVoiceFlowActive}
           />
         )}
       </DialogContent>

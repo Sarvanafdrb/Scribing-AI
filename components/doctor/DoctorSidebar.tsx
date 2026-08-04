@@ -299,11 +299,10 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   onClick={() => openQueueItem(item)}
                   disabled={isOpening}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors",
-                    isActive
-                      ? "glass-tint ring-1 ring-primary/25 shadow-glow"
-                      : "hover:bg-white/5",
+                    "glass-row flex w-full items-center gap-3 px-3 py-2.5 text-left",
+                    isActive && "shadow-glow",
                   )}
+                  data-active={isActive ? "true" : undefined}
                 >
                   <div className="relative">
                     <div

@@ -95,10 +95,12 @@
 
   --glass-bg: rgba(255, 255, 255, 0.38);
   --glass-bg-strong: rgba(255, 255, 255, 0.58);
-  --glass-bg-tint: rgba(200, 180, 255, 0.22);
-  --glass-bg-teal: rgba(120, 220, 210, 0.22);
+  --glass-bg-tint: rgba(200, 180, 255, 0.28);
+  --glass-bg-teal: rgba(120, 220, 210, 0.28);
   --glass-border: rgba(255, 255, 255, 0.72);
   --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-hover: rgba(255, 255, 255, 0.55);
+  --glass-hover-tint: rgba(160, 140, 255, 0.35);
   --glass-shadow:
     0 1px 0 rgba(255, 255, 255, 0.8) inset,
     0 0 0 0.5px rgba(255, 255, 255, 0.5) inset,
@@ -109,60 +111,63 @@
   --ambient-3: rgba(255, 210, 170, 0.45);
 }
 
-/* ─── Dark liquid glass (Apple reference) ─── */
+/* ─── Dark liquid glass (reference: indigo + teal) ─── */
 .dark {
-  --background: #0a0b0d;
+  /* Deep navy charcoal — not pure black */
+  --background: #05070a;
   --foreground: #f4f6fa;
-  --card: rgba(255, 255, 255, 0.055);
+  --card: rgba(255, 255, 255, 0.06);
   --card-foreground: #f4f6fa;
-  --popover: rgba(18, 20, 28, 0.78);
+  --popover: rgba(12, 14, 22, 0.82);
   --popover-foreground: #f4f6fa;
-  --primary: #4fd1c5;
-  --primary-foreground: #0a0b0d;
-  --secondary: rgba(255, 255, 255, 0.07);
+  --primary: #5eead4;
+  --primary-foreground: #05070a;
+  --secondary: rgba(255, 255, 255, 0.08);
   --secondary-foreground: #e8ecf4;
-  --muted: rgba(255, 255, 255, 0.06);
-  --muted-foreground: #9aa3b5;
-  --accent: rgba(130, 100, 220, 0.22);
-  --accent-foreground: #d4ccff;
+  --muted: rgba(255, 255, 255, 0.07);
+  --muted-foreground: #94a0b8;
+  --accent: rgba(99, 70, 200, 0.35);
+  --accent-foreground: #e4dcff;
   --cta: #f0734a;
   --cta-foreground: #ffffff;
   --destructive: #ff6b6b;
-  --border: rgba(255, 255, 255, 0.12);
-  --input: rgba(255, 255, 255, 0.07);
-  --ring: rgba(79, 209, 197, 0.5);
-  --glow: #4fd1c5;
-  --chart-1: #4fd1c5;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: rgba(94, 234, 212, 0.45);
+  --glow: #5eead4;
+  --chart-1: #5eead4;
   --chart-2: #a78bfa;
   --chart-3: #f0734a;
-  --chart-4: #60a5fa;
+  --chart-4: #818cf8;
   --chart-5: #94a3b8;
   --radius: 1.1rem;
   --sidebar: rgba(255, 255, 255, 0.04);
   --sidebar-foreground: #f4f6fa;
-  --sidebar-primary: #4fd1c5;
-  --sidebar-primary-foreground: #0a0b0d;
-  --sidebar-accent: rgba(130, 100, 220, 0.18);
-  --sidebar-accent-foreground: #d4ccff;
+  --sidebar-primary: #5eead4;
+  --sidebar-primary-foreground: #05070a;
+  --sidebar-accent: rgba(99, 70, 200, 0.32);
+  --sidebar-accent-foreground: #e4dcff;
   --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: rgba(79, 209, 197, 0.5);
+  --sidebar-ring: rgba(94, 234, 212, 0.45);
 
-  /* Translucent surfaces — purple tint like reference patient row */
-  --glass-bg: rgba(255, 255, 255, 0.055);
-  --glass-bg-strong: rgba(255, 255, 255, 0.09);
-  --glass-bg-tint: rgba(120, 90, 200, 0.22);
-  --glass-bg-teal: rgba(40, 160, 150, 0.18);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-highlight: rgba(255, 255, 255, 0.22);
+  /* Glass fills — jewel indigo + teal like reference cards */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-strong: rgba(255, 255, 255, 0.1);
+  --glass-bg-tint: rgba(55, 40, 120, 0.55);
+  --glass-bg-teal: rgba(20, 90, 85, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --glass-hover: rgba(255, 255, 255, 0.1);
+  --glass-hover-tint: rgba(99, 70, 200, 0.28);
   --glass-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 20px 60px rgba(0, 0, 0, 0.55),
-    0 4px 16px rgba(0, 0, 0, 0.35);
-  /* Soft orange/pink top-left, teal bottom-right, purple mid */
-  --ambient-1: rgba(255, 110, 90, 0.32);
-  --ambient-2: rgba(50, 200, 185, 0.28);
-  --ambient-3: rgba(130, 90, 230, 0.24);
+    0 18px 50px rgba(0, 0, 0, 0.4),
+    0 4px 14px rgba(0, 0, 0, 0.28);
+  /* Indigo/purple top-left, teal bottom-right (reference) */
+  --ambient-1: rgba(90, 60, 200, 0.45);
+  --ambient-2: rgba(30, 160, 150, 0.35);
+  --ambient-3: rgba(70, 50, 160, 0.3);
 }
 
 @layer base {
@@ -199,15 +204,15 @@
   body::after {
     content: "";
     position: fixed;
-    inset: -10%;
+    inset: -15%;
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 55% 45% at 5% 5%, var(--ambient-1), transparent 62%),
-      radial-gradient(ellipse 50% 45% at 95% 92%, var(--ambient-2), transparent 58%),
-      radial-gradient(ellipse 40% 35% at 72% 12%, var(--ambient-3), transparent 55%),
-      radial-gradient(ellipse 35% 30% at 35% 70%, var(--ambient-3), transparent 60%);
-    filter: blur(40px);
+      radial-gradient(ellipse 60% 50% at 0% 0%, var(--ambient-1), transparent 65%),
+      radial-gradient(ellipse 55% 50% at 100% 100%, var(--ambient-2), transparent 60%),
+      radial-gradient(ellipse 45% 40% at 80% 10%, var(--ambient-3), transparent 55%),
+      radial-gradient(ellipse 40% 35% at 30% 75%, var(--ambient-2), transparent 60%);
+    filter: blur(48px);
     opacity: 1;
   }
 }
@@ -257,11 +262,11 @@
   .glass-tint {
     background-color: var(--glass-bg-tint);
     background-image: linear-gradient(
-      165deg,
-      var(--glass-highlight) 0%,
-      transparent 50%
+      145deg,
+      rgba(140, 110, 255, 0.35) 0%,
+      transparent 55%
     );
-    border: 1px solid var(--glass-border);
+    border: 1px solid rgba(160, 140, 255, 0.28);
     box-shadow: var(--glass-shadow);
     backdrop-filter: blur(32px) saturate(180%);
     -webkit-backdrop-filter: blur(32px) saturate(180%);
@@ -271,13 +276,38 @@
     background-color: var(--glass-bg-teal);
     background-image: linear-gradient(
       165deg,
-      rgba(79, 209, 197, 0.18) 0%,
+      rgba(94, 234, 212, 0.22) 0%,
       transparent 55%
     );
-    border: 1px solid rgba(79, 209, 197, 0.28);
+    border: 1px solid rgba(94, 234, 212, 0.28);
     box-shadow: var(--glass-shadow);
     backdrop-filter: blur(32px) saturate(180%);
     -webkit-backdrop-filter: blur(32px) saturate(180%);
+  }
+
+  /* List / nav row hover — subtle indigo lift like reference */
+  .glass-row {
+    border: 1px solid transparent;
+    border-radius: 1rem;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .glass-row:hover,
+  .glass-row[data-active="true"] {
+    background-color: var(--glass-hover-tint);
+    border-color: rgba(160, 140, 255, 0.22);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.1) inset,
+      0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .glass-row:hover,
+  .dark .glass-row[data-active="true"] {
+    background-color: var(--glass-hover-tint);
+    border-color: rgba(160, 140, 255, 0.3);
   }
 
   .bg-cta {
@@ -436,8 +466,34 @@
 }
 
 .dark .bg-blue-50,
-.dark .hover\:bg-blue-50:hover {
-  background-color: rgba(96, 165, 250, 0.12) !important;
+.dark .bg-blue-50\/80,
+.dark .hover\:bg-blue-50:hover,
+.dark .hover\:bg-blue-100:hover {
+  background-color: var(--glass-hover-tint) !important;
+  color: #e4dcff !important;
+}
+
+.dark .bg-blue-100,
+.dark .bg-blue-400,
+.dark .bg-blue-500,
+.dark .bg-blue-600,
+.dark .bg-blue-700,
+.dark .hover\:bg-blue-700:hover {
+  background-color: rgba(99, 70, 200, 0.75) !important;
+  color: #f4f6fa !important;
+  box-shadow: 0 0 24px rgba(99, 70, 200, 0.35);
+}
+
+.dark .from-blue-600,
+.dark .to-blue-700 {
+  --tw-gradient-from: rgba(55, 40, 120, 0.85) !important;
+  --tw-gradient-to: rgba(30, 90, 85, 0.55) !important;
+}
+
+.dark .text-blue-100,
+.dark .text-blue-600,
+.dark .text-blue-700 {
+  color: #c4b5fd !important;
 }
 
 .dark .border-gray-100,
@@ -461,6 +517,7 @@
 .dark .text-gray-600,
 .dark .text-gray-700,
 .dark .text-gray-800,
+.dark .text-gray-900,
 .dark .text-slate-600,
 .dark .text-slate-700,
 .dark .text-slate-800 {
@@ -470,13 +527,20 @@
 .dark .text-teal-600,
 .dark .text-teal-700,
 .dark .text-teal-900 {
-  color: #4fd1c5 !important;
+  color: #5eead4 !important;
 }
 
 .dark .bg-teal-600,
 .dark .hover\:bg-teal-700:hover,
 .dark .bg-teal-700 {
-  background-color: #4fd1c5 !important;
-  color: #0a0b0d !important;
-  box-shadow: 0 0 24px rgba(79, 209, 197, 0.28);
+  background-color: #5eead4 !important;
+  color: #05070a !important;
+  box-shadow: 0 0 24px rgba(94, 234, 212, 0.28);
 }
+
+/* Soft indigo hover for table rows in dark mode */
+.dark [data-slot="table-row"]:hover,
+.dark tr[data-slot="table-row"]:hover {
+  background-color: var(--glass-hover-tint) !important;
+}
+

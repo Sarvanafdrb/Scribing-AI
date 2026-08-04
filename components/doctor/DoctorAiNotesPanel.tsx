@@ -445,7 +445,7 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
           return (
             <div
               key={section.key}
-              className="glass rounded-2xl"
+              className="glass glass-row rounded-2xl"
             >
               <button
                 type="button"

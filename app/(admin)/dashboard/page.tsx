@@ -42,10 +42,10 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex h-96 items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading user data...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+          <p className="mt-4 text-muted-foreground">Loading user data...</p>
         </div>
       </div>
     );
@@ -62,21 +62,21 @@ export default function DashboardPage() {
       change: isAllOrganizations
         ? "All organizations"
         : "Selected organization",
-      color: "bg-blue-500",
+      color: "bg-indigo-500/80",
     },
     {
       title: "Total Users",
       value: userCountLoading ? "..." : String(totalUsers),
       icon: Users,
       change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
-      color: "bg-blue-600",
+      color: "bg-violet-500/80",
     },
     {
       title: "Active Roles",
       value: roleStatsLoading ? "..." : String(roleStats?.activeCount ?? 0),
       icon: Shield,
       change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
-      color: "bg-blue-400",
+      color: "bg-indigo-400/80",
     },
     {
       title: "Active Consultations",
@@ -85,7 +85,7 @@ export default function DashboardPage() {
         : String(sessionStats?.activeCount || 0),
       icon: Activity,
       change: isAllOrganizations ? "Platform-wide" : "Organization scoped",
-      color: "bg-blue-700",
+      color: "bg-teal-500/80",
     },
     ...(isSuperAdmin
       ? [
@@ -98,7 +98,7 @@ export default function DashboardPage() {
             change: isAllOrganizations
               ? "Platform-wide"
               : "Organization scoped",
-            color: "bg-teal-600",
+            color: "bg-teal-600/80",
           },
           {
             title: "Total Patients",
@@ -107,7 +107,7 @@ export default function DashboardPage() {
             change: isAllOrganizations
               ? "Platform-wide"
               : "Organization scoped",
-            color: "bg-indigo-600",
+            color: "bg-violet-600/80",
           },
         ]
       : []),
@@ -120,7 +120,7 @@ export default function DashboardPage() {
       description: "Start exploring the platform",
       time: "Just now",
       icon: CheckCircle,
-      iconColor: "text-blue-600",
+      iconColor: "text-primary",
     },
   ];
 
@@ -134,41 +134,45 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold">
+      <div className="glass-tint rounded-3xl p-6 text-foreground">
+        <h1 className="text-2xl font-bold tracking-tight">
           Welcome back, {user.firstName} {user.lastName}!
         </h1>
-        <p className="text-blue-100 mt-1">{scopeLabel}</p>
-        <p className="text-blue-100 text-sm mt-2">
+        <p className="mt-1 text-sm text-indigo-200/90 dark:text-indigo-200/80">
+          {scopeLabel}
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
           Here&apos;s what&apos;s happening with your scribing platform today.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card key={index} className="transition-shadow hover:shadow-glow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <div className={`${stat.color} p-2 rounded-full`}>
+                <div className={`${stat.color} rounded-full p-2`}>
                   <Icon className="h-4 w-4 text-white" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-foreground">
                   {stat.value}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{stat.change}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {stat.change}
+                </p>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
@@ -177,25 +181,25 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {recentActivities.map((activity) => {
                   const Icon = activity.icon;
                   return (
                     <div
                       key={activity.id}
-                      className="flex items-start gap-3 pb-3 border-b last:border-0"
+                      className="glass-row flex items-start gap-3 px-3 py-3"
                     >
                       <div className={`${activity.iconColor} mt-1`}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-foreground">
                           {activity.title}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {activity.description}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="mt-1 text-xs text-muted-foreground/80">
                           {activity.time}
                         </p>
                       </div>
@@ -214,28 +218,28 @@ export default function DashboardPage() {
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               <Link
                 href="/organizations/create"
-                className="block w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left"
+                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
               >
                 + Create Organization
               </Link>
               <Link
                 href="/users/create"
-                className="block w-full bg-blue-50 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left"
+                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
               >
                 + Add New User
               </Link>
               <Link
                 href="/roles/create"
-                className="block w-full bg-blue-50/80 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors text-left"
+                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
               >
                 + Create Role
               </Link>
               <Link
                 href="/sessions/create"
-                className="block w-full bg-white border border-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors text-left"
+                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-primary"
               >
                 + Start New Consultation
               </Link>

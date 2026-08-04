@@ -202,7 +202,7 @@ export default function AdminLayout({
           </div>
 
           {/* User Info */}
-          <div className="border-b border-sidebar-border bg-sidebar-accent/50 p-4">
+          <div className="glass-tint mx-3 mt-3 rounded-2xl border-0 p-4">
             <p className="font-medium text-foreground">
               {user?.firstName} {user?.lastName}
             </p>
@@ -239,11 +239,12 @@ export default function AdminLayout({
                     key={item.path}
                     href={item.path}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 rounded-full px-3 py-2 transition-colors ${
+                    className={`glass-row flex items-center gap-3 px-3 py-2 transition-colors ${
                       isActive
                         ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
-                        : "text-sidebar-foreground hover:bg-muted/60"
+                        : "text-sidebar-foreground"
                     }`}
+                    data-active={isActive ? "true" : undefined}
                   >
                     <Icon className="h-5 w-5" />
                     <span>{item.label}</span>

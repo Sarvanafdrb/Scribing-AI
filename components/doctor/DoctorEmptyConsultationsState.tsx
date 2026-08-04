@@ -43,7 +43,7 @@ export function DoctorEmptyConsultationsState({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-background">
       <header className="flex items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-8">
         <div className="flex min-w-0 items-center gap-3">
           {organizationLogo ? (

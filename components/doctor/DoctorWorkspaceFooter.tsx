@@ -261,9 +261,9 @@ export function DoctorWorkspaceFooter({
 
   return (
     <>
-      <footer className="border-t border-gray-200 bg-white px-6 py-3">
+      <footer className="glass border-t border-border/50 px-6 py-3">
         <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Consultation · {patientName} · {statusLabel}
           </p>
 
@@ -316,7 +316,7 @@ export function DoctorWorkspaceFooter({
               type="button"
               onClick={handleSave}
               disabled={isSaving || !canSave}
-              className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-glow hover:opacity-90 disabled:opacity-50"
             >
               {isSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -329,7 +329,7 @@ export function DoctorWorkspaceFooter({
 
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:bg-gray-50"
+            className="glass-pill flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
             aria-label="Help"
           >
             <HelpCircle className="h-4 w-4" />
@@ -410,11 +410,11 @@ function FooterButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium disabled:opacity-50",
-        variant === "teal" && "border-teal-200 text-teal-700 hover:bg-teal-50",
-        variant === "blue" && "border-blue-200 text-blue-700 hover:bg-blue-50",
+        "glass-pill flex items-center gap-2 px-3 py-2 text-sm font-medium disabled:opacity-50",
+        variant === "teal" && "text-primary hover:bg-white/10",
+        variant === "blue" && "text-primary hover:bg-white/10",
         variant === "outline" &&
-          "border-gray-200 text-gray-600 hover:bg-gray-50",
+          "text-muted-foreground hover:bg-white/10 hover:text-foreground",
       )}
     >
       <Icon className="h-4 w-4" />

@@ -385,16 +385,16 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
   }
 
   return (
-    <section className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
-        <h3 className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-          AI Medical Notes
+    <section className="glass-teal flex h-full flex-col rounded-3xl">
+      <div className="flex items-center justify-between border-b border-border/50 px-5 py-3">
+        <h3 className="text-[10px] font-semibold tracking-wider text-primary uppercase">
+          ✦ Drafted Note
         </h3>
         <button
           type="button"
           onClick={() => generate(true)}
           disabled={!transcriptReady || isGenerating}
-          className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          className="glass-pill flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
         >
           {isGenerating ? (
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -445,7 +445,7 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
           return (
             <div
               key={section.key}
-              className="rounded-xl border border-gray-100 bg-gray-50/50"
+              className="glass rounded-2xl"
             >
               <button
                 type="button"

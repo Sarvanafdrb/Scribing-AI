@@ -20,7 +20,7 @@ export function AppHeader({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 border-b border-border/60 bg-background/55 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40",
+        "sticky top-0 z-30 glass border-b border-border/50",
         className,
       )}
     >

@@ -266,8 +266,8 @@ export default function DoctorLayout({
 
   if (shouldShowLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -276,5 +276,5 @@ export default function DoctorLayout({
     return null;
   }
 
-  return <div className="min-h-screen bg-gray-50">{children}</div>;
+  return <div className="min-h-screen bg-background">{children}</div>;
 }

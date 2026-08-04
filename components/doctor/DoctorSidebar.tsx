@@ -22,11 +22,11 @@ import { cn } from "@/lib/utils";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
 
 const AVATAR_COLORS = [
-  "bg-teal-100 text-teal-700",
-  "bg-blue-100 text-blue-700",
-  "bg-gray-100 text-gray-700",
-  "bg-teal-50 text-teal-600",
-  "bg-blue-50 text-blue-600",
+  "bg-primary/20 text-primary",
+  "bg-violet-500/20 text-violet-300",
+  "bg-sky-500/20 text-sky-300",
+  "bg-amber-500/20 text-amber-300",
+  "bg-rose-500/20 text-rose-300",
 ];
 
 const getInitials = (firstName?: string, lastName?: string) => {
@@ -301,8 +301,8 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   className={cn(
                     "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors",
                     isActive
-                      ? "bg-accent/80 ring-1 ring-primary/20 shadow-glow"
-                      : "hover:bg-muted/50",
+                      ? "glass-tint ring-1 ring-primary/25 shadow-glow"
+                      : "hover:bg-white/5",
                   )}
                 >
                   <div className="relative">
@@ -391,25 +391,25 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
           )}
         </div>
 
-        <div className="border-t border-gray-200 px-3 py-4">
+        <div className="border-t border-border/50 px-3 py-4">
           <button
             type="button"
             onClick={() => requestNavigateToHref("/sessions")}
-            className="mb-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+            className="mb-3 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
             <History className="h-4 w-4" />
             Consultation History
           </button>
 
-          <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
+          <div className="glass-tint flex items-center gap-3 rounded-2xl px-3 py-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary">
               <UserRound className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-800">
+              <p className="truncate text-sm font-medium text-foreground">
                 {doctorName}
               </p>
-              <p className="truncate text-xs text-gray-500">
+              <p className="truncate text-xs text-muted-foreground">
                 {user?.qualification || user?.email}
               </p>
             </div>

@@ -1053,7 +1053,7 @@ export function DoctorRecordingPanel({
   if (!session) return null;
 
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <section className="glass rounded-3xl p-5">
       <UnfinishedConsultationDialog
         open={showRecoveryDialog}
         previousDurationSeconds={previousDurationSeconds}

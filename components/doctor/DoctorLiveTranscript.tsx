@@ -58,14 +58,14 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
 
   if (isLoading) {
     return (
-      <section className="flex flex-1 items-center justify-center rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <section className="flex flex-1 items-center justify-center glass rounded-3xl p-5">
         <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
       </section>
     );
   }
 
   return (
-    <section className="flex min-h-[320px] flex-1 flex-col rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <section className="flex min-h-[320px] flex-1 flex-col glass rounded-3xl">
       <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-5 py-3">
         <h3 className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
           Live Transcript

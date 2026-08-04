@@ -95,7 +95,7 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <section className="glass rounded-3xl p-4">
         <h3 className="mb-3 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
           Patient Info
         </h3>
@@ -200,7 +200,7 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
         )}
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <section className="glass rounded-3xl p-4">
         <h3 className="mb-3 flex items-center gap-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
           <Pill className="h-3.5 w-3.5" />
           Medications
@@ -224,7 +224,7 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
         )}
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <section className="glass rounded-3xl p-4">
         <h3 className="mb-3 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
           Vitals Today
         </h3>

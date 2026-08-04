@@ -3,28 +3,26 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Light / dark glass — headers, search bars, dialogs, secondary actions */
+/** Glass surfaces — headers, search bars, dialogs, secondary actions */
 export const healthcareGlass = {
   bar: "glass rounded-2xl",
-  button:
-    "glass rounded-2xl hover:bg-muted/80 transition-colors",
+  button: "glass-pill hover:bg-white/10 transition-colors",
   dialog: "glass-strong rounded-3xl",
   header: "glass rounded-3xl px-6 py-5",
 };
 
-/** Surfaces — clinical data with glass readability */
 export const healthcareSolid = {
-  card: "glass rounded-2xl",
-  formCard: "glass-strong rounded-2xl",
-  section: "glass rounded-2xl p-5",
-  statCard: "glass rounded-2xl",
+  card: "glass rounded-3xl",
+  formCard: "glass-strong rounded-3xl",
+  section: "glass rounded-3xl p-5",
+  statCard: "glass rounded-3xl",
 };
 
 export const healthcareSearchInput =
-  "rounded-2xl border-border/60 bg-input/80 backdrop-blur-md pl-9 shadow-sm focus-visible:ring-ring/30";
+  "rounded-full border-border bg-transparent pl-9 focus-visible:ring-ring/30";
 
 export const healthcarePrimaryButton =
-  "rounded-full bg-primary text-primary-foreground shadow-glow hover:bg-primary/90";
+  "rounded-full bg-primary text-primary-foreground shadow-glow hover:opacity-90";
 
 export const healthcareCtaButton =
   "rounded-full bg-cta text-cta-foreground shadow-cta hover:opacity-95";

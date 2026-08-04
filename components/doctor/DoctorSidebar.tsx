@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { History, Loader2, UserRound } from "lucide-react";
+import { History, Loader2, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useSession } from "@/hooks/sessions/useSession";
@@ -12,6 +12,7 @@ import {
 } from "@/hooks/doctor/useDoctorQueue";
 import { useConsultationNavigationGuard } from "@/hooks/doctor/useConsultationNavigationGuard";
 import { RecordingSwitchDialog } from "@/components/doctor/RecordingSwitchDialog";
+import { CreatePatientDialog } from "@/components/doctor/CreatePatientDialog";
 import { getPatientFullName } from "@/utils/patient.utils";
 import { getUserOrganizationName } from "@/types/auth.types";
 import { sessionKeys } from "@/services/session.queries";
@@ -145,6 +146,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const { data: activeSession } = useSession(activeSessionId);
   const { items } = useDoctorQueue();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
+  const [isCreatePatientOpen, setIsCreatePatientOpen] = useState(false);
   const liveSessionId = useActiveRecordingStore((state) => state.sessionId);
   const liveElapsedSeconds = useActiveRecordingStore(
     (state) => state.elapsedSeconds,
@@ -393,6 +395,15 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
         <div className="border-t border-border/50 px-3 py-4">
           <button
             type="button"
+            onClick={() => setIsCreatePatientOpen(true)}
+            className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-glow hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" />
+            Add Patient
+          </button>
+
+          <button
+            type="button"
             onClick={() => requestNavigateToHref("/sessions")}
             className="mb-3 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
@@ -415,6 +426,18 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
           </div>
         </div>
       </aside>
+
+      <CreatePatientDialog
+        open={isCreatePatientOpen}
+        onOpenChange={setIsCreatePatientOpen}
+        onCreated={() => {
+          void queryClient.invalidateQueries({
+            predicate: (query) =>
+              Array.isArray(query.queryKey) &&
+              query.queryKey.includes("doctor-queue"),
+          });
+        }}
+      />
 
       <RecordingSwitchDialog
         open={isDialogOpen}

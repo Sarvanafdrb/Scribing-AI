@@ -31,7 +31,7 @@ interface SaveConsultationDialogProps {
 }
 
 type OpAction = DispositionType;
-type IpAction = "finish" | "next_round";
+type IpAction = "finish" | "next_round" | "discharge";
 
 export function SaveConsultationDialog({
   open,
@@ -42,6 +42,7 @@ export function SaveConsultationDialog({
   const router = useRouter();
   const queryClient = useQueryClient();
   const setAdmitOpen = useEncounterUiStore((s) => s.setAdmitModalOpen);
+  const setDischargeOpen = useEncounterUiStore((s) => s.setDischargeModalOpen);
   const isIp = getEncounterType(session) === "IP";
   const hasNextRound = canStartNextRoundToday(session);
   const scheduleKnown = (session.todaySchedule?.length || 0) > 0;
@@ -57,9 +58,9 @@ export function SaveConsultationDialog({
   useEffect(() => {
     if (!open) return;
     setOpAction("home");
-    setIpAction(hasNextRound ? "next_round" : "finish");
+    setIpAction(hasNextRound ? "next_round" : allDone ? "discharge" : "finish");
     setFollowUpDate("");
-  }, [open, hasNextRound]);
+  }, [open, hasNextRound, allDone]);
 
   const invalidate = async () => {
     await Promise.all([
@@ -130,6 +131,11 @@ export function SaveConsultationDialog({
       nextRound.mutate();
       return;
     }
+    if (ipAction === "discharge") {
+      onOpenChange(false);
+      setDischargeOpen(true);
+      return;
+    }
     onOpenChange(false);
   };
 
@@ -192,10 +198,32 @@ export function SaveConsultationDialog({
         {isIp && (
           <div className="space-y-2 py-2">
             {allDone ? (
-              <p className="rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
-                ✔ All rounds for today are completed. The patient remains
-                admitted and will appear in tomorrow&apos;s queue.
-              </p>
+              <>
+                <p className="rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+                  ✔ Today&apos;s rounds completed. The patient remains in the
+                  queue until discharged.
+                </p>
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="ip-next-action"
+                    checked={ipAction === "finish"}
+                    onChange={() => setIpAction("finish")}
+                    className="accent-teal-600"
+                  />
+                  Keep Admitted
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-sm hover:bg-teal-50">
+                  <input
+                    type="radio"
+                    name="ip-next-action"
+                    checked={ipAction === "discharge"}
+                    onChange={() => setIpAction("discharge")}
+                    className="accent-teal-600"
+                  />
+                  Discharge Patient
+                </label>
+              </>
             ) : (
               <>
                 <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm hover:bg-gray-50">
@@ -217,6 +245,19 @@ export function SaveConsultationDialog({
                     className="accent-teal-600"
                   />
                   Start Next Round
+                  {session.nextPendingRound?.roundName
+                    ? ` (${session.nextPendingRound.roundName})`
+                    : ""}
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm hover:bg-gray-50">
+                  <input
+                    type="radio"
+                    name="ip-next-action"
+                    checked={ipAction === "discharge"}
+                    onChange={() => setIpAction("discharge")}
+                    className="accent-teal-600"
+                  />
+                  Discharge Patient
                 </label>
               </>
             )}

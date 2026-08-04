@@ -223,7 +223,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
 
     if (item.kind === "ip_encounter" && item.encounterId) {
       if (item.allRoundsCompletedToday) {
-        toast.info("All rounds for today are completed.");
+        toast.info("Today's rounds completed.");
         return;
       }
       try {
@@ -334,9 +334,16 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                           OP
                         </span>
                       ) : (
-                        <span className="shrink-0 rounded bg-sky-50 px-1 py-px text-[9px] font-semibold text-sky-700">
-                          IP
-                        </span>
+                        <>
+                          {item.isEmergency && (
+                            <span className="shrink-0 rounded bg-red-50 px-1 py-px text-[9px] font-semibold text-red-700">
+                              EM
+                            </span>
+                          )}
+                          <span className="shrink-0 rounded bg-sky-50 px-1 py-px text-[9px] font-semibold text-sky-700">
+                            IP
+                          </span>
+                        </>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">

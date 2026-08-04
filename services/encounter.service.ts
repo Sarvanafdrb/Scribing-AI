@@ -2,6 +2,7 @@ import { api } from "@/services/api";
 import type {
   AdmitPatientData,
   CreateRoundData,
+  DischargePatientData,
   DispositionType,
   DoctorQueueItem,
   EncounterBundle,
@@ -22,6 +23,17 @@ export const encounterService = {
     return response.data.data;
   },
 
+  dischargePatient: async (
+    sessionId: string,
+    data: DischargePatientData,
+  ): Promise<EncounterBundle & { session: Session }> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/encounter/discharge`,
+      data,
+    );
+    return response.data.data;
+  },
+
   createNextRound: async (
     sessionId: string,
     data: CreateRoundData = {},
@@ -35,7 +47,7 @@ export const encounterService = {
 
   startRoundForEncounter: async (
     encounterId: string,
-    data: { roundScheduleId?: string } = {},
+    data: { roundScheduleId?: string; assignedDoctorId?: string } = {},
   ): Promise<{ session: Session } & EncounterBundle> => {
     const response = await api.post(
       `/sessions/encounters/${encounterId}/rounds/start`,

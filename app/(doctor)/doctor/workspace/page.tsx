@@ -44,6 +44,7 @@ export default function DoctorWorkspaceIndexPage() {
     if (!isScopeReady || isLoading) return;
     if (items.length === 0) {
       setOpenFailed(false);
+      setIsOpening(false);
       return;
     }
 
@@ -63,16 +64,22 @@ export default function DoctorWorkspaceIndexPage() {
       setOpenFailed(false);
       try {
         const sessionId = await resolveQueueSessionId(first);
-        if (!cancelled && sessionId) {
+        if (cancelled) return;
+        if (sessionId) {
           router.replace(`/doctor/workspace/${sessionId}`);
+          // Clear opening state so a stalled soft-nav cannot leave this page
+          // spinning forever (hard reload was previously required after discharge).
+          if (!cancelled) setIsOpening(false);
           return;
         }
-        if (!cancelled) setOpenFailed(true);
+        setOpenFailed(true);
+        setIsOpening(false);
       } catch {
         openedKeyRef.current = null;
-        if (!cancelled) setOpenFailed(true);
-      } finally {
-        if (!cancelled) setIsOpening(false);
+        if (!cancelled) {
+          setOpenFailed(true);
+          setIsOpening(false);
+        }
       }
     };
 
@@ -105,7 +112,10 @@ export default function DoctorWorkspaceIndexPage() {
     }
   };
 
-  if (!isScopeReady || isLoading || isOpening || (items.length > 0 && !openFailed)) {
+  // Only spin while auth/queue is loading or while we are actively opening a session.
+  // Do NOT keep spinning whenever items exist — that trapped the page after discharge
+  // when soft-navigation to the next consultation was delayed.
+  if (!isScopeReady || isLoading || isOpening) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />

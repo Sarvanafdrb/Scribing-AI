@@ -4,8 +4,11 @@ export type EncounterStatus =
   | "in_consultation"
   | "follow_up"
   | "admitted"
-  | "completed"
+  | "under_treatment"
+  | "ready_for_discharge"
   | "discharged"
+  | "cancelled"
+  | "completed"
   | "closed"
   | "active";
 
@@ -18,12 +21,20 @@ export type RoundType =
 
 export type DispositionType = "home" | "follow_up" | "admit";
 
+export type DischargeDisposition =
+  | "home"
+  | "follow_up"
+  | "transfer"
+  | "lama"
+  | "other";
+
 export type RoundScheduleStatus =
   | "pending"
   | "in_progress"
   | "completed"
   | "skipped"
-  | "missed";
+  | "missed"
+  | "cancelled";
 
 export interface EncounterDoctor {
   _id?: string;
@@ -41,13 +52,15 @@ export interface AdmissionInfo {
   reason?: string;
   attendingDoctorId?: string;
   attendingDoctor?: EncounterDoctor | null;
+  isEmergency?: boolean;
 }
 
 export interface DischargeInfo {
   dischargedAt: string;
-  disposition: "home" | "follow_up";
+  disposition: DischargeDisposition;
   notes?: string;
   followUpDate?: string;
+  summaryGenerated?: boolean;
 }
 
 export interface Encounter {
@@ -61,6 +74,7 @@ export interface Encounter {
   followUpDate?: string;
   admission?: AdmissionInfo;
   discharge?: DischargeInfo;
+  /** Always computed dynamically — never rely on a stored day. */
   admissionDay?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -79,6 +93,11 @@ export interface RoundSchedule {
   status: RoundScheduleStatus;
   scheduledTime?: string | null;
   consultationId?: string | null;
+  assignedDoctorId?: string | null;
+  completedDoctorId?: string | null;
+  assignedDoctor?: EncounterDoctor | null;
+  completedDoctor?: EncounterDoctor | null;
+  completedAt?: string | null;
   isCurrent?: boolean;
   isDone?: boolean;
   createdAt?: string;
@@ -102,14 +121,19 @@ export interface EncounterRound {
 }
 
 export interface AdmissionTimelineItem {
-  sessionId: string;
+  sessionId: string | null;
+  roundScheduleId?: string;
   label: string;
   admissionDay: number;
+  dateKey?: string;
   roundType?: RoundType | string;
   roundLabel?: string;
+  roundNumber?: number;
   status: string;
+  consultationStatus?: string | null;
   completedAt?: string | null;
   createdAt?: string | null;
+  doctor?: EncounterDoctor | null;
   isCurrent: boolean;
 }
 
@@ -131,12 +155,22 @@ export interface AdmitPatientData {
   reason?: string;
   attendingDoctorId: string;
   admittedAt?: string;
+  isEmergency?: boolean;
+}
+
+export interface DischargePatientData {
+  dischargedAt?: string;
+  disposition: DischargeDisposition;
+  notes?: string;
+  followUpDate?: string;
+  generateSummary?: boolean;
 }
 
 export interface CreateRoundData {
   roundType?: RoundType;
   roundLabel?: string;
   roundScheduleId?: string;
+  assignedDoctorId?: string;
 }
 
 export interface DoctorQueueItem {
@@ -152,9 +186,11 @@ export interface DoctorQueueItem {
   ward?: string | null;
   bed?: string | null;
   nextRoundLabel?: string | null;
+  nextRoundType?: RoundType | string | null;
   nextRoundStatus?: RoundScheduleStatus | null;
   nextRoundScheduleId?: string | null;
   allRoundsCompletedToday?: boolean;
   todaySchedule?: RoundSchedule[];
   hasTodaySession?: boolean;
+  isEmergency?: boolean;
 }

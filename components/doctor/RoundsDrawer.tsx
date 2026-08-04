@@ -91,9 +91,10 @@ export function RoundsDrawer({
 
   const statusLabel = (round: RoundSchedule) => {
     if (round.status === "completed") return "Completed";
-    if (round.status === "in_progress" || round.isCurrent) return "In progress";
+    if (round.status === "in_progress" || round.isCurrent) return "In Progress";
     if (round.status === "skipped") return "Skipped";
     if (round.status === "missed") return "Missed";
+    if (round.status === "cancelled") return "Cancelled";
     return "Pending";
   };
 

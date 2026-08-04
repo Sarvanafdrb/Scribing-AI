@@ -16,18 +16,24 @@ export const getEncounterType = (
 export const getVisitType = (session?: Session | null): VisitType =>
   getEncounterType(session) === "IP" ? "inpatient" : "outpatient";
 
-export const getAdmissionDay = (session?: Session | null): number => {
-  if (session?.admissionDay && session.admissionDay > 0) {
-    return session.admissionDay;
-  }
-  if (session?.encounter?.admissionDay) return session.encounter.admissionDay;
+export const getAdmissionDay = (
+  session?: Session | null,
+  reference: Date = new Date(),
+): number => {
+  // Always compute dynamically from admission date — never trust a stored snapshot alone.
   const admittedAt =
     session?.encounter?.admission?.admittedAt || session?.admittedDate;
-  if (!admittedAt) return 1;
+  if (!admittedAt) {
+    if (session?.admissionDay && session.admissionDay > 0) {
+      return session.admissionDay;
+    }
+    if (session?.encounter?.admissionDay) return session.encounter.admissionDay;
+    return 1;
+  }
   const start = new Date(admittedAt);
   if (Number.isNaN(start.getTime())) return 1;
   start.setHours(0, 0, 0, 0);
-  const now = new Date();
+  const now = new Date(reference);
   now.setHours(0, 0, 0, 0);
   return Math.max(
     1,

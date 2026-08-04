@@ -193,29 +193,98 @@ const formatAdmissionTimeline = (
     );
   }
 
+  // Group by admission day: Day 1 → Morning/Afternoon/Night, Day 2 → …
+  const byDay = new Map<number, AdmissionTimelineItem[]>();
+  for (const item of items) {
+    const day = item.admissionDay || 1;
+    const list = byDay.get(day) || [];
+    list.push(item);
+    byDay.set(day, list);
+  }
+
+  const days = [...byDay.keys()].sort((a, b) => a - b);
+
+  const doctorName = (item: AdmissionTimelineItem) => {
+    const doctor = item.doctor;
+    if (!doctor) return "—";
+    const name = `${doctor.firstName || ""} ${doctor.lastName || ""}`.trim();
+    return name ? `Dr. ${name}` : "—";
+  };
+
+  const completedTime = (item: AdmissionTimelineItem) => {
+    if (!item.completedAt) return "—";
+    const date = new Date(item.completedAt);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const statusText = (item: AdmissionTimelineItem) => {
+    const status = item.consultationStatus || item.status || "";
+    return status.replace(/_/g, " ");
+  };
+
   return (
-    <div className="space-y-1.5">
-      <p className="mb-2 text-[11px] font-semibold tracking-wide text-sky-700 uppercase">
+    <div className="space-y-3">
+      <p className="mb-1 text-[11px] font-semibold tracking-wide text-sky-700 uppercase">
         Admission Timeline
       </p>
-      {items.map((item) => (
-        <button
-          key={item.sessionId}
-          type="button"
-          onClick={() => onSelect?.(item.sessionId)}
-          className={cn(
-            "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-            item.isCurrent
-              ? "border-sky-200 bg-sky-50 text-sky-800"
-              : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
-          )}
-        >
-          <span className="font-medium">{item.label}</span>
-          <span className="text-[11px] text-gray-400 capitalize">
-            {item.status.replace(/_/g, " ")}
-          </span>
-        </button>
-      ))}
+      {days.map((day) => {
+        const dayItems = (byDay.get(day) || []).sort(
+          (a, b) => (a.roundNumber || 0) - (b.roundNumber || 0),
+        );
+        return (
+          <div key={day} className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-600">Day {day}</p>
+            {dayItems.map((item) => {
+              const canOpen = Boolean(item.sessionId);
+              const content = (
+                <>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium capitalize">
+                      {item.roundType || item.roundLabel || item.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-gray-400">
+                      {completedTime(item)} · {doctorName(item)} ·{" "}
+                      <span className="capitalize">{statusText(item)}</span>
+                    </span>
+                  </span>
+                </>
+              );
+
+              if (!canOpen) {
+                return (
+                  <div
+                    key={item.roundScheduleId || item.label}
+                    className="flex w-full items-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm text-gray-500"
+                  >
+                    {content}
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={item.sessionId || item.roundScheduleId || item.label}
+                  type="button"
+                  onClick={() => onSelect?.(item.sessionId!)}
+                  className={cn(
+                    "flex w-full items-center rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                    item.isCurrent
+                      ? "border-sky-200 bg-sky-50 text-sky-800"
+                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+                  )}
+                >
+                  {content}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 };

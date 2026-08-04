@@ -40,6 +40,7 @@ export function AdmitPatientModal({
   const [ward, setWard] = useState("");
   const [bed, setBed] = useState("");
   const [reason, setReason] = useState("");
+  const [isEmergency, setIsEmergency] = useState(false);
   const [attendingDoctorId, setAttendingDoctorId] = useState("");
   const [admittedAt, setAdmittedAt] = useState(() =>
     new Date().toISOString().slice(0, 16),
@@ -90,6 +91,7 @@ export function AdmitPatientModal({
         admittedAt: admittedAt
           ? new Date(admittedAt).toISOString()
           : undefined,
+        isEmergency,
       }),
     onSuccess: async () => {
       // Close dialog BEFORE refetch flips encounter to IP. Otherwise the parent
@@ -99,6 +101,7 @@ export function AdmitPatientModal({
       setWard("");
       setBed("");
       setReason("");
+      setIsEmergency(false);
 
       // Let Radix finish unmounting the portal, then refresh session data.
       await new Promise((resolve) => window.setTimeout(resolve, 50));
@@ -180,6 +183,15 @@ export function AdmitPatientModal({
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-teal-400"
             />
           </Field>
+          <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={isEmergency}
+              onChange={(e) => setIsEmergency(e.target.checked)}
+              className="accent-teal-600"
+            />
+            Emergency IP (priority in doctor queue)
+          </label>
         </div>
 
         <DialogFooter>

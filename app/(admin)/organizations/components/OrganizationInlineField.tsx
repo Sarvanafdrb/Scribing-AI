@@ -29,7 +29,7 @@ interface OrganizationInlineFieldProps {
   type?: InlineFieldType;
   options?: InlineSelectOption[];
   isSaving?: boolean;
-  onSave: (value: string) => Promise<void> | void;
+  onSave?: (value: string) => Promise<void> | void;
   className?: string;
 }
 
@@ -64,7 +64,7 @@ export function OrganizationInlineField({
 
   const saveEdit = async () => {
     const next = draft.trim();
-    if (next === (value || "").trim()) {
+    if (!onSave || next === (value || "").trim()) {
       setIsEditing(false);
       return;
     }

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import {
   AlertTriangle,
   Calendar,
   Droplets,
   Heart,
+  Pencil,
   Phone,
   Pill,
   Scale,
@@ -13,6 +15,9 @@ import {
 } from "lucide-react";
 import { useSession } from "@/hooks/sessions/useSession";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { EditPatientDialog } from "@/components/doctor/EditPatientDialog";
+import { Button } from "@/components/ui/button";
 import {
   getPatientAge,
   getPatientFullName,
@@ -71,8 +76,10 @@ const formatWeight = (weight?: number) =>
   weight === undefined || weight === null ? "—" : `${weight} kg`;
 
 export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
-  const { data: session } = useSession(sessionId);
+  const { data: session, refetch } = useSession(sessionId);
   const { aiNotes } = useAiNotes(sessionId);
+  const { canEditPatient } = useAccessControl();
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const patient =
     session && typeof session.patientId === "object"
@@ -80,6 +87,7 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
       : null;
 
   const patientAge = getPatientAge(patient);
+  const showEdit = Boolean(patient) && canEditPatient();
   const medications = aiNotes?.medications?.filter((m) => m.medicine) || [];
   const allergies =
     patient?.allergies?.map((allergy) => allergy.trim()).filter(Boolean) || [];
@@ -96,9 +104,23 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
   return (
     <div className="space-y-4">
       <section className="glass rounded-3xl p-4">
-        <h3 className="mb-3 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-          Patient Info
-        </h3>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+            Patient Info
+          </h3>
+          {showEdit ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setIsEditOpen(true)}
+            >
+              <Pencil className="mr-1 h-3 w-3" />
+              Edit
+            </Button>
+          ) : null}
+        </div>
         <dl className="space-y-2.5 text-sm">
           <div className="flex items-center gap-2">
             <User className="h-3.5 w-3.5 text-gray-400" />
@@ -271,6 +293,15 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
           />
         </div>
       </section>
+
+      <EditPatientDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        patient={patient}
+        onUpdated={() => {
+          void refetch();
+        }}
+      />
     </div>
   );
 }

@@ -1,12 +1,23 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { patientService } from "@/services/patient.service";
 import { patientKeys } from "@/services/patient.queries";
+import { sessionKeys } from "@/services/session.queries";
 import {
   CreatePatientData,
   Patient,
   UpdatePatientData,
 } from "@/types/patient.types";
 import { toast } from "sonner";
+
+const invalidateDoctorWorkspaceQueries = (
+  queryClient: ReturnType<typeof useQueryClient>,
+) => {
+  queryClient.invalidateQueries({ queryKey: sessionKeys.all });
+  queryClient.invalidateQueries({
+    predicate: (query) =>
+      Array.isArray(query.queryKey) && query.queryKey.includes("doctor-queue"),
+  });
+};
 
 export const usePatientMutations = () => {
   const queryClient = useQueryClient();
@@ -15,6 +26,7 @@ export const usePatientMutations = () => {
     mutationFn: (data: CreatePatientData) => patientService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      invalidateDoctorWorkspaceQueries(queryClient);
       toast.success("Patient created successfully");
     },
     onError: (error: any) => {
@@ -30,6 +42,7 @@ export const usePatientMutations = () => {
       queryClient.invalidateQueries({
         queryKey: patientKeys.detail(variables.id),
       });
+      invalidateDoctorWorkspaceQueries(queryClient);
       toast.success("Patient updated successfully");
     },
     onError: (error: any) => {

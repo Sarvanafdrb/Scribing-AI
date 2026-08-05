@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { History, Loader2, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { useSession } from "@/hooks/sessions/useSession";
 import {
   getQueueItemKey,
@@ -143,6 +144,7 @@ interface DoctorSidebarProps {
 export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const { canCreatePatient } = useAccessControl();
   const { data: activeSession } = useSession(activeSessionId);
   const { items } = useDoctorQueue();
   const [openingKey, setOpeningKey] = useState<string | null>(null);
@@ -393,14 +395,16 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
         </div>
 
         <div className="border-t border-border/50 px-3 py-4">
-          <button
-            type="button"
-            onClick={() => setIsCreatePatientOpen(true)}
-            className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-glow hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Add Patient
-          </button>
+          {canCreatePatient() ? (
+            <button
+              type="button"
+              onClick={() => setIsCreatePatientOpen(true)}
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-glow hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Add Patient
+            </button>
+          ) : null}
 
           <button
             type="button"
@@ -427,17 +431,19 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
         </div>
       </aside>
 
-      <CreatePatientDialog
-        open={isCreatePatientOpen}
-        onOpenChange={setIsCreatePatientOpen}
-        onCreated={() => {
-          void queryClient.invalidateQueries({
-            predicate: (query) =>
-              Array.isArray(query.queryKey) &&
-              query.queryKey.includes("doctor-queue"),
-          });
-        }}
-      />
+      {canCreatePatient() ? (
+        <CreatePatientDialog
+          open={isCreatePatientOpen}
+          onOpenChange={setIsCreatePatientOpen}
+          onCreated={() => {
+            void queryClient.invalidateQueries({
+              predicate: (query) =>
+                Array.isArray(query.queryKey) &&
+                query.queryKey.includes("doctor-queue"),
+            });
+          }}
+        />
+      ) : null}
 
       <RecordingSwitchDialog
         open={isDialogOpen}

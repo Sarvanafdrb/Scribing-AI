@@ -18,7 +18,7 @@ export const useSessions = (params?: UseSessionsParams) => {
   const search = params?.search || "";
   const status = params?.status || "";
   const sessionType = params?.sessionType || "";
-  const organizationId = scopedOrgId || params?.organizationId || "";
+  const organizationId = params?.organizationId || scopedOrgId || "";
   const isActive = params?.isActive || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;

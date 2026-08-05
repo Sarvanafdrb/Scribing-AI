@@ -6,11 +6,13 @@ import { useTenantScope } from "@/hooks/useTenantScope";
 export const usePatients = (params?: {
   search?: string;
   isActive?: string;
+  organizationId?: string;
   page?: number;
   limit?: number;
 }) => {
-  const { organizationId, isSuperAdmin } = useTenantScope();
+  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
   const search = (params?.search || "").trim().replace(/\s+/g, " ");
+  const organizationId = params?.organizationId || scopedOrgId || "";
 
   const query = useQuery({
     queryKey: patientKeys.list({

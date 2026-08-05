@@ -29,32 +29,53 @@ export const useOrganizationMutations = () => {
   const updateOrganization = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateOrganizationData }) =>
       organizationService.update(id, data),
-    onSuccess: (data: Organization) => {
-      queryClient.invalidateQueries({ queryKey: organizationKeys.lists() });
-      // Only invalidate detail if we have an id
-      if (data?.id) {
-        queryClient.invalidateQueries({
-          queryKey: organizationKeys.detail(data.id),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({
+        queryKey: organizationKeys.detail(id),
+      });
+      const previous = queryClient.getQueryData<Organization>(
+        organizationKeys.detail(id),
+      );
+      if (previous) {
+        queryClient.setQueryData<Organization>(organizationKeys.detail(id), {
+          ...previous,
+          ...data,
+          contactNumber: data.contactNumber ?? previous.contactNumber,
+          phone: data.contactNumber ?? previous.phone,
+          adminEmail: data.adminEmail ?? previous.adminEmail,
+          email: data.adminEmail ?? previous.email,
+          updatedAt: new Date().toISOString(),
         });
       }
-      toast.success("Organization updated successfully");
+      return { previous, id };
     },
-    onError: (error: any) => {
+    onError: (error: any, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          organizationKeys.detail(context.id),
+          context.previous,
+        );
+      }
       toast.error(
         error?.response?.data?.message || "Failed to update organization",
       );
+    },
+    onSuccess: (_data, variables) => {
+      toast.success("Organization updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: organizationKeys.detail(variables.id),
+      });
+      queryClient.invalidateQueries({ queryKey: organizationKeys.lists() });
     },
   });
 
   const activateOrganization = useMutation({
     mutationFn: (id: string) => organizationService.activate(id),
-    onSuccess: (data: Organization) => {
+    onSuccess: (_data: Organization, id: string) => {
       queryClient.invalidateQueries({ queryKey: organizationKeys.lists() });
-      if (data?.id) {
-        queryClient.invalidateQueries({
-          queryKey: organizationKeys.detail(data.id),
-        });
-      }
+      queryClient.invalidateQueries({
+        queryKey: organizationKeys.detail(id),
+      });
       toast.success("Organization activated successfully");
     },
     onError: (error: any) => {
@@ -66,13 +87,11 @@ export const useOrganizationMutations = () => {
 
   const deactivateOrganization = useMutation({
     mutationFn: (id: string) => organizationService.deactivate(id),
-    onSuccess: (data: Organization) => {
+    onSuccess: (_data: Organization, id: string) => {
       queryClient.invalidateQueries({ queryKey: organizationKeys.lists() });
-      if (data?.id) {
-        queryClient.invalidateQueries({
-          queryKey: organizationKeys.detail(data.id),
-        });
-      }
+      queryClient.invalidateQueries({
+        queryKey: organizationKeys.detail(id),
+      });
       toast.success("Organization deactivated successfully");
     },
     onError: (error: any) => {

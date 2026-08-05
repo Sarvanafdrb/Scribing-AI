@@ -16,7 +16,7 @@ export const useUsers = (params?: UseUsersParams) => {
   const { organizationId: scopedOrgId } = useTenantScope();
   const search = (params?.search || "").trim().replace(/\s+/g, " ");
   const isActive = params?.isActive || "";
-  const organizationId = scopedOrgId || params?.organizationId || "";
+  const organizationId = params?.organizationId || scopedOrgId || "";
   const roleId = params?.roleId || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;

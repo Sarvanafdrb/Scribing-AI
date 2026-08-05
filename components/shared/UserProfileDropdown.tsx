@@ -92,7 +92,7 @@ export function UserProfileDropdown({
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="glass-strong w-64 rounded-2xl border-border/50 p-1.5"
+        className="w-64 p-1.5"
       >
         <DropdownMenuLabel className="px-2.5 py-2.5 font-normal">
           <div className="space-y-0.5">
@@ -110,30 +110,30 @@ export function UserProfileDropdown({
 
         <DropdownMenuItem
           asChild
-          className="cursor-pointer rounded-xl px-2.5 py-2 text-foreground focus:bg-muted focus:text-foreground"
+          className="cursor-pointer"
         >
           <Link href={profileHref}>
-            <User className="h-4 w-4 text-muted-foreground" />
+            <User className="h-4 w-4" />
             My Profile
           </Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem
           asChild
-          className="cursor-pointer rounded-xl px-2.5 py-2 text-foreground focus:bg-muted focus:text-foreground"
+          className="cursor-pointer"
         >
           <Link href={changePasswordHref}>
-            <KeyRound className="h-4 w-4 text-muted-foreground" />
+            <KeyRound className="h-4 w-4" />
             Change Password
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuSeparator className="my-1.5 bg-border" />
+        <DropdownMenuSeparator className="my-1.5" />
 
         <DropdownMenuItem
           variant="destructive"
           onSelect={handleLogout}
-          className="cursor-pointer rounded-lg px-2.5 py-2"
+          className="cursor-pointer"
         >
           <LogOut className="h-4 w-4" />
           Logout

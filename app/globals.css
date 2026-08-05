@@ -61,7 +61,7 @@
   --foreground: #1c2434;
   --card: rgba(255, 255, 255, 0.48);
   --card-foreground: #1c2434;
-  --popover: rgba(255, 255, 255, 0.78);
+  --popover: rgba(255, 255, 255, 0.62);
   --popover-foreground: #1c2434;
   --primary: #1a2332;
   --primary-foreground: #ffffff;
@@ -94,13 +94,20 @@
   --sidebar-ring: rgba(90, 140, 255, 0.55);
 
   --glass-bg: rgba(255, 255, 255, 0.38);
-  --glass-bg-strong: rgba(255, 255, 255, 0.58);
+  --glass-bg-strong: rgba(255, 255, 255, 0.6);
   --glass-bg-tint: rgba(200, 180, 255, 0.28);
   --glass-bg-teal: rgba(120, 220, 210, 0.28);
   --glass-border: rgba(255, 255, 255, 0.72);
   --glass-highlight: rgba(255, 255, 255, 0.9);
   --glass-hover: rgba(255, 255, 255, 0.55);
   --glass-hover-tint: rgba(160, 140, 255, 0.35);
+  --glass-menu-bg: rgba(255, 255, 255, 0.6);
+  --glass-menu-border: rgba(255, 255, 255, 0.55);
+  --glass-menu-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 0 0 0.5px rgba(255, 255, 255, 0.45) inset,
+    0 20px 60px rgba(0, 0, 0, 0.22),
+    0 8px 24px rgba(40, 60, 100, 0.12);
   --glass-shadow:
     0 1px 0 rgba(255, 255, 255, 0.8) inset,
     0 0 0 0.5px rgba(255, 255, 255, 0.5) inset,
@@ -118,7 +125,7 @@
   --foreground: #f4f6fa;
   --card: rgba(255, 255, 255, 0.06);
   --card-foreground: #f4f6fa;
-  --popover: rgba(12, 14, 22, 0.82);
+  --popover: rgba(18, 20, 28, 0.72);
   --popover-foreground: #f4f6fa;
   --primary: #5eead4;
   --primary-foreground: #05070a;
@@ -152,13 +159,21 @@
 
   /* Glass fills — jewel indigo + teal like reference cards */
   --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-bg-strong: rgba(255, 255, 255, 0.1);
+  --glass-bg-strong: rgba(255, 255, 255, 0.14);
   --glass-bg-tint: rgba(55, 40, 120, 0.55);
   --glass-bg-teal: rgba(20, 90, 85, 0.45);
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-highlight: rgba(255, 255, 255, 0.16);
   --glass-hover: rgba(255, 255, 255, 0.1);
   --glass-hover-tint: rgba(99, 70, 200, 0.28);
+  /* Frosted dark menu — opaque enough that page text does not bleed through */
+  --glass-menu-bg: rgba(22, 24, 34, 0.72);
+  --glass-menu-border: rgba(255, 255, 255, 0.2);
+  --glass-menu-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 0 0 0.5px rgba(255, 255, 255, 0.08) inset,
+    0 20px 60px rgba(0, 0, 0, 0.55),
+    0 8px 28px rgba(0, 0, 0, 0.35);
   --glass-shadow:
     0 1px 0 rgba(255, 255, 255, 0.12) inset,
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
@@ -375,14 +390,78 @@
     -webkit-backdrop-filter: blur(20px) saturate(160%);
   }
 
+  /* Apple Liquid Glass menus — frosted, readable, no content bleed-through */
   [data-slot="select-content"],
   [data-slot="dropdown-menu-content"],
+  [data-slot="dropdown-menu-sub-content"],
   [data-slot="popover-content"] {
-    background-color: var(--glass-bg-strong) !important;
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: var(--glass-shadow) !important;
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    background-color: var(--glass-menu-bg) !important;
+    background-image: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      transparent 48%
+    ) !important;
+    border: 1px solid var(--glass-menu-border) !important;
+    box-shadow: var(--glass-menu-shadow) !important;
+    color: var(--popover-foreground) !important;
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    z-index: 9999;
+  }
+
+  .dark [data-slot="select-content"],
+  .dark [data-slot="dropdown-menu-content"],
+  .dark [data-slot="dropdown-menu-sub-content"],
+  .dark [data-slot="popover-content"] {
+    background-image: linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 50%
+    ) !important;
+  }
+
+  [data-slot="dropdown-menu-item"],
+  [data-slot="dropdown-menu-checkbox-item"],
+  [data-slot="dropdown-menu-radio-item"],
+  [data-slot="dropdown-menu-sub-trigger"] {
+    color: var(--popover-foreground);
+  }
+
+  [data-slot="dropdown-menu-item"] svg,
+  [data-slot="dropdown-menu-checkbox-item"] svg,
+  [data-slot="dropdown-menu-radio-item"] svg,
+  [data-slot="dropdown-menu-sub-trigger"] svg {
+    color: color-mix(in srgb, var(--popover-foreground) 72%, transparent);
+  }
+
+  [data-slot="dropdown-menu-item"]:focus,
+  [data-slot="dropdown-menu-item"]:hover,
+  [data-slot="dropdown-menu-checkbox-item"]:focus,
+  [data-slot="dropdown-menu-radio-item"]:focus,
+  [data-slot="dropdown-menu-sub-trigger"]:focus,
+  [data-slot="dropdown-menu-sub-trigger"][data-state="open"] {
+    background-color: color-mix(
+      in srgb,
+      var(--popover-foreground) 8%,
+      transparent
+    ) !important;
+  }
+
+  .dark [data-slot="dropdown-menu-item"]:focus,
+  .dark [data-slot="dropdown-menu-item"]:hover,
+  .dark [data-slot="dropdown-menu-checkbox-item"]:focus,
+  .dark [data-slot="dropdown-menu-radio-item"]:focus,
+  .dark [data-slot="dropdown-menu-sub-trigger"]:focus,
+  .dark [data-slot="dropdown-menu-sub-trigger"][data-state="open"] {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  [data-slot="dropdown-menu-separator"] {
+    background-color: color-mix(
+      in srgb,
+      var(--popover-foreground) 14%,
+      transparent
+    ) !important;
   }
 
   [data-slot="button"][data-variant="outline"],

@@ -128,7 +128,7 @@ export default function UserDetailsPage() {
                 <span className="sr-only">More actions</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-2xl">
+            <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <Link href={`/users/edit/${userId}`}>Open full edit</Link>
               </DropdownMenuItem>

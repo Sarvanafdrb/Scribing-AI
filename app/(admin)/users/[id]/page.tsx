@@ -153,7 +153,7 @@ export default function UserDetailsPage() {
               type="button"
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
+                "-mb-px border-b px-4 py-2.5 text-sm font-medium transition-colors",
                 activeTab === tab.key
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",

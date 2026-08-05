@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { OrganizationInlineField } from "@/app/(admin)/organizations/components/OrganizationInlineField";
 import { LinkCell } from "@/components/shared/LinkCell";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +10,12 @@ import { roleService } from "@/services/role.service";
 import { roleKeys } from "@/services/role.queries";
 import type { UpdateUserData, User } from "@/types/user.types";
 
-const formatDateTime = (value?: string | Date) => {
-  if (!value) return "";
+const formatDateTime = (value?: string | Date | null) => {
+  if (!value) return "—";
   try {
     return new Date(value).toLocaleString();
   } catch {
-    return "";
+    return "—";
   }
 };
 
@@ -27,6 +28,8 @@ const splitFullName = (fullName: string) => {
     lastName: parts.slice(1).join(" "),
   };
 };
+
+const parseBoolYesNo = (value: string) => value === "yes" || value === "true";
 
 interface UserDetailsTabProps {
   user: User;
@@ -42,17 +45,47 @@ export function UserDetailsTab({
   onUpdateField,
 }: UserDetailsTabProps) {
   const [savingField, setSavingField] = useState<string | null>(null);
+  const anyUser = user as any;
 
   const org =
     typeof user.organizationId === "object" ? user.organizationId : null;
   const orgId = org?.id || org?._id || "";
-  const role = typeof user.roleId === "object" ? user.roleId : null;
-  const roleId =
-    (typeof user.roleId === "object"
-      ? user.roleId?._id || user.roleId?.id
-      : user.roleId) || "";
+
+  const role =
+    typeof user.roleId === "object" ? (user.roleId as any) : null;
+  const roleId = (role?._id || role?.id || user.roleId || "") as string;
+
   const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
   const isActive = user.isActive !== false;
+
+  const phoneNumber =
+    typeof anyUser.phoneNumber === "string"
+      ? anyUser.phoneNumber
+      : typeof anyUser.phone === "string"
+        ? anyUser.phone
+        : "—";
+
+  const username =
+    typeof anyUser.username === "string" ? anyUser.username : user.email;
+
+  const department =
+    typeof anyUser.department === "string" ? anyUser.department : "";
+  const designation =
+    typeof anyUser.designation === "string" ? anyUser.designation : "";
+  const employeeId =
+    typeof anyUser.employeeId === "string"
+      ? anyUser.employeeId
+      : typeof anyUser.employeeID === "string"
+        ? anyUser.employeeID
+        : "—";
+
+  const qualifications: string[] = Array.isArray(anyUser.qualifications)
+    ? anyUser.qualifications
+    : [];
+
+  const inferredDepartment = department || qualifications[0] || "—";
+  const inferredDesignation =
+    designation || qualifications[1] || qualifications.join(", ") || "—";
 
   const rolesQuery = useQuery({
     queryKey: roleKeys.list({
@@ -67,11 +100,11 @@ export function UserDetailsTab({
         page: 1,
         limit: 100,
       }),
-    enabled: Boolean(orgId) && canEdit,
+    enabled: Boolean(orgId),
     staleTime: 5 * 60 * 1000,
   });
 
-  const roleOptions = (rolesQuery.data?.roles || []).map((item) => ({
+  const roleOptions = (rolesQuery.data?.roles || []).map((item: any) => ({
     value: String(item.id || item._id || ""),
     label: item.name,
   }));
@@ -85,43 +118,76 @@ export function UserDetailsTab({
     }
   };
 
+  const onSaveNoopWithToast = async (label: string, value: string) => {
+    toast.info(`${label} is not editable on this record page.`);
+    return;
+  };
+
+  const onSaveFullName = async (value: string) => {
+    if (!canEdit) {
+      toast.info("You don't have permission to edit this user.");
+      return;
+    }
+    const next = splitFullName(value);
+    if (!next.firstName || !next.lastName) {
+      toast.error("Please enter both first name and last name.");
+      return;
+    }
+    await saveField("fullName", { firstName: next.firstName, lastName: next.lastName });
+  };
+
+  const statusValue = isActive ? "active" : "inactive";
+
   return (
     <div className="space-y-4">
       <Section title="User Information">
         <div className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
-          <div>
+          <div className="space-y-0">
             <OrganizationInlineField
               label="User ID"
               value={user.userCode || userId}
-              editable={false}
+              editable={true}
+              type="text"
+              isSaving={savingField === "userCode"}
+              onSave={(value) =>
+                onSaveNoopWithToast("User ID", value)
+              }
               displayValue={
-                <span className="font-mono text-xs">
-                  {user.userCode || userId}
-                </span>
+                <span className="font-mono text-xs">{user.userCode || userId}</span>
               }
             />
             <OrganizationInlineField
               label="Full Name"
               value={fullName}
-              editable={canEdit}
+              editable={true}
+              type="text"
               isSaving={savingField === "fullName"}
-              onSave={(value) => {
-                const { firstName, lastName } = splitFullName(value);
-                return saveField("fullName", { firstName, lastName });
-              }}
+              onSave={onSaveFullName}
             />
             <OrganizationInlineField
               label="Display Name"
               value={fullName}
-              editable={false}
+              editable={true}
+              type="text"
+              isSaving={savingField === "displayName"}
+              onSave={async (value) => {
+                // Display name is derived from first/last in our model.
+                await onSaveFullName(value);
+              }}
             />
             <OrganizationInlineField
               label="Email"
               value={user.email || ""}
               type="email"
-              editable={canEdit}
+              editable={true}
               isSaving={savingField === "email"}
-              onSave={(value) => saveField("email", { email: value })}
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                await saveField("email", { email: value });
+              }}
               displayValue={
                 user.email ? (
                   <a
@@ -134,30 +200,41 @@ export function UserDetailsTab({
               }
             />
           </div>
-          <div>
+
+          <div className="space-y-0">
             <OrganizationInlineField
               label="Phone Number"
-              value=""
-              editable={false}
+              value={phoneNumber === "—" ? "" : phoneNumber}
+              editable={true}
+              isSaving={savingField === "phone"}
+              onSave={(value) => onSaveNoopWithToast("Phone Number", value)}
+              displayValue={phoneNumber !== "—" ? phoneNumber : undefined}
             />
             <OrganizationInlineField
               label="Username"
-              value={user.email || ""}
-              editable={false}
+              value={username || ""}
+              editable={true}
+              isSaving={savingField === "username"}
+              onSave={(value) => onSaveNoopWithToast("Username", value)}
+              displayValue={username || undefined}
             />
             <OrganizationInlineField
               label="Status"
-              value={isActive ? "active" : "inactive"}
-              editable={canEdit}
+              value={statusValue}
+              editable={true}
               type="select"
               options={[
                 { value: "active", label: "Active" },
                 { value: "inactive", label: "Inactive" },
               ]}
-              isSaving={savingField === "isActive"}
-              onSave={(value) =>
-                saveField("isActive", { isActive: value === "active" })
-              }
+              isSaving={savingField === "status"}
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                await saveField("status", { isActive: value === "active" });
+              }}
               displayValue={
                 <Badge
                   variant={isActive ? "default" : "secondary"}
@@ -169,8 +246,26 @@ export function UserDetailsTab({
             />
             <OrganizationInlineField
               label="Email Verified"
-              value={user.isEmailVerified ? "Yes" : "No"}
-              editable={false}
+              value={user.isEmailVerified ? "yes" : "no"}
+              editable={true}
+              type="select"
+              options={[
+                { value: "yes", label: "Yes" },
+                { value: "no", label: "No" },
+              ]}
+              isSaving={savingField === "isEmailVerified"}
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                await saveField("isEmailVerified", {
+                  isEmailVerified: parseBoolYesNo(value),
+                });
+              }}
+              displayValue={
+                <span>{user.isEmailVerified ? "Yes" : "No"}</span>
+              }
             />
           </div>
         </div>
@@ -178,47 +273,49 @@ export function UserDetailsTab({
 
       <Section title="Organization Information">
         <div className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
-          <div>
+          <div className="space-y-0">
             <OrganizationInlineField
               label="Organization"
-              value={org?.name || user.organizationName || ""}
-              editable={false}
+              value={org?.name || (user as any).organizationName || ""}
+              editable={true}
+              isSaving={savingField === "organization"}
+              onSave={(value) => onSaveNoopWithToast("Organization", value)}
               displayValue={
-                orgId && (org?.name || user.organizationName) ? (
+                orgId ? (
                   <LinkCell href={`/organizations/${orgId}`}>
-                    {org?.name || user.organizationName}
+                    {org?.name || (user as any).organizationName}
                   </LinkCell>
                 ) : undefined
               }
             />
             <OrganizationInlineField
               label="Department"
-              value=""
-              editable={false}
+              value={inferredDepartment === "—" ? "" : inferredDepartment}
+              editable={true}
+              isSaving={savingField === "department"}
+              onSave={(value) => onSaveNoopWithToast("Department", value)}
+              displayValue={inferredDepartment !== "—" ? inferredDepartment : undefined}
             />
           </div>
-          <div>
+
+          <div className="space-y-0">
             <OrganizationInlineField
               label="Designation"
-              value={
-                Array.isArray(user.qualifications) && user.qualifications.length
-                  ? user.qualifications.join(", ")
-                  : ""
-              }
-              editable={canEdit}
-              isSaving={savingField === "qualifications"}
-              onSave={(value) =>
-                saveField("qualifications", {
-                  qualifications: value
-                    ? value.split(",").map((part) => part.trim()).filter(Boolean)
-                    : [],
-                })
+              value={inferredDesignation === "—" ? "" : inferredDesignation}
+              editable={true}
+              isSaving={savingField === "designation"}
+              onSave={(value) => onSaveNoopWithToast("Designation", value)}
+              displayValue={
+                inferredDesignation !== "—" ? inferredDesignation : undefined
               }
             />
             <OrganizationInlineField
               label="Employee ID"
-              value={user.userCode || ""}
-              editable={false}
+              value={employeeId === "—" ? "" : employeeId}
+              editable={true}
+              isSaving={savingField === "employeeId"}
+              onSave={(value) => onSaveNoopWithToast("Employee ID", value)}
+              displayValue={employeeId !== "—" ? employeeId : undefined}
             />
           </div>
         </div>
@@ -226,39 +323,82 @@ export function UserDetailsTab({
 
       <Section title="Access Information">
         <div className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
-          <div>
+          <div className="space-y-0">
             <OrganizationInlineField
               label="Primary Role"
               value={String(roleId || "")}
-              editable={canEdit && roleOptions.length > 0}
+              editable={true}
               type="select"
               options={roleOptions}
               isSaving={savingField === "roleId"}
-              onSave={(value) => saveField("roleId", { roleId: value })}
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                await saveField("roleId", { roleId: value });
+              }}
               displayValue={
-                roleId && role?.name ? (
+                role?.name ? (
                   <LinkCell href={`/roles/${roleId}`}>{role.name}</LinkCell>
-                ) : (
-                  role?.name || undefined
-                )
+                ) : undefined
+              }
+            />
+            <OrganizationInlineField
+              label="Account Status"
+              value={statusValue}
+              editable={true}
+              type="select"
+              options={[
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ]}
+              isSaving={savingField === "accountStatus"}
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                await saveField("accountStatus", { isActive: value === "active" });
+              }}
+              displayValue={
+                <Badge
+                  variant={isActive ? "default" : "secondary"}
+                  className={isActive ? "bg-primary" : undefined}
+                >
+                  {isActive ? "Active" : "Inactive"}
+                </Badge>
               }
             />
             <OrganizationInlineField
               label="Login Enabled"
-              value={isActive ? "Yes" : "No"}
-              editable={false}
+              value={isActive ? "yes" : "no"}
+              editable={true}
+              type="select"
+              options={[
+                { value: "yes", label: "Yes" },
+                { value: "no", label: "No" },
+              ]}
+              isSaving={savingField === "loginEnabled"}
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                await saveField("loginEnabled", { isActive: parseBoolYesNo(value) });
+              }}
+              displayValue={<span>{isActive ? "Yes" : "No"}</span>}
             />
           </div>
-          <div>
+
+          <div className="space-y-0">
             <OrganizationInlineField
               label="Last Login"
-              value={formatDateTime(user.lastLogin)}
-              editable={false}
-            />
-            <OrganizationInlineField
-              label="Created By"
-              value=""
-              editable={false}
+              value={user.lastLogin ? formatDateTime(user.lastLogin) : "—"}
+              editable={true}
+              isSaving={savingField === "lastLogin"}
+              onSave={(value) => onSaveNoopWithToast("Last Login", value)}
+              displayValue={user.lastLogin ? formatDateTime(user.lastLogin) : undefined}
             />
           </div>
         </div>
@@ -266,23 +406,39 @@ export function UserDetailsTab({
 
       <Section title="Audit Information">
         <div className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
-          <div>
+          <div className="space-y-0">
+            <OrganizationInlineField
+              label="Created By"
+              value={(user as any).createdBy || ""}
+              editable={true}
+              isSaving={savingField === "createdBy"}
+              onSave={(value) => onSaveNoopWithToast("Created By", value)}
+            />
             <OrganizationInlineField
               label="Created At"
               value={formatDateTime(user.createdAt)}
-              editable={false}
+              editable={true}
+              isSaving={savingField === "createdAt"}
+              onSave={(value) => onSaveNoopWithToast("Created At", value)}
+              displayValue={user.createdAt ? formatDateTime(user.createdAt) : undefined}
+            />
+          </div>
+
+          <div className="space-y-0">
+            <OrganizationInlineField
+              label="Updated By"
+              value={(user as any).updatedBy || ""}
+              editable={true}
+              isSaving={savingField === "updatedBy"}
+              onSave={(value) => onSaveNoopWithToast("Updated By", value)}
             />
             <OrganizationInlineField
               label="Updated At"
               value={formatDateTime(user.updatedAt)}
-              editable={false}
-            />
-          </div>
-          <div>
-            <OrganizationInlineField
-              label="Last Updated By"
-              value=""
-              editable={false}
+              editable={true}
+              isSaving={savingField === "updatedAt"}
+              onSave={(value) => onSaveNoopWithToast("Updated At", value)}
+              displayValue={user.updatedAt ? formatDateTime(user.updatedAt) : undefined}
             />
           </div>
         </div>
@@ -299,9 +455,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="glass rounded-3xl p-4 sm:p-6">
+    <section className="glass rounded-2xl border border-border/60 p-4 sm:p-6">
       <h2 className="mb-3 text-base font-semibold text-foreground">{title}</h2>
-      <dl>{children}</dl>
+      <dl className="space-y-0">{children}</dl>
     </section>
   );
 }
+

@@ -125,28 +125,30 @@ export function OrganizationInlineField({
             <div className="flex shrink-0 items-center gap-1">
               <Button
                 type="button"
-                size="icon-sm"
-                className="rounded-full"
+                size="sm"
+                className="rounded-full px-3"
                 onClick={() => void saveEdit()}
                 disabled={isSaving}
                 aria-label={`Save ${label}`}
               >
                 {isSaving ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="mr-1.5 h-3.5 w-3.5" />
                 )}
+                <span className="inline text-xs">Save</span>
               </Button>
               <Button
                 type="button"
-                size="icon-sm"
+                size="sm"
                 variant="outline"
-                className="rounded-full"
+                className="rounded-full px-3"
                 onClick={cancelEdit}
                 disabled={isSaving}
                 aria-label={`Cancel ${label}`}
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="mr-1.5 h-3.5 w-3.5" />
+                <span className="inline text-xs">Cancel</span>
               </Button>
             </div>
           </div>

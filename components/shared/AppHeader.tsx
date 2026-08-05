@@ -12,7 +12,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({
-  title = "Scribblr AI",
+  title = "Scribble AI",
   subtitle,
   className,
   children,
@@ -32,7 +32,9 @@ export function AppHeader({
               {title}
             </p>
             {subtitle && (
-              <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {subtitle}
+              </p>
             )}
           </div>
         </div>

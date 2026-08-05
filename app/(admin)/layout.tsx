@@ -196,7 +196,7 @@ export default function AdminLayout({
           {/* Logo */}
           <div className="border-b border-sidebar-border p-4">
             <h1 className="bg-gradient-to-r from-primary to-[var(--glow)] bg-clip-text text-xl font-bold text-transparent">
-              Scribblr AI
+              Scribble AI
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">Admin Panel</p>
           </div>

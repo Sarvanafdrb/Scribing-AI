@@ -21,6 +21,24 @@ export const useUserMutations = () => {
   const updateUser = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateUserData }) =>
       userService.update(id, data),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: userKeys.detail(id) });
+      const previous = queryClient.getQueryData<User>(userKeys.detail(id));
+      if (previous) {
+        queryClient.setQueryData<User>(userKeys.detail(id), {
+          ...previous,
+          ...data,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      return { previous, id };
+    },
+    onError: (error: any, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(userKeys.detail(context.id), context.previous);
+      }
+      toast.error(error?.response?.data?.message || "Failed to update user");
+    },
     onSuccess: (_data: User, variables) => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({
@@ -28,15 +46,13 @@ export const useUserMutations = () => {
       });
       toast.success("User updated successfully");
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to update user");
-    },
   });
 
   const activateUser = useMutation({
     mutationFn: (id: string) => userService.setActive(id, true),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
       toast.success("User activated successfully");
     },
     onError: (error: any) => {
@@ -46,8 +62,9 @@ export const useUserMutations = () => {
 
   const deactivateUser = useMutation({
     mutationFn: (id: string) => userService.setActive(id, false),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
       toast.success("User deactivated successfully");
     },
     onError: (error: any) => {

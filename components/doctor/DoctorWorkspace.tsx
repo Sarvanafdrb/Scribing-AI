@@ -10,7 +10,6 @@ import { DoctorRecordingPanel } from "@/components/doctor/DoctorRecordingPanel";
 import { DoctorLiveTranscript } from "@/components/doctor/DoctorLiveTranscript";
 import { DoctorAiNotesPanel } from "@/components/doctor/DoctorAiNotesPanel";
 import { DispositionPanel } from "@/components/doctor/DispositionPanel";
-import { DoctorWorkspaceFooter } from "@/components/doctor/DoctorWorkspaceFooter";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
 
 interface DoctorWorkspaceProps {
@@ -95,7 +94,6 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
             </div>
           </main>
 
-          <DoctorWorkspaceFooter sessionId={sessionId} />
           {/* Admit modal host — disposition is chosen after Save Consultation */}
           <DispositionPanel sessionId={sessionId} />
         </div>

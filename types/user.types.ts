@@ -49,4 +49,5 @@ export interface UpdateUserData {
   roleId?: string;
   qualifications?: string[];
   isActive?: boolean;
+  isEmailVerified?: boolean;
 }

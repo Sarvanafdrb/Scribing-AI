@@ -135,13 +135,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="glass-tint rounded-3xl p-6 text-foreground">
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
           Welcome back, {user.firstName} {user.lastName}!
         </h1>
-        <p className="mt-1 text-sm text-indigo-200/90 dark:text-indigo-200/80">
+        <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-300">
           {scopeLabel}
         </p>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Here&apos;s what&apos;s happening with your scribing platform today.
         </p>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronUp,
@@ -16,9 +17,11 @@ import {
 } from "lucide-react";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
+import { sessionService } from "@/services/session.service";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
 import type { PreviousHistoryItem } from "@/types/session.types";
 import type { AdmissionTimelineItem } from "@/types/encounter.types";
+import type { Patient } from "@/types/patient.types";
 import { getEncounterType } from "@/utils/encounter.utils";
 import { cn } from "@/lib/utils";
 
@@ -303,6 +306,41 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
   } = useAiNotes(sessionId);
   const isIp = getEncounterType(session) === "IP";
 
+  const patientId =
+    session && typeof session.patientId === "object"
+      ? String(
+          (session.patientId as Patient).id ||
+            (session.patientId as Patient)._id ||
+            "",
+        )
+      : String(session?.patientId || "");
+
+  // Lightweight count only — widget body still uses session.previousHistory (latest 3).
+  const historyCountQuery = useQuery({
+    queryKey: ["patient-previous-history-count", patientId, sessionId],
+    queryFn: async () => {
+      const result = await sessionService.getAll({
+        patientId,
+        status: "completed",
+        page: 1,
+        limit: 1,
+      });
+      const totalCompleted = result.total || 0;
+      // Match findPreviousHistoryForPatient: exclude the current session.
+      const excludeCurrent = session?.status === "completed" ? 1 : 0;
+      return Math.max(0, totalCompleted - excludeCurrent);
+    },
+    enabled: Boolean(patientId),
+    staleTime: 60 * 1000,
+  });
+
+  const previousHistoryTotal =
+    historyCountQuery.data ?? session?.previousHistory?.length ?? 0;
+  const showViewAllHistory = Boolean(patientId) && previousHistoryTotal > 3;
+  const historyPageHref = patientId
+    ? `/doctor/patients/${patientId}/history`
+    : "";
+
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     previous_history: true,
     prescription: true,
@@ -316,6 +354,10 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const previousHistoryLabel = isIp
+    ? `Previous History / Admission Timeline (${previousHistoryTotal} Visits)`
+    : `Previous History (${previousHistoryTotal} Visits)`;
 
   const sections: NoteSection[] = [
     {
@@ -332,9 +374,7 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
     },
     {
       key: "previous_history",
-      label: isIp
-        ? "Previous History / Admission Timeline"
-        : "Previous History (Last 3 Visits)",
+      label: previousHistoryLabel,
       icon: History,
       defaultOpen: true,
     },
@@ -452,41 +492,57 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
                 onClick={() => toggleSection(section.key)}
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
               >
-                <Icon className="h-3.5 w-3.5 text-gray-400" />
-                <span className="flex-1 text-sm font-medium text-gray-700">
+                <Icon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-700">
                   {section.label}
                 </span>
-                <Pencil className="h-3 w-3 text-gray-300" />
+                <Pencil className="h-3 w-3 shrink-0 text-gray-300" />
                 {isOpen ? (
-                  <ChevronUp className="h-4 w-4 text-gray-400" />
+                  <ChevronUp className="h-4 w-4 shrink-0 text-gray-400" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
                 )}
               </button>
 
               {isOpen && (
                 <div className="border-t border-gray-100 px-3 py-3">
-                  {section.key === "prescription"
-                    ? formatMedications(aiNotes?.medications)
-                    : section.key === "previous_history"
-                      ? isIp
-                        ? (
-                            <div className="space-y-4">
-                              {formatAdmissionTimeline(
-                                session?.admissionTimeline,
-                                openConsultation,
-                              )}
-                              {formatPreviousHistory(
-                                session?.previousHistory,
-                                openConsultation,
-                              )}
-                            </div>
-                          )
-                        : formatPreviousHistory(
+                  {section.key === "prescription" ? (
+                    formatMedications(aiNotes?.medications)
+                  ) : section.key === "previous_history" ? (
+                    <div className="space-y-3">
+                      {isIp ? (
+                        <div className="space-y-4">
+                          {formatAdmissionTimeline(
+                            session?.admissionTimeline,
+                            openConsultation,
+                          )}
+                          {formatPreviousHistory(
                             session?.previousHistory,
                             openConsultation,
-                          )
-                      : renderContent(section.content)}
+                          )}
+                        </div>
+                      ) : (
+                        formatPreviousHistory(
+                          session?.previousHistory,
+                          openConsultation,
+                        )
+                      )}
+                      {showViewAllHistory ? (
+                        <div className="pt-1 text-center">
+                          <a
+                            href={historyPageHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex text-xs font-medium text-teal-700 hover:text-teal-800 hover:underline"
+                          >
+                            View All →
+                          </a>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    renderContent(section.content)
+                  )}
                 </div>
               )}
             </div>

@@ -52,8 +52,9 @@ export const usePatientMutations = () => {
 
   const activatePatient = useMutation({
     mutationFn: (id: string) => patientService.setActive(id, true),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: patientKeys.detail(id) });
       toast.success("Patient activated successfully");
     },
     onError: (error: any) => {
@@ -65,8 +66,9 @@ export const usePatientMutations = () => {
 
   const deactivatePatient = useMutation({
     mutationFn: (id: string) => patientService.setActive(id, false),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: patientKeys.detail(id) });
       toast.success("Patient deactivated successfully");
     },
     onError: (error: any) => {

@@ -205,24 +205,33 @@ export function RecordingStudio({ sessionId, embedded = false }: RecordingStudio
       );
 
       if (uploadConfig.mode === "s3" && uploadConfig.uploadUrl) {
-        const uploadResponse = await fetch(uploadConfig.uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": mimeType,
-          },
-          body: blob,
-        });
+        try {
+          const uploadResponse = await fetch(uploadConfig.uploadUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": mimeType,
+            },
+            body: blob,
+          });
 
-        if (!uploadResponse.ok) {
-          throw new Error("Failed to upload recording to S3");
+          if (!uploadResponse.ok) {
+            throw new Error("Failed to upload recording to S3");
+          }
+
+          await recordingService.complete(sessionId, {
+            key: uploadConfig.key || undefined,
+            audioUrl: uploadConfig.audioUrl || undefined,
+            duration,
+            contentType: mimeType,
+          });
+        } catch (s3Error) {
+          // Missing S3 CORS → browser CORS/403; upload via API instead.
+          console.warn(
+            "[recording] Direct S3 upload failed; falling back to API upload",
+            s3Error,
+          );
+          await recordingService.uploadFile(sessionId, blob, duration, fileName);
         }
-
-        await recordingService.complete(sessionId, {
-          key: uploadConfig.key || undefined,
-          audioUrl: uploadConfig.audioUrl || undefined,
-          duration,
-          contentType: mimeType,
-        });
       } else {
         await recordingService.uploadFile(sessionId, blob, duration, fileName);
       }

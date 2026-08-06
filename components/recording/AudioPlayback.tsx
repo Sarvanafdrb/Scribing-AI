@@ -67,6 +67,9 @@ function LegacyAudioPlayback({
       setIsLoading(true);
       setError(null);
       try {
+        if (audioUrl.startsWith("s3://")) {
+          throw new Error("Signed playback requires a session id");
+        }
         if (active) {
           setSrc(resolveAudioUrl(audioUrl));
         }

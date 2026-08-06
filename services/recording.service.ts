@@ -28,6 +28,11 @@ export const resolveAudioUrl = (audioUrl: string): string => {
     return audioUrl;
   }
 
+  // Opaque S3 storage refs are not playable — callers must use playback-url.
+  if (audioUrl.startsWith("s3://")) {
+    return audioUrl;
+  }
+
   const base = getUploadsBaseUrl();
   const normalizedPath = audioUrl.startsWith("/") ? audioUrl : `/${audioUrl}`;
 

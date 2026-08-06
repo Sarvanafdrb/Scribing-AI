@@ -96,7 +96,8 @@ export function DoctorAudioPlayer({
           setSrc(resolveAudioUrl(result.playbackUrl));
         }
       } catch (err: unknown) {
-        if (audioUrl && active) {
+        // Never treat opaque s3:// refs as playable sources.
+        if (audioUrl && !audioUrl.startsWith("s3://") && active) {
           setSrc(resolveAudioUrl(audioUrl));
           return;
         }

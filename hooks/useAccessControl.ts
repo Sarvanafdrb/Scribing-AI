@@ -22,6 +22,7 @@ import {
   PATIENT_CREATE,
   PATIENT_EDIT,
   PATIENT_DELETE,
+  ROLE_EDIT,
 } from "@/constants/permissions";
 
 const getCurrentUserId = (user?: AuthUser | null): string =>
@@ -107,5 +108,8 @@ export const useAccessControl = () => {
       hasPermission(user, PATIENT_DELETE, token) ||
       hasPermission(user, "patient:update", token) ||
       hasPermission(user, "patient:delete", token),
+    canEditRole: () =>
+      hasPermission(user, ROLE_EDIT, token) ||
+      hasPermission(user, "role:update", token),
   };
 };

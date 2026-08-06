@@ -63,7 +63,7 @@ export function RoleActions({ role, onStatusChange }: RoleActionsProps) {
           <DropdownMenuItem
             disabled={!isActive}
             onClick={() => {
-              if (isActive) router.push(`/roles/${roleId}/edit`);
+              if (isActive) router.push(`/roles/edit/${roleId}`);
             }}
           >
             <Edit className="mr-2 h-4 w-4" />

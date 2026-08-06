@@ -35,7 +35,7 @@ export const useRoleMutations = () => {
     mutationFn: (id: string) => roleService.deactivate(id),
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: roleKeys.all });
-      queryClient.removeQueries({ queryKey: roleKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: roleKeys.detail(id) });
       toast.success("Role deactivated successfully");
     },
     onError: (error: any) => {

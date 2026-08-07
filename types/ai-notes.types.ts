@@ -2,6 +2,9 @@ export type AiNotesStatus = "pending" | "processing" | "completed" | "failed";
 
 export interface AiNotesMedication {
   medicine: string;
+  medicineId?: string;
+  medicineNameSnapshot?: string;
+  strengthSnapshot?: string;
   morning?: string;
   afternoon?: string;
   night?: string;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { KeyRound, LogOut, User } from "lucide-react";
+import { KeyRound, LogOut, Pill, User } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import type { AuthUser } from "@/types/auth.types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +38,7 @@ const getRoleLabel = (user: AuthUser) => {
 interface UserProfileDropdownProps {
   profileHref?: string;
   changePasswordHref?: string;
+  medicinesHref?: string;
   className?: string;
   avatarClassName?: string;
 }
@@ -45,6 +46,7 @@ interface UserProfileDropdownProps {
 export function UserProfileDropdown({
   profileHref = "/doctor/profile",
   changePasswordHref = "/doctor/change-password",
+  medicinesHref = "/doctor/medicines",
   className,
   avatarClassName,
 }: UserProfileDropdownProps) {
@@ -115,6 +117,16 @@ export function UserProfileDropdown({
           <Link href={profileHref}>
             <User className="h-4 w-4" />
             My Profile
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          asChild
+          className="cursor-pointer"
+        >
+          <Link href={medicinesHref}>
+            <Pill className="h-4 w-4" />
+            Medicines
           </Link>
         </DropdownMenuItem>
 

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-/** Long audio uploads + proxy hops need more than the default. */
+/**
+ * Long consultation audio through /api/backend needs elevated duration.
+ * Vercel Hobby max is 300s; Pro can raise to 800 via maxDuration.
+ * Prefer direct S3 PUT (presigned) for large files so the proxy is not on the critical path.
+ */
 export const maxDuration = 300;
 
 const getApiProxyTarget = () =>

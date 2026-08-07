@@ -11,6 +11,7 @@ export const PERMISSION_MODULES = [
   { id: "roles", label: "Roles", prefix: "ROLE", legacySlug: "role" },
   { id: "permissions", label: "Permissions", prefix: "PERMISSION", legacySlug: "permission" },
   { id: "patients", label: "Patients", prefix: "PATIENT", legacySlug: "patient" },
+  { id: "medicines", label: "Medicines", prefix: "MEDICINE", legacySlug: "medicine" },
   { id: "sessions", label: "Sessions", prefix: "SESSION", legacySlug: "session" },
   { id: "reports", label: "Reports", prefix: "REPORT", legacySlug: "report" },
   { id: "settings", label: "Settings", prefix: "SETTINGS", legacySlug: "settings" },

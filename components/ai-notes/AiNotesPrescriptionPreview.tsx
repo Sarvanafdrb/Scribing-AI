@@ -20,11 +20,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceEditDialog } from "@/components/ai-notes/VoiceEditDialog";
 import { VoiceEditReview } from "@/components/ai-notes/VoiceEditReview";
+import { MedicationConditionSearch } from "@/components/ai-notes/MedicationConditionSearch";
 import type {
   AiNotes,
   AiNotesMedication,
   VoiceEditPreviewResult,
 } from "@/types/ai-notes.types";
+import type { MedicineSearchResult } from "@/types/medicine.types";
 import type { Session } from "@/types/session.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import {
@@ -136,6 +138,42 @@ export function AiNotesPrescriptionPreview({
     }));
   };
 
+  const addMedicineFromCatalog = (medicine: MedicineSearchResult) => {
+    setContent((current) => {
+      const alreadyAdded = current.medications.some(
+        (row) =>
+          (row.medicineId && row.medicineId === medicine.id) ||
+          row.medicine.trim().toLowerCase() === medicine.name.trim().toLowerCase(),
+      );
+      if (alreadyAdded) {
+        toast.info(`${medicine.name} is already on this prescription.`);
+        return current;
+      }
+
+      const displayName = medicine.strength
+        ? `${medicine.name} ${medicine.strength}`.trim()
+        : medicine.name;
+
+      return {
+        ...current,
+        medications: [
+          ...current.medications,
+          {
+            ...createEmptyMedication(),
+            medicine: displayName,
+            medicineId: medicine.id,
+            medicineNameSnapshot: medicine.name,
+            strengthSnapshot: medicine.strength || "",
+          },
+        ],
+      };
+    });
+    if (!isEditing) {
+      setIsEditing(true);
+    }
+    toast.success(`${medicine.name} added to prescription`);
+  };
+
   const removeMedication = (index: number) => {
     setContent((current) => ({
       ...current,
@@ -144,6 +182,27 @@ export function AiNotesPrescriptionPreview({
       ),
     }));
   };
+
+  const organizationId = useMemo(() => {
+    if (!session) return undefined;
+    if (typeof session.organizationId === "object" && session.organizationId) {
+      return (
+        (session.organizationId as { id?: string; _id?: string }).id ||
+        (session.organizationId as { id?: string; _id?: string })._id
+      );
+    }
+    return typeof session.organizationId === "string"
+      ? session.organizationId
+      : undefined;
+  }, [session]);
+
+  const excludedMedicineIds = useMemo(
+    () =>
+      content.medications
+        .map((medication) => medication.medicineId || "")
+        .filter(Boolean),
+    [content.medications],
+  );
 
   const handleSave = async () => {
     try {
@@ -462,26 +521,40 @@ export function AiNotesPrescriptionPreview({
       ))}
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label>Medications</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addMedication}
-          >
-            Add Medicine
-          </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Label className="text-base font-semibold tracking-wide">
+            MEDICATIONS
+          </Label>
+          <MedicationConditionSearch
+            organizationId={organizationId}
+            excludedMedicineIds={excludedMedicineIds}
+            onAdd={addMedicineFromCatalog}
+          />
         </div>
 
         {content.medications.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No medications added.</p>
+          <div className="rounded-xl border border-dashed border-teal-200 bg-teal-50/40 px-4 py-6 text-center">
+            <p className="text-sm font-medium text-foreground">
+              No medications added.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Search a condition or symptom to find medicines configured by your
+              organization.
+            </p>
+          </div>
         ) : (
           <div className="space-y-3">
+            <div className="hidden gap-2 px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:grid md:grid-cols-6">
+              <span className="md:col-span-2">Medicine</span>
+              <span>Morning</span>
+              <span>Afternoon</span>
+              <span>Night</span>
+              <span>Days</span>
+            </div>
             {content.medications.map((medication, index) => (
               <div
-                key={`medication-${index}`}
-                className="grid gap-2 rounded-lg border p-3 md:grid-cols-6"
+                key={`medication-${index}-${medication.medicineId || medication.medicine}`}
+                className="grid gap-2 rounded-lg border border-teal-100 bg-white p-3 md:grid-cols-6"
               >
                 <Input
                   placeholder="Medicine"
@@ -540,6 +613,17 @@ export function AiNotesPrescriptionPreview({
             ))}
           </div>
         )}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={addMedication}
+        >
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          Add Medicine (manual)
+        </Button>
       </div>
     </div>
   );
@@ -592,27 +676,63 @@ export function AiNotesPrescriptionPreview({
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#e8eaed]">
-          <div className="mx-auto flex w-full max-w-[1200px] justify-center px-4 py-8 sm:px-8 sm:py-10">
+          <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center gap-4 px-4 py-8 sm:px-8 sm:py-10">
             {isEditing ? (
               <div className="w-full max-w-4xl">{editForm}</div>
             ) : (
-              <div
-                className="flex justify-center"
-                style={{
-                  width: `min(100%, calc(210mm * ${zoom}))`,
-                  height: paperHeight ? `${paperHeight * zoom}px` : undefined,
-                }}
-              >
+              <>
                 <div
+                  className="flex justify-center"
                   style={{
-                    width: "min(210mm, 100%)",
-                    transform: `scale(${zoom})`,
-                    transformOrigin: "top center",
+                    width: `min(100%, calc(210mm * ${zoom}))`,
+                    height: paperHeight ? `${paperHeight * zoom}px` : undefined,
                   }}
                 >
-                  {documentView}
+                  <div
+                    style={{
+                      width: "min(210mm, 100%)",
+                      transform: `scale(${zoom})`,
+                      transformOrigin: "top center",
+                    }}
+                  >
+                    {documentView}
+                  </div>
                 </div>
-              </div>
+
+                <div className="w-full max-w-4xl rounded-xl border border-teal-100 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold tracking-wide text-foreground">
+                        MEDICATIONS
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Search your organization formulary by condition or
+                        symptom, then save changes.
+                      </p>
+                    </div>
+                    <MedicationConditionSearch
+                      organizationId={organizationId}
+                      excludedMedicineIds={excludedMedicineIds}
+                      onAdd={addMedicineFromCatalog}
+                    />
+                  </div>
+                  {content.medications.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No medications added. Search a condition or symptom to find
+                      medicines configured by your organization.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1 text-sm text-foreground">
+                      {content.medications.map((medication, index) => (
+                        <li key={`view-med-${index}`}>
+                          {medication.medicine}
+                          {medication.days ? ` · ${medication.days} days` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -441,7 +441,7 @@ const renderSectionBodyHtml = (body?: string) => {
 
 const renderMedicationTableHtml = (medications: AiNotesMedication[]) => {
   if (!medications.length) {
-    return '<p class="empty">No medications prescribed.</p>';
+    return '<p class="empty">No medications added yet. Use Manual Edit to search conditions and add medicines.</p>';
   }
 
   const rows = medications
@@ -1058,6 +1058,9 @@ export const downloadAiNotesDocx = async (
 
 export const createEmptyMedication = (): AiNotesMedication => ({
   medicine: "",
+  medicineId: undefined,
+  medicineNameSnapshot: "",
+  strengthSnapshot: "",
   morning: "",
   afternoon: "",
   night: "",

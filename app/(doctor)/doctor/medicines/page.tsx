@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Pencil, Pill, Plus, Power, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -66,6 +66,7 @@ export default function DoctorMedicinesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [showForm, setShowForm] = useState(false);
+  const genericNameTouchedRef = useRef(false);
 
   const medicinesQuery = useMedicines({
     organizationId: organizationId || undefined,
@@ -90,6 +91,7 @@ export default function DoctorMedicinesPage() {
   );
 
   const resetForm = () => {
+    genericNameTouchedRef.current = false;
     setForm(emptyForm());
     setConditionDraft("");
     setEditingId(null);
@@ -97,10 +99,11 @@ export default function DoctorMedicinesPage() {
   };
 
   const startEdit = (medicine: Medicine) => {
+    genericNameTouchedRef.current = true;
     setEditingId(medicine.id);
     setForm({
       name: medicine.name || "",
-      genericName: medicine.genericName || "",
+      genericName: medicine.genericName || medicine.name || "",
       brandName: medicine.brandName || "",
       form: medicine.form || "",
       strength: medicine.strength || "",
@@ -138,10 +141,22 @@ export default function DoctorMedicinesPage() {
       return;
     }
 
+    const genericName = form.genericName.trim() || form.name.trim();
+    if (
+      MEDICINE_FORMS.some(
+        (item) => item.toLowerCase() === genericName.toLowerCase(),
+      )
+    ) {
+      toast.error(
+        "Generic Name should be the compound (e.g. Paracetamol), not the dosage form.",
+      );
+      return;
+    }
+
     const payload = {
       organizationId,
       name: form.name.trim(),
-      genericName: form.genericName.trim() || undefined,
+      genericName,
       brandName: form.brandName.trim() || undefined,
       form: form.form || undefined,
       strength: form.strength.trim() || undefined,
@@ -149,12 +164,16 @@ export default function DoctorMedicinesPage() {
       conditions: form.conditions,
     };
 
-    if (editingId) {
-      await updateMedicine.mutateAsync({ id: editingId, data: payload });
-    } else {
-      await createMedicine.mutateAsync(payload);
+    try {
+      if (editingId) {
+        await updateMedicine.mutateAsync({ id: editingId, data: payload });
+      } else {
+        await createMedicine.mutateAsync(payload);
+      }
+      resetForm();
+    } catch {
+      // Toast is handled by the mutation; keep the form open for correction.
     }
-    resetForm();
   };
 
   const isSaving =
@@ -237,32 +256,50 @@ export default function DoctorMedicinesPage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label>Medicine Name *</Label>
+              <Label htmlFor="medicine-name">Medicine Name *</Label>
               <Input
+                id="medicine-name"
+                name="medicineName"
+                autoComplete="off"
                 value={form.name}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, name: event.target.value }))
-                }
+                onChange={(event) => {
+                  const nextName = event.target.value;
+                  setForm((current) => ({
+                    ...current,
+                    name: nextName,
+                    genericName: genericNameTouchedRef.current
+                      ? current.genericName
+                      : nextName,
+                  }));
+                }}
                 placeholder="e.g. Paracetamol"
                 className="rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Generic Name</Label>
+              <Label htmlFor="medicine-generic-name">Generic Name</Label>
               <Input
+                id="medicine-generic-name"
+                name="medicineGenericName"
+                autoComplete="off"
                 value={form.genericName}
-                onChange={(event) =>
+                onChange={(event) => {
+                  genericNameTouchedRef.current = true;
                   setForm((current) => ({
                     ...current,
                     genericName: event.target.value,
-                  }))
-                }
+                  }));
+                }}
+                placeholder="e.g. Paracetamol"
                 className="rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Brand Name</Label>
+              <Label htmlFor="medicine-brand-name">Brand Name</Label>
               <Input
+                id="medicine-brand-name"
+                name="medicineBrandName"
+                autoComplete="off"
                 value={form.brandName}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -270,18 +307,23 @@ export default function DoctorMedicinesPage() {
                     brandName: event.target.value,
                   }))
                 }
+                placeholder="e.g. Dolo"
                 className="rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Form</Label>
+              <Label htmlFor="medicine-form">Form</Label>
               <Select
                 value={form.form || undefined}
                 onValueChange={(value) =>
                   setForm((current) => ({ ...current, form: value }))
                 }
               >
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger
+                  id="medicine-form"
+                  className="rounded-xl"
+                  aria-label="Medicine form"
+                >
                   <SelectValue placeholder="Select form" />
                 </SelectTrigger>
                 <SelectContent>
@@ -294,8 +336,11 @@ export default function DoctorMedicinesPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Strength</Label>
+              <Label htmlFor="medicine-strength">Strength</Label>
               <Input
+                id="medicine-strength"
+                name="medicineStrength"
+                autoComplete="off"
                 value={form.strength}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -308,14 +353,18 @@ export default function DoctorMedicinesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Route</Label>
+              <Label htmlFor="medicine-route">Route</Label>
               <Select
                 value={form.route || undefined}
                 onValueChange={(value) =>
                   setForm((current) => ({ ...current, route: value }))
                 }
               >
-                <SelectTrigger className="rounded-xl">
+                <SelectTrigger
+                  id="medicine-route"
+                  className="rounded-xl"
+                  aria-label="Medicine route"
+                >
                   <SelectValue placeholder="Select route" />
                 </SelectTrigger>
                 <SelectContent>

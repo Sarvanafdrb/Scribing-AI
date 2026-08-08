@@ -9,13 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -37,21 +30,41 @@ type FormState = {
   name: string;
   genericName: string;
   brandName: string;
-  form: string;
+  dosageForm: string;
   strength: string;
   route: string;
   conditions: string[];
 };
 
-const emptyForm = (): FormState => ({
+const emptyFields = (): FormState => ({
   name: "",
   genericName: "",
   brandName: "",
-  form: "",
+  dosageForm: "",
   strength: "",
   route: "",
   conditions: [],
 });
+
+const isDosageFormValue = (value: string) =>
+  MEDICINE_FORMS.some(
+    (item) => item.toLowerCase() === value.trim().toLowerCase(),
+  );
+
+const collectConditions = (listed: string[], draft: string) => {
+  const next = [...listed];
+  const pending = draft.trim();
+  if (
+    pending &&
+    !next.some((item) => item.toLowerCase() === pending.toLowerCase())
+  ) {
+    next.push(pending);
+  }
+  return next;
+};
+
+const selectClassName =
+  "flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35";
 
 export default function DoctorMedicinesPage() {
   const user = useAuthStore((state) => state.user) as AuthUser | null;
@@ -64,7 +77,7 @@ export default function DoctorMedicinesPage() {
   const [search, setSearch] = useState("");
   const [conditionDraft, setConditionDraft] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(emptyForm());
+  const [fields, setFields] = useState<FormState>(emptyFields());
   const [showForm, setShowForm] = useState(false);
   const genericNameTouchedRef = useRef(false);
 
@@ -90,25 +103,28 @@ export default function DoctorMedicinesPage() {
     [editingId],
   );
 
-  const resetForm = () => {
+  const resetFields = () => {
     genericNameTouchedRef.current = false;
-    setForm(emptyForm());
+    setFields(emptyFields());
     setConditionDraft("");
     setEditingId(null);
     setShowForm(false);
   };
 
   const startEdit = (medicine: Medicine) => {
-    genericNameTouchedRef.current = true;
+    const storedGeneric = (medicine.genericName || "").trim();
+    genericNameTouchedRef.current = Boolean(storedGeneric);
     setEditingId(medicine.id);
-    setForm({
+    setFields({
       name: medicine.name || "",
-      genericName: medicine.genericName || medicine.name || "",
+      genericName: isDosageFormValue(storedGeneric)
+        ? medicine.name || ""
+        : storedGeneric || medicine.name || "",
       brandName: medicine.brandName || "",
-      form: medicine.form || "",
+      dosageForm: medicine.form || "",
       strength: medicine.strength || "",
       route: medicine.route || "",
-      conditions: medicine.indications.map((item) => item.name),
+      conditions: (medicine.indications || []).map((item) => item.name),
     });
     setShowForm(true);
   };
@@ -117,14 +133,14 @@ export default function DoctorMedicinesPage() {
     const next = conditionDraft.trim();
     if (!next) return;
     if (
-      form.conditions.some(
+      fields.conditions.some(
         (condition) => condition.toLowerCase() === next.toLowerCase(),
       )
     ) {
       toast.info("Condition already added");
       return;
     }
-    setForm((current) => ({
+    setFields((current) => ({
       ...current,
       conditions: [...current.conditions, next],
     }));
@@ -132,7 +148,7 @@ export default function DoctorMedicinesPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) {
+    if (!fields.name.trim()) {
       toast.error("Medicine name is required");
       return;
     }
@@ -141,27 +157,35 @@ export default function DoctorMedicinesPage() {
       return;
     }
 
-    const genericName = form.genericName.trim() || form.name.trim();
-    if (
-      MEDICINE_FORMS.some(
-        (item) => item.toLowerCase() === genericName.toLowerCase(),
-      )
-    ) {
-      toast.error(
-        "Generic Name should be the compound (e.g. Paracetamol), not the dosage form.",
-      );
+    const conditions = collectConditions(fields.conditions, conditionDraft);
+    if (conditions.length === 0) {
+      toast.error("Add at least one applicable condition before saving");
       return;
     }
 
+    let genericName = fields.genericName.trim();
+    let dosageForm = fields.dosageForm.trim();
+    if (isDosageFormValue(genericName)) {
+      if (!dosageForm) {
+        dosageForm =
+          MEDICINE_FORMS.find(
+            (item) => item.toLowerCase() === genericName.toLowerCase(),
+          ) || dosageForm;
+      }
+      genericName = fields.name.trim();
+    }
+    if (!genericName) genericName = fields.name.trim();
+
     const payload = {
       organizationId,
-      name: form.name.trim(),
+      name: fields.name.trim(),
       genericName,
-      brandName: form.brandName.trim() || undefined,
-      form: form.form || undefined,
-      strength: form.strength.trim() || undefined,
-      route: form.route || undefined,
-      conditions: form.conditions,
+      brandName: fields.brandName.trim() || undefined,
+      form: dosageForm || undefined,
+      strength: fields.strength.trim() || undefined,
+      route: fields.route || undefined,
+      conditions,
+      indications: conditions.map((name) => ({ name })),
     };
 
     try {
@@ -170,14 +194,13 @@ export default function DoctorMedicinesPage() {
       } else {
         await createMedicine.mutateAsync(payload);
       }
-      resetForm();
+      resetFields();
     } catch {
       // Toast is handled by the mutation; keep the form open for correction.
     }
   };
 
-  const isSaving =
-    createMedicine.isPending || updateMedicine.isPending;
+  const isSaving = createMedicine.isPending || updateMedicine.isPending;
 
   if (!organizationId) {
     return (
@@ -218,7 +241,7 @@ export default function DoctorMedicinesPage() {
             type="button"
             className="rounded-full bg-teal-600 hover:bg-teal-700"
             onClick={() => {
-              resetForm();
+              resetFields();
               setShowForm(true);
             }}
           >
@@ -247,7 +270,7 @@ export default function DoctorMedicinesPage() {
               variant="ghost"
               size="sm"
               className="rounded-full"
-              onClick={resetForm}
+              onClick={resetFields}
             >
               <X className="mr-1 h-4 w-4" />
               Close
@@ -261,10 +284,10 @@ export default function DoctorMedicinesPage() {
                 id="medicine-name"
                 name="medicineName"
                 autoComplete="off"
-                value={form.name}
+                value={fields.name}
                 onChange={(event) => {
                   const nextName = event.target.value;
-                  setForm((current) => ({
+                  setFields((current) => ({
                     ...current,
                     name: nextName,
                     genericName: genericNameTouchedRef.current
@@ -282,10 +305,10 @@ export default function DoctorMedicinesPage() {
                 id="medicine-generic-name"
                 name="medicineGenericName"
                 autoComplete="off"
-                value={form.genericName}
+                value={fields.genericName}
                 onChange={(event) => {
                   genericNameTouchedRef.current = true;
-                  setForm((current) => ({
+                  setFields((current) => ({
                     ...current,
                     genericName: event.target.value,
                   }));
@@ -300,40 +323,38 @@ export default function DoctorMedicinesPage() {
                 id="medicine-brand-name"
                 name="medicineBrandName"
                 autoComplete="off"
-                value={form.brandName}
+                value={fields.brandName}
                 onChange={(event) =>
-                  setForm((current) => ({
+                  setFields((current) => ({
                     ...current,
                     brandName: event.target.value,
                   }))
                 }
-                placeholder="e.g. Dolo"
+                placeholder="e.g. Calpol"
                 className="rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="medicine-form">Form</Label>
-              <Select
-                value={form.form || undefined}
-                onValueChange={(value) =>
-                  setForm((current) => ({ ...current, form: value }))
+              <Label htmlFor="medicine-dosage-form">Form</Label>
+              <select
+                id="medicine-dosage-form"
+                name="medicineDosageForm"
+                value={fields.dosageForm}
+                onChange={(event) =>
+                  setFields((current) => ({
+                    ...current,
+                    dosageForm: event.target.value,
+                  }))
                 }
+                className={selectClassName}
               >
-                <SelectTrigger
-                  id="medicine-form"
-                  className="rounded-xl"
-                  aria-label="Medicine form"
-                >
-                  <SelectValue placeholder="Select form" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MEDICINE_FORMS.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select form</option>
+                {MEDICINE_FORMS.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="medicine-strength">Strength</Label>
@@ -341,9 +362,9 @@ export default function DoctorMedicinesPage() {
                 id="medicine-strength"
                 name="medicineStrength"
                 autoComplete="off"
-                value={form.strength}
+                value={fields.strength}
                 onChange={(event) =>
-                  setForm((current) => ({
+                  setFields((current) => ({
                     ...current,
                     strength: event.target.value,
                   }))
@@ -354,32 +375,35 @@ export default function DoctorMedicinesPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="medicine-route">Route</Label>
-              <Select
-                value={form.route || undefined}
-                onValueChange={(value) =>
-                  setForm((current) => ({ ...current, route: value }))
+              <select
+                id="medicine-route"
+                name="medicineRoute"
+                value={fields.route}
+                onChange={(event) =>
+                  setFields((current) => ({
+                    ...current,
+                    route: event.target.value,
+                  }))
                 }
+                className={selectClassName}
               >
-                <SelectTrigger
-                  id="medicine-route"
-                  className="rounded-xl"
-                  aria-label="Medicine route"
-                >
-                  <SelectValue placeholder="Select route" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MEDICINE_ROUTES.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select route</option>
+                {MEDICINE_ROUTES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label>Applicable Conditions</Label>
+              <Label htmlFor="medicine-condition-draft">
+                Applicable Conditions *
+              </Label>
               <div className="flex gap-2">
                 <Input
+                  id="medicine-condition-draft"
+                  name="medicineConditionDraft"
+                  autoComplete="off"
                   value={conditionDraft}
                   onChange={(event) => setConditionDraft(event.target.value)}
                   onKeyDown={(event) => {
@@ -400,14 +424,18 @@ export default function DoctorMedicinesPage() {
                   Add
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Type a condition and press Add or Enter. Unsaved text is also
+                saved when you click Save Medicine.
+              </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {form.conditions.map((condition) => (
+                {fields.conditions.map((condition) => (
                   <Badge
                     key={condition}
                     variant="secondary"
                     className="cursor-pointer rounded-full"
                     onClick={() =>
-                      setForm((current) => ({
+                      setFields((current) => ({
                         ...current,
                         conditions: current.conditions.filter(
                           (item) => item !== condition,
@@ -428,7 +456,7 @@ export default function DoctorMedicinesPage() {
               type="button"
               variant="outline"
               className="rounded-full"
-              onClick={resetForm}
+              onClick={resetFields}
             >
               Cancel
             </Button>
@@ -487,7 +515,7 @@ export default function DoctorMedicinesPage() {
                     <TableCell>{medicine.strength || "—"}</TableCell>
                     <TableCell>
                       <div className="flex max-w-[240px] flex-wrap gap-1">
-                        {medicine.indications.length === 0 ? (
+                        {(medicine.indications || []).length === 0 ? (
                           <span className="text-xs text-muted-foreground">—</span>
                         ) : (
                           medicine.indications.slice(0, 4).map((indication) => (
@@ -500,8 +528,11 @@ export default function DoctorMedicinesPage() {
                             </Badge>
                           ))
                         )}
-                        {medicine.indications.length > 4 ? (
-                          <Badge variant="secondary" className="rounded-full text-[10px]">
+                        {(medicine.indications || []).length > 4 ? (
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full text-[10px]"
+                          >
                             +{medicine.indications.length - 4}
                           </Badge>
                         ) : null}

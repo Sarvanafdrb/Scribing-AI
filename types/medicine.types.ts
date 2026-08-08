@@ -38,6 +38,7 @@ export interface CreateMedicineData {
   strength?: string;
   route?: string;
   conditions?: string[];
+  indications?: Array<{ name: string; aliases?: string[] }>;
 }
 
 export interface UpdateMedicineData {
@@ -48,6 +49,7 @@ export interface UpdateMedicineData {
   strength?: string;
   route?: string;
   conditions?: string[];
+  indications?: Array<{ name: string; aliases?: string[] }>;
   isActive?: boolean;
 }
 

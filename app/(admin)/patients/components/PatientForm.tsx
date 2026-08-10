@@ -80,7 +80,7 @@ const getInitialAge = (patient?: Patient) => {
 const patientSchema = z
   .object({
     firstName: z.string().trim().min(2, "First name is required"),
-    lastName: z.string().trim().min(2, "Last name is required"),
+    lastName: z.string().trim().min(1, "Last name is required"),
     gender: z.enum(["male", "female", "other", "unknown"]),
     dateOfBirth: z.string().optional().or(z.literal("")),
     age: z

@@ -20,6 +20,8 @@ import { roleKeys } from "@/services/role.queries";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { useAccessControl } from "@/hooks/useAccessControl";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { useWorkspaceSelection } from "@/hooks/useWorkspaceSelection";
 import { Permission } from "@/types/permission.types";
 import {
   ROLE_EDIT,
@@ -30,9 +32,27 @@ import { hasPermission } from "@/types/auth.types";
 import { useAuthStore } from "@/store/auth.store";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/shared/UnsavedChangesDialog";
+import {
+  ALL_ORGANIZATIONS_WORKSPACE,
+  ALL_ORGANIZATIONS_WORKSPACE_ID,
+} from "@/utils/workspace.utils";
+import { Organization } from "@/types/organization.types";
+import { Workspace } from "@/types/workspace.types";
 
 const getPermissionId = (permission: Permission) =>
   permission.id || permission._id || "";
+
+const organizationToWorkspace = (org: Organization): Workspace => {
+  const id = org.id || org._id || "";
+  return {
+    id,
+    name: org.name,
+    organizationId: id,
+    organizationName: org.name,
+    organizationCode: org.organizationCode,
+    status: org.isActive === false ? "inactive" : "active",
+  };
+};
 
 export default function PermissionsPage() {
   const queryClient = useQueryClient();
@@ -41,10 +61,12 @@ export default function PermissionsPage() {
     isSuperAdmin,
     canManageAllOrganizations,
     organizationId: scopedOrgId,
+    isAllOrganizations,
   } = useTenantScope();
   const { hasPermission: checkPermission } = useAccessControl();
+  const { workspaces } = useWorkspaces();
+  const { switchWorkspace } = useWorkspaceSelection();
 
-  const [organizationId, setOrganizationId] = useState("");
   const [roleSearch, setRoleSearch] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<
@@ -59,8 +81,15 @@ export default function PermissionsPage() {
     limit: 100,
   });
 
-  const firstOrganizationId =
-    organizations[0]?.id || organizations[0]?._id || "";
+  const selectedOrganizationId =
+    isAllOrganizations || (isSuperAdmin && !scopedOrgId)
+      ? ALL_ORGANIZATIONS_WORKSPACE_ID
+      : scopedOrgId;
+  const fetchOrganizationId =
+    selectedOrganizationId === ALL_ORGANIZATIONS_WORKSPACE_ID
+      ? ""
+      : selectedOrganizationId;
+  const canFetchRoles = Boolean(fetchOrganizationId) || isSuperAdmin;
 
   const canView =
     checkPermission(PERMISSION_VIEW) || checkPermission("permission:read");
@@ -71,13 +100,10 @@ export default function PermissionsPage() {
     checkPermission(PERMISSION_EDIT);
 
   useEffect(() => {
-    const defaultOrgId =
-      scopedOrgId || (isSuperAdmin ? firstOrganizationId : "");
-
-    if (defaultOrgId && defaultOrgId !== organizationId) {
-      setOrganizationId(defaultOrgId);
-    }
-  }, [organizationId, scopedOrgId, isSuperAdmin, firstOrganizationId]);
+    setSelectedRoleId("");
+    setSelectedPermissionIds(new Set());
+    setInitialPermissionIds(new Set());
+  }, [scopedOrgId, isAllOrganizations]);
 
   const { data: matrix, isLoading: matrixLoading } = useQuery({
     queryKey: ["permissions", "matrix"],
@@ -86,9 +112,9 @@ export default function PermissionsPage() {
   });
 
   const { data: roles, isLoading: rolesLoading } = useQuery({
-    queryKey: roleKeys.permissionsPage(organizationId),
-    queryFn: () => roleService.getAll(organizationId),
-    enabled: !!organizationId && canView,
+    queryKey: roleKeys.permissionsPage(fetchOrganizationId || "all"),
+    queryFn: () => roleService.getAll(fetchOrganizationId),
+    enabled: canFetchRoles && canView,
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
@@ -209,11 +235,30 @@ export default function PermissionsPage() {
     confirmAction(() => setSelectedRoleId(roleId));
   };
 
+  const resolveWorkspace = (organizationId: string): Workspace | null => {
+    if (!organizationId || organizationId === ALL_ORGANIZATIONS_WORKSPACE_ID) {
+      return ALL_ORGANIZATIONS_WORKSPACE;
+    }
+
+    const workspace =
+      workspaces.find((item) => item.id === organizationId) ||
+      workspaces.find((item) => item.organizationId === organizationId);
+
+    if (workspace) return workspace;
+
+    const org = organizations.find(
+      (item) => (item.id || item._id || "") === organizationId,
+    );
+
+    return org ? organizationToWorkspace(org) : null;
+  };
+
   const handleOrganizationChange = (value: string) => {
-    if (value === organizationId) return;
+    if (value === selectedOrganizationId) return;
     confirmAction(() => {
-      setOrganizationId(value);
-      setSelectedRoleId("");
+      const workspace = resolveWorkspace(value);
+      if (!workspace) return;
+      switchWorkspace(workspace);
     });
   };
 
@@ -279,7 +324,7 @@ export default function PermissionsPage() {
                 Organization
               </label>
               <Select
-                value={organizationId || undefined}
+                value={selectedOrganizationId || undefined}
                 onValueChange={handleOrganizationChange}
                 disabled={orgsLoading}
               >
@@ -287,6 +332,9 @@ export default function PermissionsPage() {
                   <SelectValue placeholder="Select organization" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={ALL_ORGANIZATIONS_WORKSPACE_ID}>
+                    All Organizations
+                  </SelectItem>
                   {organizations.map((org) => {
                     const id = org.id || org._id || "";
                     return (
@@ -310,7 +358,7 @@ export default function PermissionsPage() {
             onSelectRole={handleSelectRole}
             search={roleSearch}
             onSearchChange={setRoleSearch}
-            isLoading={rolesLoading || !organizationId}
+            isLoading={rolesLoading || !canFetchRoles}
           />
         </div>
         <div className="lg:col-span-8">

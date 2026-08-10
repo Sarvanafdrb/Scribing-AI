@@ -4,9 +4,13 @@ import { RolePermissionsResponse } from "@/types/permission.types";
 import { matchesNormalizedSearch } from "@/utils/search.utils";
 
 export const roleService = {
-  getAll: async (organizationId: string): Promise<Role[]> => {
+  getAll: async (organizationId?: string): Promise<Role[]> => {
+    const trimmed = organizationId?.trim();
+    const isAllOrganizations =
+      !trimmed || trimmed.toLowerCase() === "all";
+
     const response = await api.get("/roles", {
-      params: { organizationId },
+      params: isAllOrganizations ? undefined : { organizationId: trimmed },
     });
     return response.data.data || [];
   },

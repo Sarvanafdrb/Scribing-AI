@@ -87,7 +87,9 @@ export default function PatientsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{total}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+              {total}
+            </div>
           </CardContent>
         </Card>
         <Card className={healthcareSolid.statCard}>

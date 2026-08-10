@@ -19,10 +19,13 @@ import { healthcareGlass, healthcareSolid } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
 
 export default function EditPatientPage() {
-  const { id } = useParams();
-  const patientId = id as string;
+  const params = useParams();
+  const rawId = params?.id;
+  const patientId = Array.isArray(rawId)
+    ? String(rawId[0] || "")
+    : String(rawId || "");
   const router = useRouter();
-  const { data: patient, isLoading } = usePatient(patientId);
+  const { data: patient, isLoading, isPending, isFetching } = usePatient(patientId);
   const { updatePatient } = usePatientMutations();
 
   const handleSubmit = async (data: CreatePatientData | UpdatePatientData) => {
@@ -30,7 +33,7 @@ export default function EditPatientPage() {
     router.push(`/patients/${patientId}`);
   };
 
-  if (isLoading) {
+  if (!patientId || isPending || isLoading || (isFetching && !patient)) {
     return <div className="animate-pulse p-6">Loading patient...</div>;
   }
 

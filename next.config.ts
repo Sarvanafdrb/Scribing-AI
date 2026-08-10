@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
         source: "/sessions/:id/edit",
         destination: "/sessions/edit/:id",
       },
+      {
+        source: "/patients/:id/edit",
+        destination: "/patients/edit/:id",
+      },
     ];
   },
   async redirects() {

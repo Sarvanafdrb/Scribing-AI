@@ -44,10 +44,15 @@ export const usePatients = (params?: {
   };
 };
 
-export const usePatient = (id: string) => {
+export const usePatient = (id?: string | string[]) => {
+  const patientId = Array.isArray(id)
+    ? String(id[0] || "").trim()
+    : String(id || "").trim();
+
   return useQuery({
-    queryKey: patientKeys.detail(id),
-    queryFn: () => patientService.getById(id),
-    enabled: Boolean(id),
+    queryKey: patientKeys.detail(patientId),
+    queryFn: () => patientService.getById(patientId),
+    enabled: Boolean(patientId),
+    staleTime: 5 * 60 * 1000,
   });
 };

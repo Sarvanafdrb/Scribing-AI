@@ -28,8 +28,8 @@ export const patientService = {
   },
 
   getById: async (id: string): Promise<Patient> => {
-    const response = await api.get(`/patients/${id}`);
-    return response.data.data;
+    const response = await api.get(`/patients/${encodeURIComponent(id)}`);
+    return response.data?.data ?? response.data;
   },
 
   create: async (data: CreatePatientData): Promise<Patient> => {

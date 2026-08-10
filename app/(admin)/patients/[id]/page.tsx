@@ -25,15 +25,19 @@ import { cn } from "@/lib/utils";
 type PatientTab = "details" | "related";
 
 export default function PatientDetailsPage() {
-  const { id } = useParams();
-  const patientId = id as string;
+  const params = useParams();
+  const rawId = params?.id;
+  const patientId = Array.isArray(rawId)
+    ? String(rawId[0] || "")
+    : String(rawId || "");
   const [activeTab, setActiveTab] = useState<PatientTab>("details");
-  const { data: patient, isLoading } = usePatient(patientId);
+  const { data: patient, isLoading, isPending, isFetching, isError } =
+    usePatient(patientId);
   const { updatePatient, activatePatient, deactivatePatient } =
     usePatientMutations();
   const { canEditPatient, canManagePatientStatus } = useAccessControl();
 
-  if (isLoading) {
+  if (!patientId || isPending || isLoading || (isFetching && !patient)) {
     return (
       <div className="mx-auto max-w-[1400px] space-y-5">
         <Skeleton className="h-4 w-32" />
@@ -44,7 +48,7 @@ export default function PatientDetailsPage() {
     );
   }
 
-  if (!patient) {
+  if (isError || !patient) {
     return (
       <div className="mx-auto max-w-[1400px] space-y-4 text-center">
         <h2 className="text-lg font-semibold">Patient not found</h2>

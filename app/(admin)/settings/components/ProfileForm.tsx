@@ -68,7 +68,10 @@ export function ProfileForm() {
         qualification: user.qualification || "",
       });
       setPreviewUrl(resolveProfilePictureUrl(user.profilePicture));
-      setSignaturePreviewUrl(resolveUploadUrl(user.signature));
+      const nextSignatureUrl = resolveUploadUrl(user.signature);
+      if (nextSignatureUrl) {
+        setSignaturePreviewUrl(nextSignatureUrl);
+      }
     }
   }, [user, form]);
 
@@ -191,11 +194,13 @@ export function ProfileForm() {
           </div>
           {signaturePreviewUrl ? (
             <div className="flex justify-end">
-              <img
-                src={signaturePreviewUrl}
-                alt="Doctor signature preview"
-                className="max-h-20 max-w-[220px] object-contain"
-              />
+              <div className="rounded-lg border border-border/60 bg-white px-4 py-3">
+                <img
+                  src={signaturePreviewUrl}
+                  alt="Doctor signature preview"
+                  className="max-h-24 max-w-[240px] object-contain"
+                />
+              </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">

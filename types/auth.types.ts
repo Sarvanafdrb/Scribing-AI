@@ -183,6 +183,7 @@ export const toPersistedAuthUser = (user: AuthUser | null): AuthUser | null => {
     roleName: normalized.roleName,
     permissions: normalized.permissions || [],
     profilePicture: sanitizeMediaUrl(normalized.profilePicture),
+    signature: sanitizeMediaUrl(normalized.signature),
   };
 };
 

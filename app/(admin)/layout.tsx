@@ -20,7 +20,6 @@ import {
   BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAccessControl } from "@/hooks/useAccessControl";
 import { hasPermission, isDoctorUser } from "@/types/auth.types";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
@@ -91,7 +90,6 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, token, isLoading, _hasHydrated, logout } = useAuthStore();
-  const { isSuperAdmin } = useAccessControl();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -204,20 +202,13 @@ export default function AdminLayout({
           {/* User Info */}
           <div className="glass-tint mx-3 mt-3 rounded-2xl border-0 p-4">
             <p className="font-medium text-foreground">
-              {user?.firstName} {user?.lastName}
+              {user?.isSuperAdmin
+                ? "Super Admin"
+                : user?.organizationName ||
+                  `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+                  "User"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">{user?.email}</p>
-            {isSuperAdmin ? (
-              <p className="mt-1 text-xs font-medium text-primary">
-                Super Admin
-              </p>
-            ) : (
-              user?.organizationName && (
-                <p className="mt-1 text-xs text-primary">
-                  {user.organizationName}
-                </p>
-              )
-            )}
           </div>
 
           {/* Navigation */}

@@ -259,8 +259,10 @@ export default function PermissionsPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <KeyRound className="h-7 w-7 text-blue-600" />
-            <h1 className="text-3xl font-bold text-slate-900">Permissions</h1>
+            <KeyRound className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+              Permissions
+            </h1>
           </div>
           <p className="mt-1 text-muted-foreground">
             Assign module permissions to roles. Users inherit permissions
@@ -272,8 +274,8 @@ export default function PermissionsPage() {
       {isSuperAdmin && (
         <Card>
           <CardContent className="pt-6">
-            <div className="max-w-md space-y-2">
-              <label className="text-sm font-medium text-slate-700">
+            <div className="flex max-w-md flex-col gap-3">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Organization
               </label>
               <Select

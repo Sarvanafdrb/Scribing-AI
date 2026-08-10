@@ -61,9 +61,9 @@ export default function SettingsPage() {
               <Badge variant="outline" className="rounded-full">
                 {roleName}
               </Badge>
-              {user?.isSuperAdmin ? (
+              {/* {user?.isSuperAdmin ? (
                 <Badge className="bg-primary">Super Admin</Badge>
-              ) : null}
+              ) : null} */}
             </div>
           </div>
         </div>

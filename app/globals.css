@@ -101,8 +101,8 @@
   --glass-highlight: rgba(255, 255, 255, 0.9);
   --glass-hover: rgba(255, 255, 255, 0.55);
   --glass-hover-tint: rgba(160, 140, 255, 0.35);
-  --glass-menu-bg: rgba(255, 255, 255, 0.6);
-  --glass-menu-border: rgba(255, 255, 255, 0.55);
+  --glass-menu-bg: #ffffff;
+  --glass-menu-border: rgba(15, 23, 42, 0.12);
   --glass-menu-shadow:
     0 1px 0 rgba(255, 255, 255, 0.85) inset,
     0 0 0 0.5px rgba(255, 255, 255, 0.45) inset,
@@ -166,9 +166,8 @@
   --glass-highlight: rgba(255, 255, 255, 0.16);
   --glass-hover: rgba(255, 255, 255, 0.1);
   --glass-hover-tint: rgba(99, 70, 200, 0.28);
-  /* Frosted dark menu — opaque enough that page text does not bleed through */
-  --glass-menu-bg: rgba(22, 24, 34, 0.72);
-  --glass-menu-border: rgba(255, 255, 255, 0.2);
+  --glass-menu-bg: #1a1d27;
+  --glass-menu-border: rgba(255, 255, 255, 0.16);
   --glass-menu-shadow:
     0 1px 0 rgba(255, 255, 255, 0.14) inset,
     0 0 0 0.5px rgba(255, 255, 255, 0.08) inset,
@@ -390,34 +389,24 @@
     -webkit-backdrop-filter: blur(20px) saturate(160%);
   }
 
-  /* Apple Liquid Glass menus — frosted, readable, no content bleed-through */
+  /* Opaque menus — glass overlay was letting form fields bleed through */
   [data-slot="select-content"],
   [data-slot="dropdown-menu-content"],
   [data-slot="dropdown-menu-sub-content"],
   [data-slot="popover-content"] {
     background-color: var(--glass-menu-bg) !important;
-    background-image: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.28) 0%,
-      transparent 48%
-    ) !important;
+    background-image: none !important;
     border: 1px solid var(--glass-menu-border) !important;
     box-shadow: var(--glass-menu-shadow) !important;
     color: var(--popover-foreground) !important;
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     z-index: 9999;
   }
 
-  .dark [data-slot="select-content"],
-  .dark [data-slot="dropdown-menu-content"],
-  .dark [data-slot="dropdown-menu-sub-content"],
-  .dark [data-slot="popover-content"] {
-    background-image: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.1) 0%,
-      transparent 50%
-    ) !important;
+  .dark [data-slot="select-trigger"] {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #f4f6fa !important;
   }
 
   [data-slot="dropdown-menu-item"],

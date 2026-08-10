@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ALL_ORGANIZATIONS_WORKSPACE_ID } from "@/utils/workspace.utils";
 
 interface RoleFiltersProps {
   search: string;
@@ -18,6 +19,7 @@ interface RoleFiltersProps {
   organizationId: string;
   onOrganizationChange: (value: string) => void;
   organizationOptions: Array<{ id: string; name: string }>;
+  showAllOrganizations?: boolean;
   onClearFilters: () => void;
 }
 
@@ -27,9 +29,16 @@ export function RoleFilters({
   organizationId,
   onOrganizationChange,
   organizationOptions,
+  showAllOrganizations = false,
   onClearFilters,
 }: RoleFiltersProps) {
-  const hasFilters = search || organizationId;
+  const isSpecificOrganization =
+    Boolean(organizationId) &&
+    organizationId !== ALL_ORGANIZATIONS_WORKSPACE_ID;
+  const hasFilters = Boolean(search) || isSpecificOrganization;
+  const selectValue =
+    organizationId ||
+    (showAllOrganizations ? ALL_ORGANIZATIONS_WORKSPACE_ID : undefined);
 
   return (
     <div className="space-y-4">
@@ -44,11 +53,16 @@ export function RoleFilters({
           />
         </div>
 
-        <Select value={organizationId} onValueChange={onOrganizationChange}>
+        <Select value={selectValue} onValueChange={onOrganizationChange}>
           <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Select organization" />
           </SelectTrigger>
           <SelectContent>
+            {showAllOrganizations && (
+              <SelectItem value={ALL_ORGANIZATIONS_WORKSPACE_ID}>
+                All Organizations
+              </SelectItem>
+            )}
             {organizationOptions.map((org) => (
               <SelectItem key={org.id} value={org.id}>
                 {org.name}
@@ -73,10 +87,15 @@ export function RoleFilters({
               <X className="h-3 w-3 cursor-pointer" onClick={() => onSearchChange("")} />
             </Badge>
           )}
-          {organizationId && (
+          {isSpecificOrganization && (
             <Badge variant="secondary" className="gap-1">
               Organization selected
-              <X className="h-3 w-3 cursor-pointer" onClick={() => onOrganizationChange("")} />
+              <X
+                className="h-3 w-3 cursor-pointer"
+                onClick={() =>
+                  onOrganizationChange(ALL_ORGANIZATIONS_WORKSPACE_ID)
+                }
+              />
             </Badge>
           )}
         </div>

@@ -12,7 +12,11 @@ interface UseRolesParams {
 
 export const useRoles = (params?: UseRolesParams) => {
   const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
-  const organizationId = params?.organizationId || scopedOrgId || "";
+  const requestedOrgId = params?.organizationId ?? scopedOrgId ?? "";
+  const organizationId =
+    !requestedOrgId || requestedOrgId.toLowerCase() === "all"
+      ? ""
+      : requestedOrgId;
   const search = params?.search || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;

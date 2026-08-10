@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -12,40 +12,108 @@ import { RoleSkeleton } from "./components/RoleSkeleton";
 import { useRoles } from "@/hooks/roles/useRoles";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useTenantScope } from "@/hooks/useTenantScope";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
+import { useWorkspaceSelection } from "@/hooks/useWorkspaceSelection";
+import {
+  ALL_ORGANIZATIONS_WORKSPACE,
+  ALL_ORGANIZATIONS_WORKSPACE_ID,
+} from "@/utils/workspace.utils";
+import { Organization } from "@/types/organization.types";
+import { Workspace } from "@/types/workspace.types";
 
 const PAGE_SIZE = 5;
+
+const organizationToWorkspace = (org: Organization): Workspace => {
+  const id = org.id || org._id || "";
+  return {
+    id,
+    name: org.name,
+    organizationId: id,
+    organizationName: org.name,
+    organizationCode: org.organizationCode,
+    status: org.isActive === false ? "inactive" : "active",
+  };
+};
 
 export default function RolesPage() {
   const searchParams = useSearchParams();
   const organizationIdFromUrl = searchParams.get("organizationId") || "";
   const [search, setSearch] = useState("");
-  const [organizationId, setOrganizationId] = useState(organizationIdFromUrl);
   const [page, setPage] = useState(1);
+  const didApplyUrlOrg = useRef(false);
 
   const { organizations } = useOrganizations({ page: 1, limit: 100 });
-  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
+  const { workspaces } = useWorkspaces();
+  const {
+    organizationId: scopedOrgId,
+    isSuperAdmin,
+    isAllOrganizations,
+  } = useTenantScope();
+  const { selectWorkspace, switchWorkspace } = useWorkspaceSelection();
+
+  const showAllOrganizations = isSuperAdmin;
+  const selectedOrganizationId =
+    isAllOrganizations || (showAllOrganizations && !scopedOrgId)
+      ? ALL_ORGANIZATIONS_WORKSPACE_ID
+      : scopedOrgId;
 
   useEffect(() => {
-    if (organizationIdFromUrl) {
-      setOrganizationId(organizationIdFromUrl);
+    if (didApplyUrlOrg.current) return;
+
+    if (!organizationIdFromUrl) {
+      didApplyUrlOrg.current = true;
       return;
     }
 
-    if (!organizationIdFromUrl && scopedOrgId && scopedOrgId !== organizationId) {
-      setOrganizationId(scopedOrgId);
+    const urlIsAll =
+      organizationIdFromUrl === ALL_ORGANIZATIONS_WORKSPACE_ID ||
+      organizationIdFromUrl.toLowerCase() === "all";
+
+    if (urlIsAll) {
+      didApplyUrlOrg.current = true;
+      if (showAllOrganizations && !isAllOrganizations) {
+        selectWorkspace(ALL_ORGANIZATIONS_WORKSPACE);
+      }
       return;
     }
 
-    if (!organizationId && scopedOrgId) {
-      setOrganizationId(scopedOrgId);
+    if (scopedOrgId === organizationIdFromUrl) {
+      didApplyUrlOrg.current = true;
       return;
     }
 
-    if (!organizationId && isSuperAdmin && organizations.length > 0) {
-      const firstOrgId = organizations[0].id || organizations[0]._id || "";
-      setOrganizationId(firstOrgId);
+    const workspace =
+      workspaces.find((item) => item.id === organizationIdFromUrl) ||
+      workspaces.find((item) => item.organizationId === organizationIdFromUrl);
+
+    if (workspace) {
+      didApplyUrlOrg.current = true;
+      selectWorkspace(workspace);
+      return;
     }
-  }, [organizations, organizationId, organizationIdFromUrl, scopedOrgId, isSuperAdmin]);
+
+    const org = organizations.find(
+      (item) => (item.id || item._id || "") === organizationIdFromUrl,
+    );
+
+    if (org) {
+      didApplyUrlOrg.current = true;
+      selectWorkspace(organizationToWorkspace(org));
+      return;
+    }
+
+    if (workspaces.length > 0 || organizations.length > 0) {
+      didApplyUrlOrg.current = true;
+    }
+  }, [
+    organizationIdFromUrl,
+    organizations,
+    workspaces,
+    scopedOrgId,
+    isAllOrganizations,
+    showAllOrganizations,
+    selectWorkspace,
+  ]);
 
   const {
     roles,
@@ -57,7 +125,6 @@ export default function RolesPage() {
     inactiveCount,
     refetch,
   } = useRoles({
-    organizationId,
     search,
     page,
     limit: PAGE_SIZE,
@@ -65,11 +132,46 @@ export default function RolesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, organizationId]);
+  }, [search, scopedOrgId, isAllOrganizations]);
+
+  const resolveWorkspace = (organizationId: string): Workspace | null => {
+    if (!organizationId || organizationId === ALL_ORGANIZATIONS_WORKSPACE_ID) {
+      return ALL_ORGANIZATIONS_WORKSPACE;
+    }
+
+    const workspace =
+      workspaces.find((item) => item.id === organizationId) ||
+      workspaces.find((item) => item.organizationId === organizationId);
+
+    if (workspace) return workspace;
+
+    const org = organizations.find(
+      (item) => (item.id || item._id || "") === organizationId,
+    );
+
+    return org ? organizationToWorkspace(org) : null;
+  };
+
+  const handleOrganizationChange = (organizationId: string) => {
+    const workspace = resolveWorkspace(organizationId);
+    if (!workspace) return;
+
+    if (
+      !showAllOrganizations &&
+      workspace.id === ALL_ORGANIZATIONS_WORKSPACE_ID
+    ) {
+      return;
+    }
+
+    switchWorkspace(workspace);
+  };
 
   const handleClearFilters = () => {
     setSearch("");
     setPage(1);
+    if (showAllOrganizations && !isAllOrganizations) {
+      switchWorkspace(ALL_ORGANIZATIONS_WORKSPACE);
+    }
   };
 
   const organizationOptions = organizations.map((org) => ({
@@ -122,9 +224,10 @@ export default function RolesPage() {
       <RoleFilters
         search={search}
         onSearchChange={setSearch}
-        organizationId={organizationId}
-        onOrganizationChange={setOrganizationId}
+        organizationId={selectedOrganizationId}
+        onOrganizationChange={handleOrganizationChange}
         organizationOptions={organizationOptions}
+        showAllOrganizations={showAllOrganizations}
         onClearFilters={handleClearFilters}
       />
 

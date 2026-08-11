@@ -73,6 +73,7 @@ export default function CreateUserPage() {
             onSubmit={handleSubmit}
             isLoading={createUser.isPending}
             submitLabel="Create User"
+            onCancel={() => router.push("/users")}
           />
         </CardContent>
       </Card>

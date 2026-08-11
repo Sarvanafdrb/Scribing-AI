@@ -60,6 +60,7 @@ export default function CreateSessionPage() {
             onSubmit={handleSubmit}
             isLoading={createSession.isPending}
             submitLabel="Create Consultation"
+            onCancel={() => router.push("/sessions")}
           />
         </CardContent>
       </Card>

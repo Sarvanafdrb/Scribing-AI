@@ -7,6 +7,7 @@ import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FixedFormActions } from "@/components/ui/fixed-form-actions";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -46,6 +47,8 @@ interface RoleFormProps {
   onSubmit: (data: CreateRoleData | UpdateRoleData) => Promise<void>;
   isLoading?: boolean;
   submitLabel?: string;
+  onCancel?: () => void;
+  cancelLabel?: string;
 }
 
 const resolveOrganizationId = (organizationId?: Role["organizationId"]) => {
@@ -64,10 +67,13 @@ export function RoleForm({
   onSubmit,
   isLoading = false,
   submitLabel = "Create Role",
+  onCancel,
+  cancelLabel = "Cancel",
 }: RoleFormProps) {
   const isEditing =
     mode === "edit" ||
     (mode !== "create" && Boolean(initialData?.id || initialData?._id));
+  const hasFixedActions = Boolean(onCancel);
 
   const { data: orgData } = useQuery({
     queryKey: ["organizations", "all-options"],
@@ -177,7 +183,7 @@ export function RoleForm({
     <Form {...createForm}>
       <form
         onSubmit={createForm.handleSubmit(handleCreateSubmit)}
-        className="space-y-6"
+        className={hasFixedActions ? "space-y-6 pb-24" : "space-y-6"}
       >
         <FormField
           control={createForm.control}
@@ -233,13 +239,24 @@ export function RoleForm({
           )}
         />
 
-        <Button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700"
-          disabled={isLoading}
-        >
-          {isLoading ? "Creating..." : submitLabel}
-        </Button>
+        {hasFixedActions && onCancel ? (
+          <FixedFormActions
+            onCancel={onCancel}
+            cancelLabel={cancelLabel}
+            submitLabel={submitLabel}
+            loadingLabel="Creating..."
+            isLoading={isLoading}
+            submitClassName="bg-blue-600 hover:bg-blue-700"
+          />
+        ) : (
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            disabled={isLoading}
+          >
+            {isLoading ? "Creating..." : submitLabel}
+          </Button>
+        )}
       </form>
     </Form>
   );

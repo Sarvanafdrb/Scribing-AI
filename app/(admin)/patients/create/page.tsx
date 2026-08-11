@@ -56,6 +56,7 @@ export default function CreatePatientPage() {
             onSubmit={handleSubmit}
             isLoading={createPatient.isPending}
             submitLabel="Create Patient"
+            onCancel={() => router.push("/patients")}
           />
         </CardContent>
       </Card>

@@ -56,6 +56,7 @@ export default function CreateRolePage() {
             onSubmit={handleSubmit}
             isLoading={createRole.isPending}
             submitLabel="Create Role"
+            onCancel={() => router.push("/roles")}
           />
         </CardContent>
       </Card>

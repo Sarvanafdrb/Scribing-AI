@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { FixedFormActions } from "@/components/ui/fixed-form-actions";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -179,6 +180,8 @@ interface SessionFormProps {
   onSubmit: (data: CreateSessionData | UpdateSessionData) => Promise<void>;
   isLoading?: boolean;
   submitLabel?: string;
+  onCancel?: () => void;
+  cancelLabel?: string;
 }
 
 const getOrgId = (session?: Session) => {
@@ -225,8 +228,11 @@ export function SessionForm({
   onSubmit,
   isLoading = false,
   submitLabel = "Create Session",
+  onCancel,
+  cancelLabel = "Cancel",
 }: SessionFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?._id);
+  const hasFixedActions = Boolean(onCancel);
   const { organizationId: scopedOrgId, canManageAllOrganizations } =
     useTenantScope();
 
@@ -357,7 +363,10 @@ export function SessionForm({
   if (!isEditing) {
     return (
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className={hasFixedActions ? "space-y-5 pb-24" : "space-y-5"}
+        >
           {canManageAllOrganizations && (
             <FormField
               control={form.control}
@@ -647,13 +656,24 @@ export function SessionForm({
             />
           </div>
 
-          <Button
-            type="submit"
-            className={cn("w-full", healthcarePrimaryButton)}
-            disabled={isLoading}
-          >
-            {isLoading ? "Creating..." : submitLabel}
-          </Button>
+          {hasFixedActions && onCancel ? (
+            <FixedFormActions
+              onCancel={onCancel}
+              cancelLabel={cancelLabel}
+              submitLabel={submitLabel}
+              loadingLabel="Creating..."
+              isLoading={isLoading}
+              submitClassName={healthcarePrimaryButton}
+            />
+          ) : (
+            <Button
+              type="submit"
+              className={cn("w-full", healthcarePrimaryButton)}
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating..." : submitLabel}
+            </Button>
+          )}
         </form>
       </Form>
     );

@@ -7,6 +7,7 @@ import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FixedFormActions } from "@/components/ui/fixed-form-actions";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -129,6 +130,8 @@ interface PatientFormProps {
   onSubmit: (data: CreatePatientData | UpdatePatientData) => Promise<void>;
   isLoading?: boolean;
   submitLabel?: string;
+  onCancel?: () => void;
+  cancelLabel?: string;
 }
 
 const getOrgId = (patient?: Patient) => {
@@ -144,8 +147,11 @@ export function PatientForm({
   onSubmit,
   isLoading = false,
   submitLabel = "Create Patient",
+  onCancel,
+  cancelLabel = "Cancel",
 }: PatientFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?._id);
+  const hasFixedActions = Boolean(onCancel);
   const {
     organizationId: scopedOrgId,
     organizationName: scopedOrgName,
@@ -243,7 +249,10 @@ export function PatientForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className={hasFixedActions ? "space-y-5 pb-24" : "space-y-5"}
+      >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -582,13 +591,24 @@ export function PatientForm({
           </FormItem>
         )}
 
-        <Button
-          type="submit"
-          className="w-full rounded-xl bg-blue-600 hover:bg-blue-700"
-          disabled={isLoading}
-        >
-          {isLoading ? "Saving..." : submitLabel}
-        </Button>
+        {hasFixedActions && onCancel ? (
+          <FixedFormActions
+            onCancel={onCancel}
+            cancelLabel={cancelLabel}
+            submitLabel={submitLabel}
+            loadingLabel="Saving..."
+            isLoading={isLoading}
+            submitClassName="rounded-xl bg-blue-600 hover:bg-blue-700"
+          />
+        ) : (
+          <Button
+            type="submit"
+            className="w-full rounded-xl bg-blue-600 hover:bg-blue-700"
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : submitLabel}
+          </Button>
+        )}
       </form>
     </Form>
   );

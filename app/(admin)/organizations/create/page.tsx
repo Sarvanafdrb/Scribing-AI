@@ -71,6 +71,7 @@ export default function CreateOrganizationPage() {
             onSubmit={handleSubmit}
             isLoading={createOrganization.isPending}
             submitLabel={isSuperAdmin ? "Create Organization" : "Create Branch"}
+            onCancel={() => router.push("/organizations")}
           />
         </CardContent>
       </Card>

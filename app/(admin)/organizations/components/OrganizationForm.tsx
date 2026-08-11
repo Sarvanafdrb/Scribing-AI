@@ -7,6 +7,7 @@ import * as z from "zod";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { FixedFormActions } from "@/components/ui/fixed-form-actions";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
@@ -82,6 +83,11 @@ interface OrganizationFormProps {
   isLoading?: boolean;
 
   submitLabel?: string;
+
+  /** When set, shows Cancel next to submit in a fixed bottom action bar. */
+  onCancel?: () => void;
+
+  cancelLabel?: string;
 }
 
 export function OrganizationForm({
@@ -92,6 +98,10 @@ export function OrganizationForm({
   isLoading = false,
 
   submitLabel = "Create Organization",
+
+  onCancel,
+
+  cancelLabel = "Cancel",
 }: OrganizationFormProps) {
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -181,9 +191,14 @@ export function OrganizationForm({
     await onSubmit(payload as FormData & { logo?: File | string | null });
   };
 
+  const hasFixedActions = Boolean(onCancel);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className={hasFixedActions ? "space-y-6 pb-24" : "space-y-6"}
+      >
         {/* Logo */}
 
         <div className="flex items-center gap-4">
@@ -494,13 +509,28 @@ export function OrganizationForm({
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading
-            ? isEditing
-              ? "Updating Organization..."
-              : "Creating Organization..."
-            : submitLabel}
-        </Button>
+        {hasFixedActions && onCancel ? (
+          <FixedFormActions
+            onCancel={onCancel}
+            cancelLabel={cancelLabel}
+            submitLabel={submitLabel}
+            loadingLabel={
+              isEditing
+                ? "Updating Organization..."
+                : "Creating Organization..."
+            }
+            isLoading={isLoading}
+            maxWidthClassName="max-w-3xl"
+          />
+        ) : (
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading
+              ? isEditing
+                ? "Updating Organization..."
+                : "Creating Organization..."
+              : submitLabel}
+          </Button>
+        )}
       </form>
     </Form>
   );

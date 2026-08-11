@@ -70,6 +70,7 @@ export default function EditPatientPage() {
             onSubmit={handleSubmit}
             isLoading={updatePatient.isPending}
             submitLabel="Save Changes"
+            onCancel={() => router.push(`/patients/${patientId}`)}
           />
         </CardContent>
       </Card>

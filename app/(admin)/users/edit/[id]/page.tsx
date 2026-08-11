@@ -112,6 +112,7 @@ export default function EditUserPage() {
             onSubmit={handleSubmit}
             isLoading={updateUser.isPending}
             submitLabel="Update User"
+            onCancel={() => router.push("/users")}
           />
         </CardContent>
       </Card>

@@ -69,6 +69,7 @@ export default function EditSessionPage() {
             onSubmit={handleSubmit}
             isLoading={updateSession.isPending}
             submitLabel="Update Session"
+            onCancel={() => router.push(`/sessions/${sessionId}`)}
           />
         </CardContent>
       </Card>

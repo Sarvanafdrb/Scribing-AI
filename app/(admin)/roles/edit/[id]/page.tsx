@@ -99,6 +99,17 @@ export default function EditRolePage() {
             onSubmit={handleSubmit}
             isLoading={updateRole.isPending}
             submitLabel="Update Role"
+            onCancel={() => {
+              const orgId =
+                typeof role.organizationId === "string"
+                  ? role.organizationId
+                  : "";
+              router.push(
+                orgId
+                  ? `/roles?organizationId=${encodeURIComponent(orgId)}`
+                  : "/roles",
+              );
+            }}
           />
         </CardContent>
       </Card>

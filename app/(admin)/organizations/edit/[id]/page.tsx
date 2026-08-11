@@ -111,6 +111,7 @@ export default function EditOrganizationPage() {
             onSubmit={handleSubmit}
             isLoading={updateOrganization.isPending}
             submitLabel="Update Organization"
+            onCancel={() => router.push(`/organizations/${id}`)}
           />
         </CardContent>
       </Card>

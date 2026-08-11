@@ -132,7 +132,7 @@ export function RoleForm({
       <Form {...editForm}>
         <form
           onSubmit={editForm.handleSubmit(handleEditSubmit)}
-          className="space-y-6"
+          className={hasFixedActions ? "space-y-6 pb-24" : "space-y-6"}
         >
           <FormField
             control={editForm.control}
@@ -167,13 +167,24 @@ export function RoleForm({
             <Input value={organizationName} disabled readOnly />
           </FormItem>
 
-          <Button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            disabled={isLoading}
-          >
-            {isLoading ? "Updating..." : submitLabel}
-          </Button>
+          {hasFixedActions && onCancel ? (
+            <FixedFormActions
+              onCancel={onCancel}
+              cancelLabel={cancelLabel}
+              submitLabel={submitLabel}
+              loadingLabel="Updating..."
+              isLoading={isLoading}
+              submitClassName="bg-blue-600 hover:bg-blue-700"
+            />
+          ) : (
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading ? "Updating..." : submitLabel}
+            </Button>
+          )}
         </form>
       </Form>
     );

@@ -681,7 +681,10 @@ export function SessionForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className={hasFixedActions ? "space-y-4 pb-24" : "space-y-4"}
+      >
         <FormField
           control={form.control}
           name="title"
@@ -760,13 +763,24 @@ export function SessionForm({
           )}
         />
 
-        <Button
-          type="submit"
-          className={cn("w-full", healthcarePrimaryButton)}
-          disabled={isLoading}
-        >
-          {isLoading ? "Saving..." : submitLabel}
-        </Button>
+        {hasFixedActions && onCancel ? (
+          <FixedFormActions
+            onCancel={onCancel}
+            cancelLabel={cancelLabel}
+            submitLabel={submitLabel}
+            loadingLabel="Saving..."
+            isLoading={isLoading}
+            submitClassName={healthcarePrimaryButton}
+          />
+        ) : (
+          <Button
+            type="submit"
+            className={cn("w-full", healthcarePrimaryButton)}
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : submitLabel}
+          </Button>
+        )}
       </form>
     </Form>
   );

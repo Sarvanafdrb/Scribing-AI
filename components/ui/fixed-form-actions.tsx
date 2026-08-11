@@ -11,9 +11,11 @@ interface FixedFormActionsProps {
   isLoading?: boolean;
   submitClassName?: string;
   maxWidthClassName?: string;
+  /** `page` = viewport-fixed bar; `dialog` = sticky bar inside popup */
+  variant?: "page" | "dialog";
 }
 
-/** Fixed bottom Cancel + Submit bar for admin create pages. */
+/** Fixed bottom Cancel + Submit bar for create/edit forms. */
 export function FixedFormActions({
   onCancel,
   cancelLabel = "Cancel",
@@ -22,14 +24,29 @@ export function FixedFormActions({
   isLoading = false,
   submitClassName,
   maxWidthClassName = "max-w-2xl",
+  variant = "page",
 }: FixedFormActionsProps) {
+  const isDialog = variant === "dialog";
+
   return (
-    <div className="fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:left-64">
-      <div className={cn("mx-auto flex gap-3 p-4", maxWidthClassName)}>
+    <div
+      className={cn(
+        "z-40 border-t bg-white",
+        isDialog
+          ? "sticky bottom-0 -mx-6 mt-4 px-6"
+          : "fixed inset-x-0 bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:left-64",
+      )}
+    >
+      <div
+        className={cn(
+          "flex gap-3",
+          isDialog ? "py-4" : cn("mx-auto p-4", maxWidthClassName),
+        )}
+      >
         <Button
           type="button"
           variant="outline"
-          className="flex-1"
+          className="flex-1 rounded-full bg-white"
           disabled={isLoading}
           onClick={onCancel}
         >
@@ -37,7 +54,7 @@ export function FixedFormActions({
         </Button>
         <Button
           type="submit"
-          className={cn("flex-1", submitClassName)}
+          className={cn("flex-1 rounded-full", submitClassName)}
           disabled={isLoading}
         >
           {isLoading ? loadingLabel : submitLabel}

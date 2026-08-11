@@ -132,6 +132,8 @@ interface PatientFormProps {
   submitLabel?: string;
   onCancel?: () => void;
   cancelLabel?: string;
+  /** Use sticky footer inside dialogs instead of page-fixed bar. */
+  actionsVariant?: "page" | "dialog";
 }
 
 const getOrgId = (patient?: Patient) => {
@@ -149,6 +151,7 @@ export function PatientForm({
   submitLabel = "Create Patient",
   onCancel,
   cancelLabel = "Cancel",
+  actionsVariant = "page",
 }: PatientFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?._id);
   const hasFixedActions = Boolean(onCancel);
@@ -251,7 +254,13 @@ export function PatientForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className={hasFixedActions ? "space-y-5 pb-24" : "space-y-5"}
+        className={
+          hasFixedActions
+            ? actionsVariant === "dialog"
+              ? "space-y-5"
+              : "space-y-5 pb-24"
+            : "space-y-5"
+        }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
@@ -598,12 +607,13 @@ export function PatientForm({
             submitLabel={submitLabel}
             loadingLabel="Saving..."
             isLoading={isLoading}
-            submitClassName="rounded-xl bg-blue-600 hover:bg-blue-700"
+            variant={actionsVariant}
+            submitClassName="rounded-full bg-primary text-primary-foreground hover:opacity-90"
           />
         ) : (
           <Button
             type="submit"
-            className="w-full rounded-xl bg-blue-600 hover:bg-blue-700"
+            className="w-full rounded-full bg-primary text-primary-foreground hover:opacity-90"
             disabled={isLoading}
           >
             {isLoading ? "Saving..." : submitLabel}

@@ -1,15 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
-import { Info, Loader2, LogOut, Plus, RefreshCw, Shield } from "lucide-react";
+import { Info, Loader2, LogOut, RefreshCw, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
-import { useAccessControl } from "@/hooks/useAccessControl";
 import { UserProfileDropdown } from "@/components/shared/UserProfileDropdown";
-import { CreatePatientDialog } from "@/components/doctor/CreatePatientDialog";
 import { getUserOrganizationName } from "@/types/auth.types";
 import { resolveUploadUrl } from "@/utils/media-url.utils";
 import { cn } from "@/lib/utils";
@@ -24,11 +20,8 @@ export function DoctorEmptyConsultationsState({
   isRefreshing = false,
 }: DoctorEmptyConsultationsStateProps) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const { canCreatePatient } = useAccessControl();
-  const [isCreatePatientOpen, setIsCreatePatientOpen] = useState(false);
 
   const organizationName = getUserOrganizationName(user) || "Organization";
   const organizationLogo = resolveUploadUrl(user?.organization?.logo);
@@ -161,19 +154,7 @@ export function DoctorEmptyConsultationsState({
         </div>
       </main>
 
-      <footer className="flex items-center justify-between gap-4 border-t border-gray-100 px-5 py-4 sm:px-8">
-        {canCreatePatient() ? (
-          <button
-            type="button"
-            onClick={() => setIsCreatePatientOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-glow hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Add Patient
-          </button>
-        ) : (
-          <div />
-        )}
+      <footer className="flex items-center justify-end gap-4 border-t border-gray-100 px-5 py-4 sm:px-8">
         <div className="text-right">
           <div className="flex items-center justify-end gap-1.5 text-xs text-gray-400">
             <Shield className="h-3.5 w-3.5" />
@@ -184,21 +165,6 @@ export function DoctorEmptyConsultationsState({
           </p>
         </div>
       </footer>
-
-      {canCreatePatient() ? (
-        <CreatePatientDialog
-          open={isCreatePatientOpen}
-          onOpenChange={setIsCreatePatientOpen}
-          onCreated={() => {
-            void queryClient.invalidateQueries({
-              predicate: (query) =>
-                Array.isArray(query.queryKey) &&
-                query.queryKey.includes("doctor-queue"),
-            });
-            void onRefresh();
-          }}
-        />
-      ) : null}
     </div>
   );
 }

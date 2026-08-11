@@ -37,19 +37,19 @@ const statusConfig: Record<
   },
   transcript_ready: {
     label: "Transcript Ready",
-    className: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200",
+    className: "bg-primary/10 text-primary hover:bg-primary/20",
   },
   ai_notes_generated: {
     label: "AI Notes Generated",
-    className: "bg-violet-100 text-violet-700 hover:bg-violet-200",
+    className: "bg-primary/10 text-primary hover:bg-primary/20",
   },
   ready_for_review: {
     label: "Ready for Review",
-    className: "bg-teal-100 text-teal-700 hover:bg-teal-200",
+    className: "bg-primary/10 text-primary hover:bg-primary/20",
   },
   completed: {
     label: "Completed",
-    className: "bg-green-100 text-green-700 hover:bg-green-200",
+    className: "bg-primary/10 text-primary hover:bg-primary/20",
   },
   failed: {
     label: "Failed",

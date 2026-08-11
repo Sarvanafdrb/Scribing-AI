@@ -138,7 +138,7 @@ export default function DoctorWorkspaceIndexPage() {
         <button
           type="button"
           onClick={() => void handleRefresh()}
-          className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-100"
+          className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/15"
         >
           Try again
         </button>
@@ -159,7 +159,7 @@ export default function DoctorWorkspaceIndexPage() {
         <button
           type="button"
           onClick={() => void handleRefresh()}
-          className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-100"
+          className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/15"
         >
           Refresh queue
         </button>

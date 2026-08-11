@@ -121,11 +121,11 @@ const QUEUE_STATUS_STYLES: Partial<
   },
   ready_for_review: {
     label: "Ready for Review",
-    className: "bg-teal-50 text-teal-700",
+    className: "bg-primary/10 text-primary",
   },
   completed: {
     label: "Completed",
-    className: "bg-green-50 text-green-700",
+    className: "bg-primary/10 text-primary",
   },
   failed: {
     label: "Failed",
@@ -318,7 +318,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                       {getInitials(patient?.firstName, patient?.lastName)}
                     </div>
                     {isActive && (
-                      <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" />
+                      <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary" />
                     )}
                   </div>
 
@@ -368,7 +368,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   </div>
 
                   {isOpening ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
                   ) : (
                     showStatusBadge &&
                     statusStyle && (

@@ -142,10 +142,11 @@ const formatPreviousHistory = (
             }}
             className={cn(
               "rounded-lg border border-gray-200 bg-white px-3 py-2.5",
-              onSelect && "cursor-pointer hover:border-teal-200 hover:bg-teal-50/40",
+              onSelect &&
+                "cursor-pointer hover:border-primary/30 hover:bg-primary/10",
             )}
           >
-            <p className="text-[11px] font-semibold tracking-wide text-teal-700 uppercase">
+            <p className="text-[11px] font-semibold tracking-wide text-primary uppercase">
               {formatConsultationDate(item.completedAt)}
             </p>
             {item.title ? (
@@ -419,13 +420,13 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <section className="glass-teal flex h-full flex-col rounded-3xl">
+    <section className="glass-tint flex h-full flex-col rounded-3xl">
       <div className="flex items-center justify-between border-b border-border/50 px-5 py-3">
         <h3 className="text-[10px] font-semibold tracking-wider text-primary uppercase">
           ✦ Drafted Note
@@ -472,7 +473,7 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
 
         {transcriptReady && isGenerating && !isCompleted && (
           <div className="flex items-center gap-2 px-2 py-4 text-sm text-gray-500">
-            <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
             Generating notes...
           </div>
         )}
@@ -533,7 +534,7 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
                             href={historyPageHref}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex text-xs font-medium text-teal-700 hover:text-teal-800 hover:underline"
+                            className="inline-flex text-xs font-medium text-primary hover:text-primary hover:underline"
                           >
                             View All →
                           </a>

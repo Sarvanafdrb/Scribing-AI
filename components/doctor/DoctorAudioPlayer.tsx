@@ -242,7 +242,7 @@ export function DoctorAudioPlayer({
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
-        <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+        <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
         Loading audio...
       </div>
     );
@@ -273,7 +273,7 @@ export function DoctorAudioPlayer({
           type="button"
           onClick={togglePlay}
           aria-label={isPlaying ? "Pause" : "Play"}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white shadow-sm transition-transform hover:bg-teal-700 active:scale-95"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-600 text-white shadow-sm transition-transform hover:bg-purple-700 active:scale-95"
         >
           {isPlaying ? (
             <Pause className="h-4 w-4" />
@@ -292,9 +292,9 @@ export function DoctorAudioPlayer({
             onChange={(e) => handleSeek(Number(e.target.value))}
             aria-label="Seek"
             disabled={seekMax <= 0}
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-teal-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-purple-600 disabled:cursor-not-allowed disabled:opacity-60"
             style={{
-              background: `linear-gradient(to right, #0d9488 ${progressPercent}%, #e5e7eb ${progressPercent}%)`,
+              background: `linear-gradient(to right, #7c3aed ${progressPercent}%, #e5e7eb ${progressPercent}%)`,
             }}
           />
           <div className="flex justify-between font-mono text-[11px] text-gray-500">
@@ -326,7 +326,7 @@ export function DoctorAudioPlayer({
             value={isMuted ? 0 : volume}
             onChange={(e) => handleVolumeChange(Number(e.target.value))}
             aria-label="Volume"
-            className="h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-gray-200 accent-teal-600"
+            className="h-1.5 w-20 cursor-pointer appearance-none rounded-full bg-gray-200 accent-purple-600"
           />
         </div>
 
@@ -342,8 +342,8 @@ export function DoctorAudioPlayer({
               className={cn(
                 "rounded-md px-2 py-1 text-xs font-medium transition-colors",
                 playbackRate === speed
-                  ? "bg-teal-600 text-white"
-                  : "bg-white text-gray-600 hover:bg-teal-50 hover:text-teal-700",
+                  ? "bg-purple-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-purple-50 hover:text-purple-700",
               )}
             >
               {speed}x

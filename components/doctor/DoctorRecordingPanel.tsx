@@ -1045,7 +1045,7 @@ export function DoctorRecordingPanel({
   if (isLoading && !session) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -1095,7 +1095,7 @@ export function DoctorRecordingPanel({
             disabled={isUploading || recoveryBusy}
             className="group flex flex-col items-center gap-3"
           >
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-teal-600 shadow-lg shadow-teal-200 transition-transform group-hover:scale-105 group-active:scale-95">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/25 transition-transform group-hover:scale-105 group-active:scale-95">
               <Mic className="h-8 w-8 text-white" />
             </div>
             <span className="text-sm font-medium text-gray-700">
@@ -1150,7 +1150,7 @@ export function DoctorRecordingPanel({
                 <button
                   type="button"
                   onClick={handleResumeMicClick}
-                  className="flex items-center gap-1.5 rounded-xl bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
+                  className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90"
                 >
                   <Play className="h-4 w-4" />
                   Resume
@@ -1250,7 +1250,7 @@ function WaveformPlaceholder({
           key={i}
           className={cn(
             "w-1 rounded-full bg-gray-200",
-            active && "animate-pulse bg-teal-300",
+            active && "animate-pulse bg-primary/40",
           )}
           style={{ height: `${height * 2}px` }}
         />

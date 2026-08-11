@@ -53,12 +53,12 @@ export function DoctorEmptyConsultationsState({
               className="h-10 w-10 shrink-0 rounded-lg object-contain"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-lg font-bold text-white">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-lg font-bold text-primary-foreground">
               +
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold text-teal-700 sm:text-xl">
+            <h1 className="truncate text-lg font-bold text-primary sm:text-xl">
               {organizationName}
             </h1>
             <p className="text-xs text-gray-500">AI Medical Scribe</p>
@@ -93,7 +93,7 @@ export function DoctorEmptyConsultationsState({
           <h2 className="text-2xl font-bold tracking-tight text-slate-800 sm:text-3xl">
             No Consultations Scheduled Today
           </h2>
-          <p className="mt-2 text-base font-semibold text-teal-600 sm:text-lg">
+          <p className="mt-2 text-base font-semibold text-primary sm:text-lg">
             You&apos;re all caught up!
           </p>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-500 sm:text-base">
@@ -108,20 +108,20 @@ export function DoctorEmptyConsultationsState({
               onClick={handleRefresh}
               disabled={isRefreshing}
               className={cn(
-                "flex items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50/80 px-4 py-3.5 text-left transition-colors",
-                "hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60",
+                "flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3.5 text-left transition-colors",
+                "hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60",
               )}
             >
               {isRefreshing ? (
-                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-teal-600" />
+                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
               ) : (
-                <RefreshCw className="h-5 w-5 shrink-0 text-teal-600" />
+                <RefreshCw className="h-5 w-5 shrink-0 text-primary" />
               )}
               <span>
-                <span className="block text-sm font-semibold text-teal-800">
+                <span className="block text-sm font-semibold text-primary">
                   Refresh
                 </span>
-                <span className="block text-xs text-teal-600/80">
+                <span className="block text-xs text-primary/80">
                   Check for new sessions
                 </span>
               </span>

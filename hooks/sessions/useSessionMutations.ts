@@ -17,6 +17,11 @@ export const useSessionMutations = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
       queryClient.invalidateQueries({ queryKey: sessionKeys.stats() });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey.includes("doctor-queue"),
+      });
       toast.success("Session created successfully");
     },
     onError: (error: any) => {

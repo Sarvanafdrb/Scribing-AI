@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { PatientForm } from "@/app/(admin)/patients/components/PatientForm";
 import { usePatientMutations } from "@/hooks/patients/usePatientMutations";
+import { sessionService } from "@/services/session.service";
+import { useTenantScope } from "@/hooks/useTenantScope";
 import type {
   CreatePatientData,
   UpdatePatientData,
@@ -26,9 +28,27 @@ export function CreatePatientDialog({
   onCreated,
 }: CreatePatientDialogProps) {
   const { createPatient } = usePatientMutations();
+  const { user, organizationId } = useTenantScope();
 
   const handleSubmit = async (data: CreatePatientData | UpdatePatientData) => {
-    await createPatient.mutateAsync(data as CreatePatientData);
+    const patient = await createPatient.mutateAsync(data as CreatePatientData);
+
+    // Auto-create an OP consultation so the patient appears in the doctor queue
+    const patientId = String(patient._id || patient.id || "");
+    const userId = String(user?._id || user?.id || "");
+    if (patientId && userId && organizationId) {
+      try {
+        await sessionService.create({
+          organizationId,
+          patientId,
+          userId,
+          sessionType: "consultation",
+        });
+      } catch {
+        // Patient was created; session creation failure is non-blocking
+      }
+    }
+
     onCreated?.();
     onOpenChange(false);
   };

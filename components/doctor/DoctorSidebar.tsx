@@ -26,9 +26,9 @@ import { useActiveRecordingStore } from "@/store/active-recording.store";
 const AVATAR_COLORS = [
   "bg-primary/20 text-primary",
   "bg-violet-500/20 text-violet-300",
-  "bg-sky-500/20 text-sky-300",
-  "bg-amber-500/20 text-amber-300",
-  "bg-rose-500/20 text-rose-300",
+  "bg-purple-500/20 text-purple-300",
+  "bg-fuchsia-500/20 text-fuchsia-300",
+  "bg-indigo-500/20 text-indigo-300",
 ];
 
 const getInitials = (firstName?: string, lastName?: string) => {
@@ -113,11 +113,11 @@ const QUEUE_STATUS_STYLES: Partial<
   },
   transcript_ready: {
     label: "Transcript Ready",
-    className: "bg-indigo-50 text-indigo-700",
+    className: "bg-primary/10 text-primary",
   },
   ai_notes_generated: {
     label: "AI Notes Generated",
-    className: "bg-violet-50 text-violet-700",
+    className: "bg-primary/10 text-primary",
   },
   ready_for_review: {
     label: "Ready for Review",

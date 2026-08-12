@@ -74,7 +74,7 @@ export function AppHeader({
         className={cn(
           "sticky top-0 z-[100] isolate transition-[background-color,backdrop-filter,box-shadow,border-color] duration-300 ease-out",
           isScrolled
-            ? "border-b border-white/25 bg-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.14)] backdrop-blur-3xl backdrop-saturate-200 dark:border-white/20 dark:bg-[rgba(16,18,26,0.82)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
+            ? "border-b border-white/25 bg-white/80 shadow-[0_8px_30px_rgba(0,0,0,0.14)] backdrop-blur-3xl backdrop-saturate-200 dark:border-white/20 dark:bg-[rgba(0,0,0,0.88)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.55)]"
             : "border-b border-transparent bg-transparent shadow-none backdrop-blur-[2px]",
           className,
         )}

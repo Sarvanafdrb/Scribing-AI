@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   AlertTriangle,
+  Building2,
   Calendar,
   Droplets,
   Heart,
@@ -24,6 +25,7 @@ import {
 } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
 import type { LastVisit, SessionVitals } from "@/types/session.types";
+import { getSessionDepartmentName } from "@/types/session.types";
 import {
   formatAdmissionDate,
   getAdmissionDay,
@@ -127,6 +129,13 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
             <dt className="text-gray-500">Name</dt>
             <dd className="ml-auto font-medium text-gray-800">
               {getPatientFullName(patient)}
+            </dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-3.5 w-3.5 text-gray-400" />
+            <dt className="text-gray-500">Department</dt>
+            <dd className="ml-auto font-medium text-gray-800">
+              {getSessionDepartmentName(session) || "—"}
             </dd>
           </div>
           <div className="flex items-center gap-2">

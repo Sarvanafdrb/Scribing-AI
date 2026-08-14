@@ -15,6 +15,7 @@ import type {
   SessionUser,
   UpdateSessionData,
 } from "@/types/session.types";
+import { getSessionDepartmentName } from "@/types/session.types";
 import {
   getPatientAge,
   getPatientFullName,
@@ -353,6 +354,12 @@ export function SessionDetailsTab({
                   "—"
                 )
               }
+            />
+            <OrganizationInlineField
+              label="Department"
+              value={getSessionDepartmentName(session)}
+              editable={false}
+              displayValue={getSessionDepartmentName(session) || "—"}
             />
           </div>
           <div className="space-y-0">

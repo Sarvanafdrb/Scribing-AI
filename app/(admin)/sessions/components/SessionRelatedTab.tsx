@@ -30,6 +30,7 @@ import type {
   SessionOrganization,
   SessionUser,
 } from "@/types/session.types";
+import { getSessionDepartmentName } from "@/types/session.types";
 import { getPatientFullName } from "@/utils/patient.utils";
 
 interface SessionRelatedTabProps {
@@ -290,6 +291,7 @@ export function SessionRelatedTab({
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Department</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -309,6 +311,7 @@ export function SessionRelatedTab({
                   <TableCell className="text-muted-foreground">
                     {doctor?.email || "—"}
                   </TableCell>
+                  <TableCell>{getSessionDepartmentName(session) || "—"}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

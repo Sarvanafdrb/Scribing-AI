@@ -44,6 +44,15 @@ export interface SessionUser {
   email?: string;
   qualification?: string;
   signature?: string;
+  departmentId?: SessionDepartment | string | null;
+}
+
+export interface SessionDepartment {
+  _id?: string;
+  id?: string;
+  name?: string;
+  departmentCode?: string;
+  isActive?: boolean;
 }
 
 export interface SessionOrganization {
@@ -97,6 +106,7 @@ export interface Session {
   organizationId: string | SessionOrganization;
   patientId: string | Patient;
   userId: string | SessionUser;
+  departmentId?: string | SessionDepartment | null;
   title: string;
   description?: string;
   sessionType: SessionType;
@@ -178,3 +188,23 @@ export interface SessionStats {
   activeCount: number;
   statusCounts: SessionStatusCounts;
 }
+
+export const getSessionDepartmentId = (
+  session?: Session | null,
+): string => {
+  if (!session?.departmentId) return "";
+  if (typeof session.departmentId === "object") {
+    return session.departmentId.id || session.departmentId._id || "";
+  }
+  return session.departmentId;
+};
+
+export const getSessionDepartmentName = (
+  session?: Session | null,
+): string => {
+  if (!session?.departmentId) return "";
+  if (typeof session.departmentId === "object") {
+    return session.departmentId.name || "";
+  }
+  return "";
+};

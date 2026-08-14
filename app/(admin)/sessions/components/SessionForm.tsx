@@ -33,6 +33,7 @@ import {
 import { organizationService } from "@/services/organization.service";
 import { userService } from "@/services/user.service";
 import { roleService } from "@/services/role.service";
+import { getUserDepartmentName } from "@/types/user.types";
 import { PatientCombobox } from "./PatientCombobox";
 import { DoctorCombobox } from "./DoctorCombobox";
 import {
@@ -263,6 +264,9 @@ export function SessionForm({
   const selectedOrgId = !isEditing
     ? (form.watch as (name: "organizationId") => string)("organizationId")
     : scopedOrgId || getOrgId(initialData);
+  const selectedDoctorId = !isEditing
+    ? (form.watch as (name: "userId") => string)("userId")
+    : "";
 
   const { data: orgData } = useQuery({
     queryKey: ["organizations", "session-form-options", scopedOrgId],
@@ -343,6 +347,14 @@ export function SessionForm({
 
   const organizations = orgData?.organizations || [];
   const doctors = doctorsData?.users || [];
+  const selectedDoctor = doctors.find((doctor) => {
+    const doctorId = String(doctor.id || doctor._id || "");
+    return doctorId === String(selectedDoctorId);
+  });
+  const selectedDoctorDepartmentName = getUserDepartmentName(selectedDoctor);
+  const departmentFieldValue = !selectedDoctorId
+    ? ""
+    : selectedDoctorDepartmentName || "No department assigned";
 
   const organizationOptions: ComboboxOption[] = organizations.map((org) => ({
     value: org.id || org._id || "",
@@ -436,6 +448,19 @@ export function SessionForm({
               </FormItem>
             )}
           />
+
+          <FormItem>
+            <FormLabel>Department</FormLabel>
+            <FormControl>
+              <Input
+                readOnly
+                disabled
+                value={departmentFieldValue}
+                placeholder="Select a doctor first"
+                className="bg-slate-50 text-muted-foreground"
+              />
+            </FormControl>
+          </FormItem>
 
           <FormField
             control={form.control}

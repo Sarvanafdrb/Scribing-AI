@@ -40,6 +40,7 @@ import {
 import { getPatientAge, getPatientFullName } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
 import type { AiNotes } from "@/types/ai-notes.types";
+import { getSessionDepartmentName } from "@/types/session.types";
 import { cn } from "@/lib/utils";
 
 const EMPTY_AI_NOTES: AiNotes = {
@@ -268,6 +269,9 @@ export function DoctorHeader({
           <p className="text-sm text-muted-foreground">
             {patientAge !== null ? `${patientAge} yrs` : "—"}
             {patient?.gender ? ` · ${formatGender(patient.gender)}` : ""}
+            {getSessionDepartmentName(session)
+              ? ` · ${getSessionDepartmentName(session)}`
+              : ""}
           </p>
         </div>
 

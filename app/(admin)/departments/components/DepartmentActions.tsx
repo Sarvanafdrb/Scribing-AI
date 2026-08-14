@@ -98,7 +98,7 @@ export function DepartmentActions({
       </DropdownMenu>
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-        <DialogContent>
+        <DialogContent data-solid="true">
           <DialogHeader>
             <DialogTitle>
               {isActive ? "Deactivate Department?" : "Activate Department?"}

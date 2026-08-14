@@ -10,6 +10,7 @@ export const PERMISSION_MODULES = [
   { id: "users", label: "Users", prefix: "USER", legacySlug: "user" },
   { id: "roles", label: "Roles", prefix: "ROLE", legacySlug: "role" },
   { id: "permissions", label: "Permissions", prefix: "PERMISSION", legacySlug: "permission" },
+  { id: "departments", label: "Departments", prefix: "DEPARTMENT", legacySlug: "department" },
   { id: "patients", label: "Patients", prefix: "PATIENT", legacySlug: "patient" },
   { id: "medicines", label: "Medicines", prefix: "MEDICINE", legacySlug: "medicine" },
   { id: "sessions", label: "Sessions", prefix: "SESSION", legacySlug: "session" },
@@ -66,6 +67,11 @@ export const USER_VIEW = "USER_VIEW";
 export const USER_CREATE = "USER_CREATE";
 export const USER_EDIT = "USER_EDIT";
 export const USER_DELETE = "USER_DELETE";
+
+export const DEPARTMENT_VIEW = "DEPARTMENT_VIEW";
+export const DEPARTMENT_CREATE = "DEPARTMENT_CREATE";
+export const DEPARTMENT_EDIT = "DEPARTMENT_EDIT";
+export const DEPARTMENT_DELETE = "DEPARTMENT_DELETE";
 
 export const PATIENT_VIEW = "PATIENT_VIEW";
 export const PATIENT_CREATE = "PATIENT_CREATE";

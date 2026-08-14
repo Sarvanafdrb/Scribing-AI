@@ -27,6 +27,7 @@ import { roleService } from "@/services/role.service";
 import { roleKeys } from "@/services/role.queries";
 import type { Permission } from "@/types/permission.types";
 import type { User } from "@/types/user.types";
+import { getUserDepartmentName } from "@/types/user.types";
 
 interface UserRelatedTabProps {
   user: User;
@@ -136,7 +137,7 @@ export function UserRelatedTab({
     ? anyUser.qualifications
     : [];
 
-  const inferredDepartment = anyUser.department || qualifications[0] || "—";
+  const inferredDepartment = getUserDepartmentName(user) || "—";
   const inferredDesignation =
     anyUser.designation ||
     qualifications[1] ||

@@ -1,54 +1,52 @@
 import { useQuery } from "@tanstack/react-query";
-import { userService } from "@/services/user.service";
-import { userKeys } from "@/services/user.queries";
+import { departmentService } from "@/services/department.service";
+import { departmentKeys } from "@/services/department.queries";
 import { useTenantScope } from "@/hooks/useTenantScope";
 
-interface UseUsersParams {
+interface UseDepartmentsParams {
   search?: string;
   isActive?: string;
   organizationId?: string;
-  roleId?: string;
-  departmentId?: string;
   page?: number;
   limit?: number;
+  enabled?: boolean;
 }
 
-export const useUsers = (params?: UseUsersParams) => {
-  const { organizationId: scopedOrgId } = useTenantScope();
-  const search = (params?.search || "").trim().replace(/\s+/g, " ");
+export const useDepartments = (params?: UseDepartmentsParams) => {
+  const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
+  const search = params?.search || "";
   const isActive = params?.isActive || "";
-  const organizationId = params?.organizationId || scopedOrgId || "";
-  const roleId = params?.roleId || "";
-  const departmentId = params?.departmentId || "";
+  const requestedOrgId = params?.organizationId ?? scopedOrgId ?? "";
+  const organizationId =
+    !requestedOrgId || requestedOrgId.toLowerCase() === "all"
+      ? ""
+      : requestedOrgId;
   const page = params?.page || 1;
   const limit = params?.limit || 10;
 
   const query = useQuery({
-    queryKey: userKeys.list({
+    queryKey: departmentKeys.list({
       search,
       isActive,
       organizationId,
-      roleId,
-      departmentId,
       page,
       limit,
     }),
     queryFn: () =>
-      userService.getAll({
+      departmentService.getAll({
         search: search || undefined,
         isActive: isActive || undefined,
         organizationId: organizationId || undefined,
-        roleId: roleId || undefined,
-        departmentId: departmentId || undefined,
         page,
         limit,
       }),
+    enabled: (params?.enabled ?? true) && (!!organizationId || isSuperAdmin),
     staleTime: 5 * 60 * 1000,
   });
 
   return {
     ...query,
-    users: query.data?.users || [],
+    departments: query.data?.departments || [],
     total: query.data?.total || 0,
     page: query.data?.page || 1,
     limit: query.data?.limit || 10,

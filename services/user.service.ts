@@ -7,6 +7,7 @@ export const userService = {
     isActive?: string;
     organizationId?: string;
     roleId?: string;
+    departmentId?: string;
     page?: number;
     limit?: number;
   }) => {

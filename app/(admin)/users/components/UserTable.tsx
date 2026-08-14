@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LinkCell } from "@/components/shared/LinkCell";
 import { UserActions } from "./UserActions";
-import { User } from "@/types/user.types";
+import { User, getUserDepartmentName } from "@/types/user.types";
 import { Building2, Calendar, Mail, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface UserTableProps {
@@ -83,6 +83,7 @@ export function UserTable({
               <TableHead className="font-bold">Email</TableHead>
               <TableHead className="font-bold">Organization</TableHead>
               <TableHead className="font-bold">Role</TableHead>
+              <TableHead className="font-bold">Department</TableHead>
               <TableHead className="font-bold">Status</TableHead>
               <TableHead className="font-bold">Joined</TableHead>
               <TableHead className="text-right font-bold">Actions</TableHead>
@@ -92,7 +93,7 @@ export function UserTable({
             {users.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-8 text-muted-foreground"
                 >
                   No users found
@@ -165,6 +166,9 @@ export function UserTable({
                           {roleName}
                         </Badge>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {getUserDepartmentName(user) || "—"}
                     </TableCell>
                     <TableCell>
                       <Badge

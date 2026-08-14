@@ -18,6 +18,10 @@ import {
   ORGANIZATION_VIEW,
   ORGANIZATION_CREATE,
   hasPermissionCode,
+  DEPARTMENT_VIEW,
+  DEPARTMENT_CREATE,
+  DEPARTMENT_EDIT,
+  DEPARTMENT_DELETE,
   PATIENT_VIEW,
   PATIENT_CREATE,
   PATIENT_EDIT,
@@ -94,6 +98,18 @@ export const useAccessControl = () => {
         hasPermission(user, "user:delete", token)
       );
     },
+    canViewDepartments: () =>
+      hasPermission(user, DEPARTMENT_VIEW, token) ||
+      hasPermission(user, "department:read", token),
+    canCreateDepartment: () =>
+      hasPermission(user, DEPARTMENT_CREATE, token) ||
+      hasPermission(user, "department:create", token),
+    canEditDepartment: () =>
+      hasPermission(user, DEPARTMENT_EDIT, token) ||
+      hasPermission(user, "department:update", token),
+    canDeactivateDepartment: () =>
+      hasPermission(user, DEPARTMENT_DELETE, token) ||
+      hasPermission(user, "department:delete", token),
     canViewPatients: () =>
       hasPermission(user, PATIENT_VIEW, token) ||
       hasPermission(user, "patient:read", token),

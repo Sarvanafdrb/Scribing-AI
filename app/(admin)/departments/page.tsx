@@ -1,29 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserFilters } from "./components/UserFilters";
-import { UserTable } from "./components/UserTable";
-import { UserSkeleton } from "./components/UserSkeleton";
-import { useUsers } from "@/hooks/users/useUsers";
-import { useAccessControl } from "@/hooks/useAccessControl";
+import { DepartmentFilters } from "./components/DepartmentFilters";
+import { DepartmentTable } from "./components/DepartmentTable";
+import { DepartmentSkeleton } from "./components/DepartmentSkeleton";
 import { useDepartments } from "@/hooks/departments/useDepartments";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 const PAGE_SIZE = 5;
 
-export default function UsersPage() {
-  const { canCreateUser, canViewUsers, canManageAllUsers, canViewDepartments } =
-    useAccessControl();
+export default function DepartmentsPage() {
+  const { canCreateDepartment, canViewDepartments } = useAccessControl();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [departmentId, setDepartmentId] = useState("all");
   const [page, setPage] = useState(1);
 
   const {
-    users,
+    departments,
     isLoading,
     error,
     total,
@@ -31,37 +28,30 @@ export default function UsersPage() {
     activeCount,
     inactiveCount,
     refetch,
-  } = useUsers({
+  } = useDepartments({
     search,
     isActive: status === "all" ? undefined : status,
-    departmentId: departmentId === "all" ? undefined : departmentId,
     page,
     limit: PAGE_SIZE,
-  });
-
-  const { departments } = useDepartments({
-    page: 1,
-    limit: 100,
     enabled: canViewDepartments(),
   });
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, departmentId]);
+  }, [search, status]);
 
   const handleClearFilters = () => {
     setSearch("");
     setStatus("all");
-    setDepartmentId("all");
     setPage(1);
   };
 
-  if (!canViewUsers()) {
+  if (!canViewDepartments()) {
     return (
       <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
         <h1 className="text-xl font-semibold text-slate-900">Access Denied</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          You do not have permission to view users.
+          You do not have permission to view departments.
         </p>
       </div>
     );
@@ -71,18 +61,16 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Users</h1>
+          <h1 className="text-3xl font-bold">Departments</h1>
           <p className="text-muted-foreground">
-            {canManageAllUsers
-              ? `Manage system users • ${total} total`
-              : "View your profile"}
+            Manage organization departments • {total} total
           </p>
         </div>
-        {canCreateUser() && (
-          <Link href="/users/create">
+        {canCreateDepartment() && (
+          <Link href="/departments/create">
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" />
-              New User
+              Add Department
             </Button>
           </Link>
         )}
@@ -117,34 +105,28 @@ export default function UsersPage() {
         </Card>
       </div>
 
-      <UserFilters
+      <DepartmentFilters
         search={search}
         onSearchChange={setSearch}
         status={status}
         onStatusChange={setStatus}
-        departmentId={departmentId}
-        onDepartmentChange={canViewDepartments() ? setDepartmentId : undefined}
-        departmentOptions={departments.map((department) => ({
-          id: department.id || department._id || "",
-          name: department.name,
-        }))}
         onClearFilters={handleClearFilters}
       />
 
       {isLoading ? (
-        <UserSkeleton count={5} />
+        <DepartmentSkeleton count={5} />
       ) : error ? (
         <Card>
           <CardContent className="py-8 text-center text-destructive">
-            Failed to load users.{" "}
+            Failed to load departments.{" "}
             <Button variant="link" onClick={() => refetch()}>
               Retry
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <UserTable
-          users={users}
+        <DepartmentTable
+          departments={departments}
           onStatusChange={refetch}
           page={page}
           totalPages={totalPages}

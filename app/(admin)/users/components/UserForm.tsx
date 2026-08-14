@@ -23,13 +23,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CreateUserData, UpdateUserData, User } from "@/types/user.types";
+import { CreateUserData, UpdateUserData, User, getUserDepartmentId } from "@/types/user.types";
 import { organizationService } from "@/services/organization.service";
 import { roleService } from "@/services/role.service";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { Organization } from "@/types/organization.types";
 import { lastNameSchema, strictEmailSchema } from "@/lib/validation";
+import { useDepartments } from "@/hooks/departments/useDepartments";
+import { NO_DEPARTMENT_VALUE } from "@/types/department.types";
 
 const getOrganizationOptionId = (org: Organization): string => {
   const rawId = org.id || org._id;
@@ -44,6 +46,7 @@ const createSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   organizationId: z.string().min(1, "Organization is required"),
   roleId: z.string().optional(),
+  departmentId: z.string().optional(),
   qualifications: z.array(z.string()).optional(),
 });
 
@@ -87,6 +90,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
       password: "",
       organizationId: orgId || "",
       roleId: roleId || "",
+      departmentId: getUserDepartmentId(data) || NO_DEPARTMENT_VALUE,
       qualifications: data?.qualifications || [],
     };
   }
@@ -98,6 +102,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
     password: "",
     organizationId: "",
     roleId: "",
+    departmentId: NO_DEPARTMENT_VALUE,
     qualifications: [],
   };
 };
@@ -161,6 +166,38 @@ export function UserForm({
     enabled: !!selectedOrgId,
   });
 
+  const currentDepartmentId = getUserDepartmentId(initialData);
+  const { departments, isLoading: departmentsLoading } = useDepartments({
+    organizationId: selectedOrgId,
+    isActive: "true",
+    page: 1,
+    limit: 100,
+    enabled: Boolean(selectedOrgId),
+  });
+
+  const departmentOptions = useMemo(() => {
+    const options = departments.map((department) => ({
+      id: department.id || department._id || "",
+      name: department.name,
+      isActive: department.isActive !== false,
+    }));
+
+    if (
+      currentDepartmentId &&
+      !options.some((option) => option.id === currentDepartmentId) &&
+      typeof initialData?.departmentId === "object" &&
+      initialData.departmentId?.name
+    ) {
+      options.unshift({
+        id: currentDepartmentId,
+        name: initialData.departmentId.name,
+        isActive: initialData.departmentId.isActive !== false,
+      });
+    }
+
+    return options.filter((option) => option.id);
+  }, [departments, currentDepartmentId, initialData]);
+
   useEffect(() => {
     if (initialData) {
       form.reset(getDefaultValues(initialData, true));
@@ -181,6 +218,7 @@ export function UserForm({
   useEffect(() => {
     if (!selectedOrgId || isEditing) return;
     form.setValue("roleId", "");
+    form.setValue("departmentId", NO_DEPARTMENT_VALUE);
   }, [selectedOrgId, form, isEditing]);
 
   const handleSubmit = async (data: CreateFormData | EditFormData) => {
@@ -195,6 +233,13 @@ export function UserForm({
     }
     if (!payload.roleId) {
       delete payload.roleId;
+    }
+
+    if (
+      !payload.departmentId ||
+      payload.departmentId === NO_DEPARTMENT_VALUE
+    ) {
+      payload.departmentId = null;
     }
 
     if (isEditing) {
@@ -399,6 +444,52 @@ export function UserForm({
             )}
           />
         )}
+        <FormField
+          control={form.control}
+          name="departmentId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Department</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || NO_DEPARTMENT_VALUE}
+                disabled={!selectedOrgId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      !selectedOrgId
+                        ? "Select organization first"
+                        : departmentsLoading
+                          ? "Loading departments..."
+                          : "Select department"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_DEPARTMENT_VALUE}>
+                    No Department
+                  </SelectItem>
+                  {departmentOptions.map((department) => (
+                    <SelectItem key={department.id} value={department.id}>
+                      {department.name}
+                      {!department.isActive ? " (inactive)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedOrgId &&
+                !departmentsLoading &&
+                departmentOptions.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No active departments available. Users can be created
+                    without a department.
+                  </p>
+                )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="qualifications"

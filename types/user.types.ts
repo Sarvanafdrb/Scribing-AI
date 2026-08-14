@@ -12,6 +12,13 @@ export interface UserRole {
   description?: string;
 }
 
+export interface UserDepartment {
+  _id: string;
+  id?: string;
+  name: string;
+  isActive?: boolean;
+}
+
 export interface User {
   id?: string;
   _id?: string;
@@ -22,6 +29,7 @@ export interface User {
   organizationId?: UserOrganization | string;
   organizationName?: string;
   roleId?: UserRole | string;
+  departmentId?: UserDepartment | string | null;
   qualifications?: string[];
   isActive?: boolean;
   isEmailVerified?: boolean;
@@ -37,6 +45,7 @@ export interface CreateUserData {
   password: string;
   organizationId: string;
   roleId?: string;
+  departmentId?: string | null;
   qualifications?: string[];
   isActive?: boolean;
 }
@@ -47,7 +56,25 @@ export interface UpdateUserData {
   email?: string;
   password?: string;
   roleId?: string;
+  departmentId?: string | null;
   qualifications?: string[];
   isActive?: boolean;
   isEmailVerified?: boolean;
 }
+
+export const getUserDepartmentId = (user?: User | null): string => {
+  if (!user?.departmentId) return "";
+  if (typeof user.departmentId === "object") {
+    return user.departmentId.id || user.departmentId._id || "";
+  }
+  return user.departmentId;
+};
+
+export const getUserDepartmentName = (user?: User | null): string => {
+  if (!user?.departmentId) return "";
+  if (typeof user.departmentId === "object") {
+    return user.departmentId.name || "";
+  }
+  return "";
+};
+

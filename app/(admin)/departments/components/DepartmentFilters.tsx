@@ -12,28 +12,22 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-interface UserFiltersProps {
+interface DepartmentFiltersProps {
   search: string;
   onSearchChange: (value: string) => void;
   status: string;
   onStatusChange: (value: string) => void;
-  departmentId?: string;
-  onDepartmentChange?: (value: string) => void;
-  departmentOptions?: Array<{ id: string; name: string }>;
   onClearFilters: () => void;
 }
 
-export function UserFilters({
+export function DepartmentFilters({
   search,
   onSearchChange,
   status,
   onStatusChange,
-  departmentId = "all",
-  onDepartmentChange,
-  departmentOptions = [],
   onClearFilters,
-}: UserFiltersProps) {
-  const hasFilters = search || status !== "all" || departmentId !== "all";
+}: DepartmentFiltersProps) {
+  const hasFilters = search || status !== "all";
 
   return (
     <div className="space-y-4">
@@ -41,7 +35,7 @@ export function UserFilters({
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder="Search department..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
@@ -58,22 +52,6 @@ export function UserFilters({
             <SelectItem value="false">Inactive</SelectItem>
           </SelectContent>
         </Select>
-
-        {onDepartmentChange && (
-          <Select value={departmentId} onValueChange={onDepartmentChange}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="All Departments" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Departments</SelectItem>
-              {departmentOptions.map((department) => (
-                <SelectItem key={department.id} value={department.id}>
-                  {department.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
 
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={onClearFilters}>
@@ -100,17 +78,6 @@ export function UserFilters({
               <X
                 className="h-3 w-3 cursor-pointer"
                 onClick={() => onStatusChange("all")}
-              />
-            </Badge>
-          )}
-          {departmentId !== "all" && (
-            <Badge variant="secondary" className="gap-1">
-              Department:{" "}
-              {departmentOptions.find((item) => item.id === departmentId)
-                ?.name || departmentId}
-              <X
-                className="h-3 w-3 cursor-pointer"
-                onClick={() => onDepartmentChange?.("all")}
               />
             </Badge>
           )}

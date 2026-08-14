@@ -26,6 +26,7 @@ import { useUsers } from "@/hooks/users/useUsers";
 import { usePatients } from "@/hooks/patients/usePatients";
 import { useSessions } from "@/hooks/sessions/useSessions";
 import { useRoles } from "@/hooks/roles/useRoles";
+import { useDepartments } from "@/hooks/departments/useDepartments";
 
 type RelatedKey =
   | "users"
@@ -104,7 +105,9 @@ const SECTIONS: RelatedSectionConfig[] = [
     key: "departments",
     title: "Departments",
     description: "Department structure for this organization",
-    available: false,
+    addHref: "/departments/create",
+    viewAllHref: "/departments",
+    available: true,
   },
   {
     key: "appointments",
@@ -334,6 +337,24 @@ function RelatedSectionBody({
   if (sectionKey === "roles") {
     return (
       <RolesRelatedTable
+        organizationId={organizationId}
+        search={deferredSearch}
+        page={page}
+        limit={limit}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        onPageChange={setPage}
+        addHref={addHref}
+        viewAllHref={viewAllHref}
+      />
+    );
+  }
+
+  if (sectionKey === "departments") {
+    return (
+      <DepartmentsRelatedTable
         organizationId={organizationId}
         search={deferredSearch}
         page={page}
@@ -848,6 +869,100 @@ function RolesRelatedTable({
                           }
                         >
                           {role.isActive === false ? "Inactive" : "Active"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+function DepartmentsRelatedTable({
+  organizationId,
+  search,
+  page,
+  limit,
+  onSearchChange,
+  onPageChange,
+  addHref,
+  viewAllHref,
+}: {
+  organizationId: string;
+  search: string;
+  page: number;
+  limit: number;
+  onSearchChange: (value: string) => void;
+  onPageChange: (page: number) => void;
+  addHref?: string;
+  viewAllHref?: string;
+}) {
+  const { departments, total, totalPages, isLoading } = useDepartments({
+    organizationId,
+    search,
+    page,
+    limit,
+  });
+
+  return (
+    <div>
+      <RelatedToolbar
+        search={search}
+        onSearchChange={onSearchChange}
+        total={total}
+        addHref={addHref}
+        viewAllHref={viewAllHref}
+        addLabel="Add Department"
+      />
+      {isLoading ? (
+        <LoadingBlock />
+      ) : departments.length === 0 ? (
+        <EmptyRelated message="No departments found." />
+      ) : (
+        <>
+          <div className="overflow-hidden rounded-2xl border border-border/60">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Users</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {departments.map((department) => {
+                  const id = String(department.id || department._id || "");
+                  return (
+                    <TableRow key={id}>
+                      <TableCell>
+                        <LinkCell href={`/departments/edit/${id}`}>
+                          {department.name}
+                        </LinkCell>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {department.description || "—"}
+                      </TableCell>
+                      <TableCell>{department.userCount ?? 0}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            department.isActive === false
+                              ? "secondary"
+                              : "default"
+                          }
+                        >
+                          {department.isActive === false ? "Inactive" : "Active"}
                         </Badge>
                       </TableCell>
                     </TableRow>

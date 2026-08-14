@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Building2,
   Users,
+  Hospital,
   Shield,
   Mic,
   Settings,
@@ -45,6 +46,12 @@ const menuItems = [
     label: "Users",
     icon: Users,
     permission: "USER_VIEW",
+  },
+  {
+    path: "/departments",
+    label: "Departments",
+    icon: Hospital,
+    permission: "DEPARTMENT_VIEW",
   },
   {
     path: "/reports",

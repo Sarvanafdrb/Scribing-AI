@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { roleService } from "@/services/role.service";
 import { roleKeys } from "@/services/role.queries";
 import type { UpdateUserData, User } from "@/types/user.types";
+import { getUserDepartmentName } from "@/types/user.types";
 
 const formatDateTime = (value?: string | Date | null) => {
   if (!value) return "—";
@@ -68,8 +69,6 @@ export function UserDetailsTab({
   const username =
     typeof anyUser.username === "string" ? anyUser.username : user.email;
 
-  const department =
-    typeof anyUser.department === "string" ? anyUser.department : "";
   const designation =
     typeof anyUser.designation === "string" ? anyUser.designation : "";
   const employeeId =
@@ -83,7 +82,7 @@ export function UserDetailsTab({
     ? anyUser.qualifications
     : [];
 
-  const inferredDepartment = department || qualifications[0] || "—";
+  const inferredDepartment = getUserDepartmentName(user) || "—";
   const inferredDesignation =
     designation || qualifications[1] || qualifications.join(", ") || "—";
 
@@ -291,7 +290,7 @@ export function UserDetailsTab({
             <OrganizationInlineField
               label="Department"
               value={inferredDepartment === "—" ? "" : inferredDepartment}
-              editable={true}
+              editable={false}
               isSaving={savingField === "department"}
               onSave={(value) => onSaveNoopWithToast("Department", value)}
               displayValue={inferredDepartment !== "—" ? inferredDepartment : undefined}

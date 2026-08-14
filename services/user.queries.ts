@@ -6,6 +6,7 @@ export const userKeys = {
     isActive?: string;
     organizationId?: string;
     roleId?: string;
+    departmentId?: string;
     page?: number;
     limit?: number;
   }) => [...userKeys.lists(), filters] as const,

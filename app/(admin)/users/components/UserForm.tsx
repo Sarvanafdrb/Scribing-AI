@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,6 +32,7 @@ import { Organization } from "@/types/organization.types";
 import { lastNameSchema, strictEmailSchema } from "@/lib/validation";
 import { useDepartments } from "@/hooks/departments/useDepartments";
 import { NO_DEPARTMENT_VALUE } from "@/types/department.types";
+import { Eye, EyeOff } from "lucide-react";
 
 const getOrganizationOptionId = (org: Organization): string => {
   const rawId = org.id || org._id;
@@ -118,6 +119,7 @@ export function UserForm({
 }: UserFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?._id);
   const hasFixedActions = Boolean(onCancel);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     organizationId: scopedOrgId,
     organizationName: scopedOrgName,
@@ -316,13 +318,29 @@ export function UserForm({
                 {isEditing ? "New Password (optional)" : "Password *"}
               </FormLabel>
               <FormControl>
-                <Input
-                  type="password"
-                  placeholder={
-                    isEditing ? "Leave blank to keep current" : "Enter Password"
-                  }
-                  {...field}
-                />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    className="pr-10"
+                    placeholder={
+                      isEditing ? "Leave blank to keep current" : "Enter Password"
+                    }
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>

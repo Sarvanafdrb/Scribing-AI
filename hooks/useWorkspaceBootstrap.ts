@@ -6,7 +6,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useWorkspaceStore } from "@/store/workspace.store";
 import { workspaceService } from "@/services/workspace.service";
 import { workspaceKeys } from "@/services/workspace.queries";
-import { isSuperAdminUser } from "@/types/auth.types";
+import { isSuperAdminUser, getUserOrganizationId } from "@/types/auth.types";
 import {
   getDefaultWorkspace,
   isWorkspaceAccessible,
@@ -44,8 +44,10 @@ export const useWorkspaceBootstrap = () => {
 
         if (cancelled) return;
 
+        const organizationId = getUserOrganizationId(user);
         const defaultWorkspace = getDefaultWorkspace(workspaces, {
           isSuperAdmin,
+          organizationId,
         });
 
         if (!defaultWorkspace) {
@@ -57,6 +59,8 @@ export const useWorkspaceBootstrap = () => {
         setHasWorkspaceAccess(true);
 
         if (
+          !selectedWorkspace ||
+          selectedWorkspace.id !== defaultWorkspace.id ||
           !isWorkspaceAccessible(selectedWorkspace, workspaces, {
             isSuperAdmin,
           })
@@ -87,6 +91,7 @@ export const useWorkspaceBootstrap = () => {
     selectedWorkspace,
     setSelectedWorkspace,
     token,
+    user,
     workspaceHydrated,
   ]);
 

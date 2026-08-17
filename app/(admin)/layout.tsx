@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/types/auth.types";
 import { resolveAuthenticatedHomePath } from "@/utils/authRedirect";
+import { useTenantScope } from "@/hooks/useTenantScope";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
@@ -105,6 +106,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, token, isLoading, _hasHydrated, logout } = useAuthStore();
+  const { organizationName: scopedOrganizationName } = useTenantScope();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -234,7 +236,8 @@ export default function AdminLayout({
             <p className="font-medium text-foreground">
               {user?.isSuperAdmin
                 ? "Super Admin"
-                : user?.organizationName ||
+                : scopedOrganizationName ||
+                  user?.organizationName ||
                   `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
                   "User"}
             </p>

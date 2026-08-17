@@ -19,13 +19,22 @@ export const getActiveWorkspaces = (workspaces: Workspace[]) =>
 
 export const getDefaultWorkspace = (
   workspaces: Workspace[],
-  options?: { isSuperAdmin?: boolean },
+  options?: { isSuperAdmin?: boolean; organizationId?: string },
 ): Workspace | null => {
   if (options?.isSuperAdmin) {
     return ALL_ORGANIZATIONS_WORKSPACE;
   }
 
-  return getActiveWorkspaces(workspaces)[0] ?? null;
+  const active = getActiveWorkspaces(workspaces);
+
+  if (options?.organizationId) {
+    const matched = active.find(
+      (workspace) => workspace.id === options.organizationId,
+    );
+    if (matched) return matched;
+  }
+
+  return active[0] ?? null;
 };
 
 export const isWorkspaceAccessible = (

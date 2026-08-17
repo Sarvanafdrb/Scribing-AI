@@ -223,8 +223,9 @@ export const isNurseUser = (user?: AuthUser | null): boolean =>
 export const isReceptionistUser = (user?: AuthUser | null): boolean =>
   matchesRoleName(user, "receptionist");
 
+/** Doctors only — nurses use permission-scoped admin routes, not Doctor Workspace. */
 export const isClinicalRoleUser = (user?: AuthUser | null): boolean =>
-  isDoctorUser(user) || isNurseUser(user);
+  isDoctorUser(user);
 
 export const canManageAllOrganizations = (
   user?: AuthUser | null,

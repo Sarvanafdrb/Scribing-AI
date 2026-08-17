@@ -107,7 +107,7 @@ export function WorkspaceSwitcher({
               <p className="truncate text-sm font-medium text-gray-900">
                 {selectedWorkspace.name}
               </p>
-              {!compact && (
+              {!compact && isSuperAdmin && (
                 <p className="truncate text-xs text-gray-500">
                   {selectedWorkspace.organizationName}
                 </p>

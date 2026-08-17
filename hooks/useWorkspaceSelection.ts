@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useWorkspaceStore } from "@/store/workspace.store";
 import { useAuthStore } from "@/store/auth.store";
 import { Workspace } from "@/types/workspace.types";
-import { isSuperAdminUser } from "@/types/auth.types";
+import { isSuperAdminUser, getUserOrganizationId } from "@/types/auth.types";
 import { resolveAuthenticatedHomePath } from "@/utils/authRedirect";
 import { organizationKeys } from "@/services/organization.queries";
 import { userKeys } from "@/services/user.queries";
@@ -83,12 +83,21 @@ export const resolvePostLoginWorkspace = async (): Promise<{
   const user = useAuthStore.getState().user;
   const token = useAuthStore.getState().token;
   const isSuperAdmin = isSuperAdminUser(user, token);
-  const defaultWorkspace = getDefaultWorkspace(workspaces, { isSuperAdmin });
+  const organizationId = getUserOrganizationId(user);
+  const defaultWorkspace = getDefaultWorkspace(workspaces, {
+    isSuperAdmin,
+    organizationId,
+  });
   const redirectTo = resolveAuthenticatedHomePath(user, token);
 
   if (!defaultWorkspace || redirectTo === "/access-not-assigned") {
     useWorkspaceStore.getState().clearWorkspace();
     return { redirectTo: "/access-not-assigned" };
+  }
+
+  const selected = useWorkspaceStore.getState().selectedWorkspace;
+  if (!selected || selected.id !== defaultWorkspace.id) {
+    useWorkspaceStore.getState().setSelectedWorkspace(defaultWorkspace);
   }
 
   return { redirectTo, workspace: defaultWorkspace };

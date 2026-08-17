@@ -11,6 +11,11 @@ import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
 import { useWorkspaceBootstrap } from "@/hooks/useWorkspaceBootstrap";
 import { recordDiagEvent } from "@/hooks/recording/recordingFailureDiagnostics";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
+import { isSuperAdminUser } from "@/types/auth.types";
+import {
+  canAccessDoctorWorkspace,
+  canViewAdminPanel,
+} from "@/constants/permissions";
 
 const FILE = "app/(doctor)/layout.tsx";
 const PREFIX = "[LAYOUT-DIAG]";
@@ -45,7 +50,7 @@ export default function DoctorLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { token, _hasHydrated, isLoading } = useAuthStore();
+  const { token, user, _hasHydrated, isLoading } = useAuthStore();
   const router = useRouter();
   const { isValidating } = useAuthValidation();
   const { shouldShowLoading: workspaceGuardLoading, shouldBlock } =
@@ -54,6 +59,12 @@ export default function DoctorLayout({
 
   useAutoLogin();
   useSessionExpiry();
+
+  const isSuperAdmin = isSuperAdminUser(user, token);
+  const hasWorkspaceAccess = canAccessDoctorWorkspace(
+    user?.permissions || [],
+    isSuperAdmin,
+  );
 
   const isLocallyRecording = useActiveRecordingStore(
     (state) => state.isLocallyRecording,
@@ -247,7 +258,9 @@ export default function DoctorLayout({
   ]);
 
   useEffect(() => {
-    if (!_hasHydrated || isLoading || isValidating) return;
+    if (!_hasHydrated || isLoading || isValidating || workspaceGuardLoading) {
+      return;
+    }
     if (!token) {
       layoutDiag(
         "router.replace(/login)",
@@ -261,8 +274,28 @@ export default function DoctorLayout({
         { trace: true },
       );
       router.replace("/login");
+      return;
     }
-  }, [_hasHydrated, isLoading, isValidating, token, router]);
+    if (!hasWorkspaceAccess) {
+      const redirectTo = canViewAdminPanel(
+        user?.permissions || [],
+        isSuperAdmin,
+      )
+        ? "/dashboard"
+        : "/access-not-assigned";
+      router.replace(redirectTo);
+    }
+  }, [
+    _hasHydrated,
+    hasWorkspaceAccess,
+    isLoading,
+    isSuperAdmin,
+    isValidating,
+    router,
+    token,
+    user?.permissions,
+    workspaceGuardLoading,
+  ]);
 
   if (shouldShowLoading) {
     return (
@@ -272,7 +305,7 @@ export default function DoctorLayout({
     );
   }
 
-  if (!token || shouldBlock) {
+  if (!token || shouldBlock || !hasWorkspaceAccess) {
     return null;
   }
 

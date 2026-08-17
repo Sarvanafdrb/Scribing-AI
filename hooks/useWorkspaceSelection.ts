@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { useWorkspaceStore } from "@/store/workspace.store";
 import { useAuthStore } from "@/store/auth.store";
 import { Workspace } from "@/types/workspace.types";
-import { isDoctorUser, isSuperAdminUser } from "@/types/auth.types";
+import { isSuperAdminUser } from "@/types/auth.types";
+import {
+  canAccessDoctorWorkspace,
+  canViewAdminPanel,
+} from "@/constants/permissions";
 import { organizationKeys } from "@/services/organization.queries";
 import { userKeys } from "@/services/user.queries";
 import { roleKeys } from "@/services/role.queries";
@@ -83,15 +87,21 @@ export const resolvePostLoginWorkspace = async (): Promise<{
   const token = useAuthStore.getState().token;
   const isSuperAdmin = isSuperAdminUser(user, token);
   const defaultWorkspace = getDefaultWorkspace(workspaces, { isSuperAdmin });
+  const permissions = user?.permissions || [];
 
   if (!defaultWorkspace) {
     useWorkspaceStore.getState().clearWorkspace();
     return { redirectTo: "/access-not-assigned" };
   }
 
-  if (isDoctorUser(user)) {
+  if (canViewAdminPanel(permissions, isSuperAdmin)) {
+    return { redirectTo: "/dashboard", workspace: defaultWorkspace };
+  }
+
+  if (canAccessDoctorWorkspace(permissions, isSuperAdmin)) {
     return { redirectTo: "/doctor/workspace", workspace: defaultWorkspace };
   }
 
-  return { redirectTo: "/dashboard", workspace: defaultWorkspace };
+  useWorkspaceStore.getState().clearWorkspace();
+  return { redirectTo: "/access-not-assigned" };
 };

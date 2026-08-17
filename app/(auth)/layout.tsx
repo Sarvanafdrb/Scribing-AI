@@ -3,7 +3,11 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
-import { isDoctorUser } from "@/types/auth.types";
+import { isSuperAdminUser } from "@/types/auth.types";
+import {
+  canAccessDoctorWorkspace,
+  canViewAdminPanel,
+} from "@/constants/permissions";
 
 const PUBLIC_AUTH_PATHS = [
   "/login",
@@ -28,8 +32,18 @@ export default function AuthLayout({
 
   useEffect(() => {
     if (!isAuthenticated || !isPublicAuthPage) return;
-    router.push(isDoctorUser(user) ? "/doctor/workspace" : "/dashboard");
-  }, [isAuthenticated, isPublicAuthPage, router, user]);
+    const permissions = user?.permissions || [];
+    const isSuperAdmin = isSuperAdminUser(user, token);
+    if (canViewAdminPanel(permissions, isSuperAdmin)) {
+      router.push("/dashboard");
+      return;
+    }
+    if (canAccessDoctorWorkspace(permissions, isSuperAdmin)) {
+      router.push("/doctor/workspace");
+      return;
+    }
+    router.push("/access-not-assigned");
+  }, [isAuthenticated, isPublicAuthPage, router, user, token]);
 
   if (isLoginPage) {
     return <>{children}</>;

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { SessionForm } from "../components/SessionForm";
 import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { CreateSessionData, UpdateSessionData } from "@/types/session.types";
 import { healthcareGlass, healthcareSolid } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,18 @@ import { cn } from "@/lib/utils";
 export default function CreateSessionPage() {
   const router = useRouter();
   const { createSession } = useSessionMutations();
+  const { canCreateSession } = useAccessControl();
+
+  if (!canCreateSession()) {
+    return (
+      <div className="glass mx-auto max-w-xl rounded-3xl p-8 text-center">
+        <h1 className="text-xl font-semibold text-foreground">Access Denied</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          You do not have permission to create consultations.
+        </p>
+      </div>
+    );
+  }
 
   const handleSubmit = async (data: CreateSessionData | UpdateSessionData) => {
     await createSession.mutateAsync(data as CreateSessionData);

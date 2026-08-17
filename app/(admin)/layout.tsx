@@ -21,7 +21,11 @@ import {
   BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { hasPermission, isDoctorUser } from "@/types/auth.types";
+import { hasPermission, isSuperAdminUser } from "@/types/auth.types";
+import {
+  canAccessDoctorWorkspace,
+  canViewAdminPanel,
+} from "@/constants/permissions";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
@@ -146,10 +150,13 @@ export default function AdminLayout({
       return;
     }
 
-    if (isDoctorUser(user)) {
+    if (
+      !canViewAdminPanel(user?.permissions || [], isSuperAdminUser(user, token)) &&
+      canAccessDoctorWorkspace(user?.permissions || [], isSuperAdminUser(user, token))
+    ) {
       router.replace("/doctor/workspace");
     }
-  }, [isAuthenticated, _hasHydrated, isValidating, router, user]);
+  }, [isAuthenticated, _hasHydrated, isValidating, router, user, token]);
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -171,7 +178,15 @@ export default function AdminLayout({
   if (!isAuthenticated || shouldBlock) {
     return null;
   }
-  if (!user || isDoctorUser(user)) {
+  if (!user) {
+    return null;
+  }
+
+  const isSuperAdmin = isSuperAdminUser(user, token);
+  if (
+    !canViewAdminPanel(user.permissions || [], isSuperAdmin) &&
+    canAccessDoctorWorkspace(user.permissions || [], isSuperAdmin)
+  ) {
     return null;
   }
   return (

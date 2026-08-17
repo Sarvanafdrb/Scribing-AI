@@ -9,6 +9,8 @@ import {
 } from "@/types/auth.types";
 import {
   canManageAllUsersFromPermissions,
+  canAccessDoctorWorkspace,
+  canViewAdminPanel,
   ORGANIZATION_EDIT,
   ORGANIZATION_DELETE,
   USER_CREATE,
@@ -127,5 +129,36 @@ export const useAccessControl = () => {
     canEditRole: () =>
       hasPermission(user, ROLE_EDIT, token) ||
       hasPermission(user, "role:update", token),
+    canAccessDoctorWorkspace: () =>
+      canAccessDoctorWorkspace(user?.permissions || [], isSuperAdmin),
+    canViewAdminPanel: () =>
+      canViewAdminPanel(user?.permissions || [], isSuperAdmin),
+    canViewSessions: () =>
+      hasPermission(user, "SESSION_VIEW", token) ||
+      hasPermission(user, "session:read", token),
+    canCreateSession: () =>
+      hasPermission(user, "SESSION_CREATE", token) ||
+      hasPermission(user, "session:create", token),
+    canCreateRecording: () =>
+      hasPermission(user, "RECORDING_CREATE", token) ||
+      hasPermission(user, "recording:create", token),
+    canViewRecording: () =>
+      hasPermission(user, "RECORDING_VIEW", token) ||
+      hasPermission(user, "recording:read", token),
+    canEditRecording: () =>
+      hasPermission(user, "RECORDING_EDIT", token) ||
+      hasPermission(user, "recording:update", token),
+    canViewTranscript: () =>
+      hasPermission(user, "TRANSCRIPT_VIEW", token) ||
+      hasPermission(user, "transcript:read", token),
+    canEditTranscript: () =>
+      hasPermission(user, "TRANSCRIPT_EDIT", token) ||
+      hasPermission(user, "transcript:update", token),
+    canViewAiNotes: () =>
+      hasPermission(user, "AI_NOTES_VIEW", token) ||
+      hasPermission(user, "ai_notes:read", token),
+    canEditAiNotes: () =>
+      hasPermission(user, "AI_NOTES_EDIT", token) ||
+      hasPermission(user, "ai_notes:update", token),
   };
 };

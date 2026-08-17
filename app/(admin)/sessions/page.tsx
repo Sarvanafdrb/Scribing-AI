@@ -9,10 +9,12 @@ import { SessionFilters } from "./components/SessionFilters";
 import { SessionTable } from "./components/SessionTable";
 import { SessionSkeleton } from "./components/SessionSkeleton";
 import { useSessions } from "@/hooks/sessions/useSessions";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 const PAGE_SIZE = 5;
 
 export default function SessionsPage() {
+  const { canViewSessions } = useAccessControl();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [sessionType, setSessionType] = useState("all");
@@ -45,6 +47,17 @@ export default function SessionsPage() {
     setSessionType("all");
     setPage(1);
   };
+
+  if (!canViewSessions()) {
+    return (
+      <div className="glass rounded-3xl p-8 text-center">
+        <h1 className="text-xl font-semibold text-foreground">Access Denied</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          You do not have permission to view consultations.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

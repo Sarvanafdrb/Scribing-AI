@@ -88,3 +88,31 @@ export function canManageAllUsersFromPermissions(
     hasPermissionCode(permissions, "user:create")
   );
 }
+
+/** Minimum permissions to use the clinical Doctor Workspace. */
+export function canAccessDoctorWorkspace(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return (
+    hasPermissionCode(permissions, "SESSION_VIEW") &&
+    hasPermissionCode(permissions, "RECORDING_CREATE")
+  );
+}
+
+/** Whether the user should land in the admin panel (vs clinical workspace only). */
+export function canViewAdminPanel(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return (
+    hasPermissionCode(permissions, "USER_VIEW") ||
+    hasPermissionCode(permissions, "ORGANIZATION_VIEW") ||
+    hasPermissionCode(permissions, "ROLE_VIEW") ||
+    hasPermissionCode(permissions, "DEPARTMENT_VIEW") ||
+    hasPermissionCode(permissions, "REPORT_VIEW") ||
+    hasPermissionCode(permissions, "PERMISSION_VIEW")
+  );
+}

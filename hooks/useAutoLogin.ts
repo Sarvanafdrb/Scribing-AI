@@ -45,10 +45,30 @@ export const useAutoLogin = () => {
         } else {
           throw new Error("Invalid session");
         }
-      } catch (error) {
+      } catch (error: unknown) {
+        const axiosError = error as {
+          response?: { status?: number };
+          code?: string;
+          message?: string;
+        };
+        const status = axiosError.response?.status;
+        const isTransientError =
+          axiosError.code === "ERR_NETWORK" ||
+          !axiosError.response ||
+          status === 503 ||
+          status === 502 ||
+          status === 504;
+
+        if (isTransientError) {
+          console.warn(
+            "⚠️ Auto-login skipped: API not reachable.",
+            axiosError.message,
+          );
+          return;
+        }
+
         console.error("❌ Auto-login failed:", error);
 
-        // clean everything
         localStorage.removeItem("auth-storage");
         setAuth(null, null, null);
       }

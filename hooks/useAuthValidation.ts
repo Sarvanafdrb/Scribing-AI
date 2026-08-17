@@ -43,8 +43,10 @@ export const useAuthValidation = () => {
         const status = error?.response?.status;
         const isNetworkError =
           error?.code === "ERR_NETWORK" || !error?.response;
+        const isTransientError =
+          isNetworkError || status === 503 || status === 502 || status === 504;
 
-        if (isNetworkError) {
+        if (isTransientError) {
           console.warn(
             "⚠️ Auth validation skipped: API not reachable.",
             error?.message,

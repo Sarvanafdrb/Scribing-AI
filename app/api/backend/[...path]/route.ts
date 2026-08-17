@@ -131,7 +131,11 @@ async function proxyRequest(request: NextRequest, path: string[]) {
     const target = getApiProxyTarget();
     const unreachable = isBackendUnreachable(error);
 
-    console.error(`API proxy failed for ${url.toString()}:`, error);
+    if (unreachable) {
+      console.warn(`API proxy unreachable for ${url.toString()}:`, error);
+    } else {
+      console.error(`API proxy failed for ${url.toString()}:`, error);
+    }
 
     return NextResponse.json(
       {

@@ -106,6 +106,30 @@ export default function LoginPage() {
 
       setAuth(toPersistedAuthUser(normalizeAuthUser(user))!, accessToken, refreshToken);
 
+      try {
+        const meResponse = await authService.getCurrentUser();
+        const freshUser =
+          meResponse?.data?.user || meResponse?.user || meResponse?.data;
+        if (freshUser?.id) {
+          useAuthStore.getState().setUser(
+            toPersistedAuthUser(
+              normalizeAuthUser({
+                ...freshUser,
+                isSuperAdmin: Boolean(freshUser.isSuperAdmin),
+                permissions: freshUser.permissions || [],
+                organizationName:
+                  freshUser.organizationName || freshUser.organization?.name,
+                organization: freshUser.isSuperAdmin
+                  ? null
+                  : freshUser.organization,
+              }),
+            ),
+          );
+        }
+      } catch {
+        // Proceed with login response user if /auth/me refresh fails.
+      }
+
       toast.success("Welcome back!", {
         description: `Hello ${user.firstName} ${user.lastName}`,
       });

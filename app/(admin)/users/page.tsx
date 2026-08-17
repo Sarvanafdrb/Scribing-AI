@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserFilters } from "./components/UserFilters";
 import { UserTable } from "./components/UserTable";
 import { UserSkeleton } from "./components/UserSkeleton";
+import { UsersSubNav } from "./components/UsersSubNav";
 import { useUsers } from "@/hooks/users/useUsers";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { useDepartments } from "@/hooks/departments/useDepartments";
@@ -69,6 +70,8 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      <UsersSubNav active="users" />
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Users</h1>

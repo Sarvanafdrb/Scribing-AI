@@ -3,13 +3,10 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth.store";
-import { isSuperAdminUser } from "@/types/auth.types";
-import {
-  canAccessDoctorWorkspace,
-  canViewAdminPanel,
-} from "@/constants/permissions";
+import { resolveAuthenticatedHomePath } from "@/utils/authRedirect";
 
-const PUBLIC_AUTH_PATHS = [
+/** Auth pages that should bounce authenticated users to their home workspace. */
+const REDIRECT_WHEN_AUTHENTICATED_PATHS = [
   "/login",
   "/register",
   "/forgot-password",
@@ -26,26 +23,16 @@ export default function AuthLayout({
   const router = useRouter();
   const isAuthenticated = !!token;
   const isLoginPage = pathname === "/login";
-  const isPublicAuthPage = PUBLIC_AUTH_PATHS.some((path) =>
-    pathname.startsWith(path),
+  const shouldRedirectAuthenticated = REDIRECT_WHEN_AUTHENTICATED_PATHS.some(
+    (path) => pathname.startsWith(path),
   );
 
   useEffect(() => {
-    if (!isAuthenticated || !isPublicAuthPage) return;
-    const permissions = user?.permissions || [];
-    const isSuperAdmin = isSuperAdminUser(user, token);
-    if (canViewAdminPanel(permissions, isSuperAdmin)) {
-      router.push("/dashboard");
-      return;
-    }
-    if (canAccessDoctorWorkspace(permissions, isSuperAdmin)) {
-      router.push("/doctor/workspace");
-      return;
-    }
-    router.push("/access-not-assigned");
-  }, [isAuthenticated, isPublicAuthPage, router, user, token]);
+    if (!isAuthenticated || !shouldRedirectAuthenticated) return;
+    router.push(resolveAuthenticatedHomePath(user, token));
+  }, [isAuthenticated, shouldRedirectAuthenticated, router, user, token]);
 
-  if (isLoginPage) {
+  if (isLoginPage || pathname.startsWith("/accept-invitation/")) {
     return <>{children}</>;
   }
 

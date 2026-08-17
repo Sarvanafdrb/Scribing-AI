@@ -25,8 +25,14 @@ const getRequestPath = (url?: string) => {
   return url.replace(API_BASE_URL, "").split("?")[0];
 };
 
+const isPublicInvitationAcceptRequest = (path: string) =>
+  path === "/invitations/accept" || path.startsWith("/invitations/accept/");
+
 const isPublicAuthRequest = (url?: string) => {
   const path = getRequestPath(url);
+  if (isPublicInvitationAcceptRequest(path)) {
+    return true;
+  }
   return PUBLIC_AUTH_PATHS.some(
     (authPath) => path === authPath || path.endsWith(authPath),
   );

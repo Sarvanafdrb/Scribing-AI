@@ -19,13 +19,11 @@ import {
   X,
   HeartPulse,
   BarChart3,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { hasPermission, isSuperAdminUser } from "@/types/auth.types";
-import {
-  canAccessDoctorWorkspace,
-  canViewAdminPanel,
-} from "@/constants/permissions";
+import { hasPermission } from "@/types/auth.types";
+import { resolveAuthenticatedHomePath } from "@/utils/authRedirect";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
@@ -50,6 +48,12 @@ const menuItems = [
     label: "Users",
     icon: Users,
     permission: "USER_VIEW",
+  },
+  {
+    path: "/users/invitations",
+    label: "Invitations",
+    icon: Mail,
+    permission: "USER_CREATE",
   },
   {
     path: "/departments",
@@ -150,11 +154,9 @@ export default function AdminLayout({
       return;
     }
 
-    if (
-      !canViewAdminPanel(user?.permissions || [], isSuperAdminUser(user, token)) &&
-      canAccessDoctorWorkspace(user?.permissions || [], isSuperAdminUser(user, token))
-    ) {
-      router.replace("/doctor/workspace");
+    const home = resolveAuthenticatedHomePath(user, token);
+    if (home === "/doctor/workspace") {
+      router.replace(home);
     }
   }, [isAuthenticated, _hasHydrated, isValidating, router, user, token]);
   const handleLogout = () => {
@@ -182,11 +184,7 @@ export default function AdminLayout({
     return null;
   }
 
-  const isSuperAdmin = isSuperAdminUser(user, token);
-  if (
-    !canViewAdminPanel(user.permissions || [], isSuperAdmin) &&
-    canAccessDoctorWorkspace(user.permissions || [], isSuperAdmin)
-  ) {
+  if (resolveAuthenticatedHomePath(user, token) === "/doctor/workspace") {
     return null;
   }
   return (

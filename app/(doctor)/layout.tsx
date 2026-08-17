@@ -12,10 +12,8 @@ import { useWorkspaceBootstrap } from "@/hooks/useWorkspaceBootstrap";
 import { recordDiagEvent } from "@/hooks/recording/recordingFailureDiagnostics";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
 import { isSuperAdminUser } from "@/types/auth.types";
-import {
-  canAccessDoctorWorkspace,
-  canViewAdminPanel,
-} from "@/constants/permissions";
+import { canAccessDoctorWorkspace } from "@/constants/permissions";
+import { resolveAuthenticatedHomePath } from "@/utils/authRedirect";
 
 const FILE = "app/(doctor)/layout.tsx";
 const PREFIX = "[LAYOUT-DIAG]";
@@ -277,13 +275,7 @@ export default function DoctorLayout({
       return;
     }
     if (!hasWorkspaceAccess) {
-      const redirectTo = canViewAdminPanel(
-        user?.permissions || [],
-        isSuperAdmin,
-      )
-        ? "/dashboard"
-        : "/access-not-assigned";
-      router.replace(redirectTo);
+      router.replace(resolveAuthenticatedHomePath(user, token));
     }
   }, [
     _hasHydrated,

@@ -7,10 +7,7 @@ import { useWorkspaceStore } from "@/store/workspace.store";
 import { useAuthStore } from "@/store/auth.store";
 import { Workspace } from "@/types/workspace.types";
 import { isSuperAdminUser } from "@/types/auth.types";
-import {
-  canAccessDoctorWorkspace,
-  canViewAdminPanel,
-} from "@/constants/permissions";
+import { resolveAuthenticatedHomePath } from "@/utils/authRedirect";
 import { organizationKeys } from "@/services/organization.queries";
 import { userKeys } from "@/services/user.queries";
 import { roleKeys } from "@/services/role.queries";
@@ -87,21 +84,12 @@ export const resolvePostLoginWorkspace = async (): Promise<{
   const token = useAuthStore.getState().token;
   const isSuperAdmin = isSuperAdminUser(user, token);
   const defaultWorkspace = getDefaultWorkspace(workspaces, { isSuperAdmin });
-  const permissions = user?.permissions || [];
+  const redirectTo = resolveAuthenticatedHomePath(user, token);
 
-  if (!defaultWorkspace) {
+  if (!defaultWorkspace || redirectTo === "/access-not-assigned") {
     useWorkspaceStore.getState().clearWorkspace();
     return { redirectTo: "/access-not-assigned" };
   }
 
-  if (canViewAdminPanel(permissions, isSuperAdmin)) {
-    return { redirectTo: "/dashboard", workspace: defaultWorkspace };
-  }
-
-  if (canAccessDoctorWorkspace(permissions, isSuperAdmin)) {
-    return { redirectTo: "/doctor/workspace", workspace: defaultWorkspace };
-  }
-
-  useWorkspaceStore.getState().clearWorkspace();
-  return { redirectTo: "/access-not-assigned" };
+  return { redirectTo, workspace: defaultWorkspace };
 };

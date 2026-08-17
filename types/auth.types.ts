@@ -203,11 +203,28 @@ export const isSuperAdminUser = (
 export const getUserRoleName = (user?: AuthUser | null): string =>
   (user?.roleName || user?.role?.name || "").trim();
 
-/** True when the user's role name is Doctor (case-insensitive). Super Admin is never a doctor. */
-export const isDoctorUser = (user?: AuthUser | null): boolean => {
+const matchesRoleName = (
+  user: AuthUser | null | undefined,
+  roleName: string,
+): boolean => {
   if (!user || user.isSuperAdmin) return false;
-  return getUserRoleName(user).toLowerCase() === "doctor";
+  return getUserRoleName(user).toLowerCase() === roleName.toLowerCase();
 };
+
+/** True when the user's role name is Doctor (case-insensitive). Super Admin is never a doctor. */
+export const isDoctorUser = (user?: AuthUser | null): boolean =>
+  matchesRoleName(user, "doctor");
+
+/** True when the user's role name is Nurse (case-insensitive). */
+export const isNurseUser = (user?: AuthUser | null): boolean =>
+  matchesRoleName(user, "nurse");
+
+/** True when the user's role name is Receptionist (case-insensitive). */
+export const isReceptionistUser = (user?: AuthUser | null): boolean =>
+  matchesRoleName(user, "receptionist");
+
+export const isClinicalRoleUser = (user?: AuthUser | null): boolean =>
+  isDoctorUser(user) || isNurseUser(user);
 
 export const canManageAllOrganizations = (
   user?: AuthUser | null,

@@ -157,8 +157,13 @@ export default function AdminLayout({
     const home = resolveAuthenticatedHomePath(user, token);
     if (home === "/doctor/workspace") {
       router.replace(home);
+      return;
     }
-  }, [isAuthenticated, _hasHydrated, isValidating, router, user, token]);
+
+    if (pathname === "/dashboard" && home !== "/dashboard") {
+      router.replace(home);
+    }
+  }, [isAuthenticated, _hasHydrated, isValidating, pathname, router, user, token]);
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -185,6 +190,11 @@ export default function AdminLayout({
   }
 
   if (resolveAuthenticatedHomePath(user, token) === "/doctor/workspace") {
+    return null;
+  }
+
+  const home = resolveAuthenticatedHomePath(user, token);
+  if (pathname === "/dashboard" && home !== "/dashboard") {
     return null;
   }
   return (

@@ -75,7 +75,7 @@ export function DepartmentTable({
                 return (
                   <TableRow key={departmentId}>
                     <TableCell>
-                      <LinkCell href={`/departments/edit/${departmentId}`}>
+                      <LinkCell href={`/departments/${departmentId}`}>
                         <div>
                           <p className="font-medium">{department.name}</p>
                           {department.departmentCode && (

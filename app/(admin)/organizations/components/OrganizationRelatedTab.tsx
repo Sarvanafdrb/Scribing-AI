@@ -946,7 +946,7 @@ function DepartmentsRelatedTable({
                   return (
                     <TableRow key={id}>
                       <TableCell>
-                        <LinkCell href={`/departments/edit/${id}`}>
+                        <LinkCell href={`/departments/${id}`}>
                           {department.name}
                         </LinkCell>
                       </TableCell>

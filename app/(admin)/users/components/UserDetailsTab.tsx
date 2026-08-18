@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { roleService } from "@/services/role.service";
 import { roleKeys } from "@/services/role.queries";
 import type { UpdateUserData, User } from "@/types/user.types";
-import { getUserDepartmentName } from "@/types/user.types";
+import { getUserDepartmentName, isDoctorRoleName } from "@/types/user.types";
 
 const formatDateTime = (value?: string | Date | null) => {
   if (!value) return "—";
@@ -85,6 +85,9 @@ export function UserDetailsTab({
   const inferredDepartment = getUserDepartmentName(user) || "—";
   const inferredDesignation =
     designation || qualifications[1] || qualifications.join(", ") || "—";
+  const isDoctor = isDoctorRoleName(role?.name);
+  const specialization =
+    typeof anyUser.specialization === "string" ? anyUser.specialization : "";
 
   const rolesQuery = useQuery({
     queryKey: roleKeys.list({
@@ -295,6 +298,47 @@ export function UserDetailsTab({
               onSave={(value) => onSaveNoopWithToast("Department", value)}
               displayValue={inferredDepartment !== "—" ? inferredDepartment : undefined}
             />
+            {isDoctor ? (
+              <OrganizationInlineField
+                label="Specialization"
+                value={specialization}
+                editable={canEdit}
+                isSaving={savingField === "specialization"}
+                onSave={async (value) => {
+                  if (!canEdit) {
+                    toast.info("You don't have permission to edit this user.");
+                    return;
+                  }
+                  await saveField("specialization", {
+                    specialization: value.trim() || undefined,
+                  });
+                }}
+                displayValue={specialization || undefined}
+              />
+            ) : null}
+            {isDoctor ? (
+              <OrganizationInlineField
+                label="Qualification"
+                value={qualifications.join(", ")}
+                editable={canEdit}
+                isSaving={savingField === "qualifications"}
+                onSave={async (value) => {
+                  if (!canEdit) {
+                    toast.info("You don't have permission to edit this user.");
+                    return;
+                  }
+                  await saveField("qualifications", {
+                    qualifications: value
+                      .split(",")
+                      .map((item) => item.trim())
+                      .filter(Boolean),
+                  });
+                }}
+                displayValue={
+                  qualifications.length > 0 ? qualifications.join(", ") : undefined
+                }
+              />
+            ) : null}
           </div>
 
           <div className="space-y-0">

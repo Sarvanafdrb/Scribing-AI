@@ -14,6 +14,7 @@ export const useProfileMutations = () => {
       lastName: string;
       phone?: string;
       qualification?: string;
+      specialization?: string;
     }) => authService.updateProfile(data),
     onSuccess: (response: any) => {
       const userData = response?.data?.user || response?.data || response?.user || response;

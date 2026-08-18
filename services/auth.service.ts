@@ -43,6 +43,7 @@ export const authService = {
     lastName: string;
     phone?: string;
     qualification?: string;
+    specialization?: string;
   }) => {
     const response = await api.patch("/auth/me", data);
     return response.data;

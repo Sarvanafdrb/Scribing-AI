@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CreateUserData, UpdateUserData, User, getUserDepartmentId } from "@/types/user.types";
+import { CreateUserData, UpdateUserData, User, getUserDepartmentId, isDoctorRoleName } from "@/types/user.types";
 import { organizationService } from "@/services/organization.service";
 import { roleService } from "@/services/role.service";
 import { useTenantScope } from "@/hooks/useTenantScope";
@@ -49,6 +49,7 @@ const createSchema = z.object({
   roleId: z.string().optional(),
   departmentId: z.string().optional(),
   qualifications: z.array(z.string()).optional(),
+  specialization: z.string().trim().max(200).optional(),
 });
 
 const editSchema = createSchema.omit({ password: true }).extend({
@@ -93,6 +94,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
       roleId: roleId || "",
       departmentId: getUserDepartmentId(data) || NO_DEPARTMENT_VALUE,
       qualifications: data?.qualifications || [],
+      specialization: data?.specialization || "",
     };
   }
 
@@ -105,6 +107,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
     roleId: "",
     departmentId: NO_DEPARTMENT_VALUE,
     qualifications: [],
+    specialization: "",
   };
 };
 
@@ -136,6 +139,7 @@ export function UserForm({
   });
 
   const selectedOrgId = form.watch("organizationId");
+  const selectedRoleId = form.watch("roleId");
 
   const {
     data: orgData,
@@ -167,6 +171,19 @@ export function UserForm({
     queryFn: () => roleService.getAll(selectedOrgId),
     enabled: !!selectedOrgId,
   });
+
+  const effectiveRoleName = useMemo(() => {
+    const selectedRole = roles.find(
+      (role) => (role._id || role.id || "") === selectedRoleId,
+    );
+    if (selectedRole?.name) return selectedRole.name;
+    if (typeof initialData?.roleId === "object") {
+      return initialData.roleId.name || "";
+    }
+    return "";
+  }, [roles, selectedRoleId, initialData?.roleId]);
+
+  const isDoctorRole = isDoctorRoleName(effectiveRoleName);
 
   const currentDepartmentId = getUserDepartmentId(initialData);
   const { departments, isLoading: departmentsLoading } = useDepartments({
@@ -242,6 +259,22 @@ export function UserForm({
       payload.departmentId === NO_DEPARTMENT_VALUE
     ) {
       payload.departmentId = null;
+    }
+
+    if (isDoctorRole) {
+      const specialization =
+        typeof payload.specialization === "string"
+          ? payload.specialization.trim()
+          : "";
+      payload.specialization = specialization || undefined;
+    } else {
+      delete payload.specialization;
+      delete payload.qualifications;
+      if (isEditing) {
+        delete payload.departmentId;
+      } else {
+        payload.departmentId = null;
+      }
     }
 
     if (isEditing) {
@@ -462,79 +495,96 @@ export function UserForm({
             )}
           />
         )}
-        <FormField
-          control={form.control}
-          name="departmentId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Department</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || NO_DEPARTMENT_VALUE}
-                disabled={!selectedOrgId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={
-                      !selectedOrgId
-                        ? "Select organization first"
-                        : departmentsLoading
-                          ? "Loading departments..."
-                          : "Select department"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_DEPARTMENT_VALUE}>
-                    No Department
-                  </SelectItem>
-                  {departmentOptions.map((department) => (
-                    <SelectItem key={department.id} value={department.id}>
-                      {department.name}
-                      {!department.isActive ? " (inactive)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedOrgId &&
-                !departmentsLoading &&
-                departmentOptions.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No active departments available. Users can be created
-                    without a department.
-                  </p>
-                )}
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="qualifications"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Qualifications</FormLabel>
-
-              <FormControl>
-                <Input
-                  placeholder="MBBS, MD, DM Cardiology"
-                  value={(field.value ?? []).join(", ")}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value
-                        .split(",")
-                        .map((q) => q.trim())
-                        .filter(Boolean),
-                    )
-                  }
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
+        {isDoctorRole ? (
+          <>
+            <FormField
+              control={form.control}
+              name="departmentId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Department</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || NO_DEPARTMENT_VALUE}
+                    disabled={!selectedOrgId}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          !selectedOrgId
+                            ? "Select organization first"
+                            : departmentsLoading
+                              ? "Loading departments..."
+                              : "Select department"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_DEPARTMENT_VALUE}>
+                        No Department
+                      </SelectItem>
+                      {departmentOptions.map((department) => (
+                        <SelectItem key={department.id} value={department.id}>
+                          {department.name}
+                          {!department.isActive ? " (inactive)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedOrgId &&
+                    !departmentsLoading &&
+                    departmentOptions.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        No active departments available. Users can be created
+                        without a department.
+                      </p>
+                    )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="specialization"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Specialization</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g. Interventional Cardiology"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="qualifications"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Qualification</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="MBBS, MD"
+                      value={(field.value ?? []).join(", ")}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value
+                            .split(",")
+                            .map((q) => q.trim())
+                            .filter(Boolean),
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        ) : null}
         {isEditing && initialData?.userCode ? (
           <FormItem>
             <FormLabel>User ID</FormLabel>

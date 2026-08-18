@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useProfileMutations } from "@/hooks/auth/useProfileMutations";
 import { useAuthStore } from "@/store/auth.store";
 import type { AuthUser } from "@/types/auth.types";
+import { isDoctorUser } from "@/types/auth.types";
 import { resolveUploadUrl } from "@/utils/media-url.utils";
 
 const Section = ({
@@ -74,6 +75,7 @@ export function SettingsDetailsTab() {
       lastName: string;
       phone?: string;
       qualification?: string;
+      specialization?: string;
     }>,
   ) => {
     setSavingField(fieldKey);
@@ -86,6 +88,14 @@ export function SettingsDetailsTab() {
           patch.qualification !== undefined
             ? patch.qualification
             : user.qualification || undefined,
+        ...(isDoctorUser(user)
+          ? {
+              specialization:
+                patch.specialization !== undefined
+                  ? patch.specialization
+                  : user.specialization || undefined,
+            }
+          : {}),
       });
     } finally {
       setSavingField(null);
@@ -295,6 +305,21 @@ export function SettingsDetailsTab() {
               }}
               displayValue={user.qualification || "—"}
             />
+            {isDoctorUser(user) ? (
+              <OrganizationInlineField
+                label="Specialization"
+                value={user.specialization || ""}
+                editable
+                type="text"
+                isSaving={savingField === "specialization"}
+                onSave={async (value) => {
+                  await saveProfilePatch("specialization", {
+                    specialization: value.trim() || undefined,
+                  });
+                }}
+                displayValue={user.specialization || "—"}
+              />
+            ) : null}
             <OrganizationInlineField
               label="User ID"
               value={user.id || user._id || ""}

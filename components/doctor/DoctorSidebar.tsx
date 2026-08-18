@@ -424,7 +424,9 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                 {doctorName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                {user?.qualification || user?.email}
+                {[user?.specialization, user?.qualification]
+                  .filter(Boolean)
+                  .join(" · ") || user?.email}
               </p>
             </div>
           </div>

@@ -31,6 +31,7 @@ export interface User {
   roleId?: UserRole | string;
   departmentId?: UserDepartment | string | null;
   qualifications?: string[];
+  specialization?: string;
   isActive?: boolean;
   isEmailVerified?: boolean;
   lastLogin?: string | Date;
@@ -47,6 +48,7 @@ export interface CreateUserData {
   roleId?: string;
   departmentId?: string | null;
   qualifications?: string[];
+  specialization?: string;
   isActive?: boolean;
 }
 
@@ -58,6 +60,7 @@ export interface UpdateUserData {
   roleId?: string;
   departmentId?: string | null;
   qualifications?: string[];
+  specialization?: string;
   isActive?: boolean;
   isEmailVerified?: boolean;
 }
@@ -77,4 +80,7 @@ export const getUserDepartmentName = (user?: User | null): string => {
   }
   return "";
 };
+
+export const isDoctorRoleName = (roleName?: string | null): boolean =>
+  (roleName || "").trim().toLowerCase() === "doctor";
 

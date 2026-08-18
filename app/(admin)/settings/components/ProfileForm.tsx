@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Camera, Loader2, PenLine } from "lucide-react";
 import { resolveUploadUrl } from "@/utils/media-url.utils";
 import { lastNameSchema } from "@/lib/validation";
+import { isDoctorUser } from "@/types/auth.types";
 
 const profileSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
@@ -33,6 +34,7 @@ const profileSchema = z.object({
       "Phone must be 10 to 15 digits",
     ),
   qualification: z.string().trim().max(200).optional(),
+  specialization: z.string().trim().max(200).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -56,6 +58,7 @@ export function ProfileForm() {
       lastName: user?.lastName || "",
       phone: user?.phone || "",
       qualification: user?.qualification || "",
+      specialization: user?.specialization || "",
     },
   });
 
@@ -66,6 +69,7 @@ export function ProfileForm() {
         lastName: user.lastName || "",
         phone: user.phone || "",
         qualification: user.qualification || "",
+        specialization: user.specialization || "",
       });
       setPreviewUrl(resolveProfilePictureUrl(user.profilePicture));
       const nextSignatureUrl = resolveUploadUrl(user.signature);
@@ -81,6 +85,9 @@ export function ProfileForm() {
       lastName: data.lastName,
       phone: data.phone?.trim() || undefined,
       qualification: data.qualification?.trim() || undefined,
+      ...(isDoctorUser(user)
+        ? { specialization: data.specialization?.trim() || undefined }
+        : {}),
     });
   };
 
@@ -273,6 +280,25 @@ export function ProfileForm() {
                 </FormItem>
               )}
             />
+
+            {isDoctorUser(user) ? (
+              <FormField
+                control={form.control}
+                name="specialization"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Specialization</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g. Interventional Cardiology"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>

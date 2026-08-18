@@ -45,6 +45,7 @@ export interface AuthUser {
   profilePicture?: string;
   signature?: string;
   qualification?: string;
+  specialization?: string;
   isSuperAdmin?: boolean;
   organizationId?: string;
   organizationName?: string;
@@ -64,6 +65,7 @@ type AuthUserInput = {
   profilePicture?: string;
   signature?: string;
   qualification?: string;
+  specialization?: string;
   isSuperAdmin?: boolean;
   organizationId?: string;
   organizationName?: string;
@@ -115,6 +117,7 @@ export const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
     profilePicture: sanitizeMediaUrl(user.profilePicture),
     signature: sanitizeMediaUrl(user.signature),
     qualification: user.qualification || "",
+    specialization: user.specialization || "",
     isSuperAdmin: Boolean(user.isSuperAdmin),
     permissions: Array.isArray(user.permissions) ? user.permissions : [],
     organizationId: organizationId || undefined,

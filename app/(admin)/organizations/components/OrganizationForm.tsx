@@ -521,9 +521,14 @@ export function OrganizationForm({
             }
             isLoading={isLoading}
             maxWidthClassName="max-w-3xl"
+            submitClassName="bg-blue-600 hover:bg-blue-700"
           />
         ) : (
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            disabled={isLoading}
+          >
             {isLoading
               ? isEditing
                 ? "Updating Organization..."

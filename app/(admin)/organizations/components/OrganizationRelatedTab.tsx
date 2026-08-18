@@ -412,7 +412,7 @@ function RelatedToolbar({
           </Button>
         ) : null}
         {addHref ? (
-          <Button asChild size="sm" className="rounded-full">
+          <Button asChild size="sm" className="rounded-full bg-blue-600 hover:bg-blue-700">
             <Link href={addHref}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {addLabel}
@@ -476,7 +476,7 @@ function EmptyRelated({
     <div className="rounded-2xl border border-dashed border-border/70 px-4 py-8 text-center">
       <p className="text-sm text-muted-foreground">{message}</p>
       {actionHref && actionLabel ? (
-        <Button asChild className="mt-4 rounded-full" size="sm">
+        <Button asChild className="mt-4 rounded-full bg-blue-600 hover:bg-blue-700" size="sm">
           <Link href={actionHref}>{actionLabel}</Link>
         </Button>
       ) : null}

@@ -67,7 +67,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
         <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="mt-1 text-blue-100">
+        <p className="mt-1 text-white/80">
           {isSuperAdmin && isAllOrganizations
             ? "Platform-wide analytics across organizations, doctors, and consultations."
             : `Analytics for ${organizationName || "your organization"}.`}

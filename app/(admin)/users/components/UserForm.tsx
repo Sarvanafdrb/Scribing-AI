@@ -40,6 +40,12 @@ const getOrganizationOptionId = (org: Organization): string => {
   return typeof rawId === "string" ? rawId : String(rawId);
 };
 
+const parseQualificationsInput = (value?: string): string[] =>
+  (value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
 const createSchema = z.object({
   firstName: z.string().trim().min(2, "First name is required"),
   lastName: lastNameSchema,
@@ -48,7 +54,7 @@ const createSchema = z.object({
   organizationId: z.string().min(1, "Organization is required"),
   roleId: z.string().optional(),
   departmentId: z.string().optional(),
-  qualifications: z.array(z.string()).optional(),
+  qualificationsInput: z.string().optional(),
   specialization: z.string().trim().max(200).optional(),
 });
 
@@ -93,7 +99,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
       organizationId: orgId || "",
       roleId: roleId || "",
       departmentId: getUserDepartmentId(data) || NO_DEPARTMENT_VALUE,
-      qualifications: data?.qualifications || [],
+      qualificationsInput: (data?.qualifications || []).join(", "),
       specialization: data?.specialization || "",
     };
   }
@@ -106,7 +112,7 @@ const getDefaultValues = (data?: User, isEdit = false) => {
     organizationId: "",
     roleId: "",
     departmentId: NO_DEPARTMENT_VALUE,
-    qualifications: [],
+    qualificationsInput: "",
     specialization: "",
   };
 };
@@ -267,6 +273,11 @@ export function UserForm({
           ? payload.specialization.trim()
           : "";
       payload.specialization = specialization || undefined;
+      const qualificationsInput =
+        typeof payload.qualificationsInput === "string"
+          ? payload.qualificationsInput
+          : "";
+      payload.qualifications = parseQualificationsInput(qualificationsInput);
     } else {
       delete payload.specialization;
       delete payload.qualifications;
@@ -276,6 +287,8 @@ export function UserForm({
         payload.departmentId = null;
       }
     }
+
+    delete payload.qualificationsInput;
 
     if (isEditing) {
       delete payload.organizationId;
@@ -561,23 +574,12 @@ export function UserForm({
             />
             <FormField
               control={form.control}
-              name="qualifications"
+              name="qualificationsInput"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Qualification</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="MBBS, MD"
-                      value={(field.value ?? []).join(", ")}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value
-                            .split(",")
-                            .map((q) => q.trim())
-                            .filter(Boolean),
-                        )
-                      }
-                    />
+                    <Input placeholder="MBBS, MD" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

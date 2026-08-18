@@ -29,6 +29,11 @@ import {
   PATIENT_EDIT,
   PATIENT_DELETE,
   ROLE_EDIT,
+  ROLE_VIEW,
+  ROLE_CREATE,
+  ROLE_DELETE,
+  PERMISSION_VIEW,
+  PERMISSION_EDIT,
 } from "@/constants/permissions";
 
 const getCurrentUserId = (user?: AuthUser | null): string =>
@@ -129,6 +134,27 @@ export const useAccessControl = () => {
     canEditRole: () =>
       hasPermission(user, ROLE_EDIT, token) ||
       hasPermission(user, "role:update", token),
+    canViewRoles: () =>
+      hasPermission(user, ROLE_VIEW, token) ||
+      hasPermission(user, "role:read", token),
+    canCreateRole: () =>
+      hasPermission(user, ROLE_CREATE, token) ||
+      hasPermission(user, "role:create", token),
+    canManageRoleStatus: () =>
+      hasPermission(user, ROLE_DELETE, token) ||
+      hasPermission(user, ROLE_EDIT, token) ||
+      hasPermission(user, "role:delete", token) ||
+      hasPermission(user, "role:update", token),
+    canViewPermissions: () =>
+      hasPermission(user, PERMISSION_VIEW, token) ||
+      hasPermission(user, "permission:read", token),
+    canEditPermissions: () =>
+      hasPermission(user, PERMISSION_EDIT, token) ||
+      hasPermission(user, "permission:update", token),
+    canViewDashboard: () =>
+      hasPermission(user, USER_VIEW, token) ||
+      hasPermission(user, "user:read", token) ||
+      canViewAdminPanel(user?.permissions || [], isSuperAdmin),
     canAccessDoctorWorkspace: () =>
       canAccessDoctorWorkspace(user?.permissions || [], isSuperAdmin),
     canViewAdminPanel: () =>
@@ -139,6 +165,15 @@ export const useAccessControl = () => {
     canCreateSession: () =>
       hasPermission(user, "SESSION_CREATE", token) ||
       hasPermission(user, "session:create", token),
+    canEditSession: () =>
+      hasPermission(user, "SESSION_EDIT", token) ||
+      hasPermission(user, "session:update", token),
+    canDeleteSession: () =>
+      hasPermission(user, "SESSION_DELETE", token) ||
+      hasPermission(user, "session:delete", token),
+    canManageSessionStatus: () =>
+      hasPermission(user, "SESSION_EDIT", token) ||
+      hasPermission(user, "session:update", token),
     canCreateRecording: () =>
       hasPermission(user, "RECORDING_CREATE", token) ||
       hasPermission(user, "recording:create", token),
@@ -160,5 +195,19 @@ export const useAccessControl = () => {
     canEditAiNotes: () =>
       hasPermission(user, "AI_NOTES_EDIT", token) ||
       hasPermission(user, "ai_notes:update", token),
+    canViewMedicines: () =>
+      hasPermission(user, "MEDICINE_VIEW", token) ||
+      hasPermission(user, "medicine:read", token),
+    canCreateMedicine: () =>
+      hasPermission(user, "MEDICINE_CREATE", token) ||
+      hasPermission(user, "medicine:create", token),
+    canEditMedicine: () =>
+      hasPermission(user, "MEDICINE_EDIT", token) ||
+      hasPermission(user, "medicine:update", token),
+    canManageMedicineStatus: () =>
+      hasPermission(user, "MEDICINE_DELETE", token) ||
+      hasPermission(user, "MEDICINE_EDIT", token) ||
+      hasPermission(user, "medicine:delete", token) ||
+      hasPermission(user, "medicine:update", token),
   };
 };

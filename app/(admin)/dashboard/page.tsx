@@ -19,9 +19,18 @@ import {
   HeartPulse,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { AccessDenied } from "@/components/shared/AccessDenied";
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
+  const {
+    canViewDashboard,
+    canCreateOrganization,
+    canCreateUser,
+    canCreateRole,
+    canCreateSession,
+  } = useAccessControl();
   const { organizationId, organizationName, isAllOrganizations, isSuperAdmin } =
     useTenantScope();
   const { total: totalOrganizations, isLoading: orgCountLoading } =
@@ -48,6 +57,12 @@ export default function DashboardPage() {
           <p className="mt-4 text-muted-foreground">Loading user data...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!canViewDashboard()) {
+    return (
+      <AccessDenied message="You do not have permission to view the dashboard." />
     );
   }
 
@@ -219,30 +234,46 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link
-                href="/organizations/create"
-                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
-              >
-                + Create Organization
-              </Link>
-              <Link
-                href="/users/create"
-                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
-              >
-                + Add New User
-              </Link>
-              <Link
-                href="/roles/create"
-                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
-              >
-                + Create Role
-              </Link>
-              <Link
-                href="/sessions/create"
-                className="glass-row block w-full px-4 py-2.5 text-left text-sm text-primary"
-              >
-                + Start New Consultation
-              </Link>
+              {canCreateOrganization() ? (
+                <Link
+                  href="/organizations/create"
+                  className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
+                >
+                  + Create Organization
+                </Link>
+              ) : null}
+              {canCreateUser() ? (
+                <Link
+                  href="/users/create"
+                  className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
+                >
+                  + Add New User
+                </Link>
+              ) : null}
+              {canCreateRole() ? (
+                <Link
+                  href="/roles/create"
+                  className="glass-row block w-full px-4 py-2.5 text-left text-sm text-foreground"
+                >
+                  + Create Role
+                </Link>
+              ) : null}
+              {canCreateSession() ? (
+                <Link
+                  href="/sessions/create"
+                  className="glass-row block w-full px-4 py-2.5 text-left text-sm text-primary"
+                >
+                  + Start New Consultation
+                </Link>
+              ) : null}
+              {!canCreateOrganization() &&
+              !canCreateUser() &&
+              !canCreateRole() &&
+              !canCreateSession() ? (
+                <p className="px-4 py-2 text-sm text-muted-foreground">
+                  No quick actions available for your role.
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         </div>

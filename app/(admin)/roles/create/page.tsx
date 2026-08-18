@@ -14,6 +14,7 @@ import {
 import { RoleForm } from "../components/RoleForm";
 import { useRoleMutations } from "@/hooks/roles/useRoleMutations";
 import { CreateRoleData, UpdateRoleData } from "@/types/role.types";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
 
 export default function CreateRolePage() {
   const router = useRouter();
@@ -28,7 +29,11 @@ export default function CreateRolePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <PermissionGuard
+      permission="ROLE_CREATE"
+      message="You do not have permission to create roles."
+    >
+      <div className="max-w-2xl mx-auto">
       <div className="mb-6">
         <Link href="/roles">
           <Button variant="ghost" className="pl-0">
@@ -61,5 +66,6 @@ export default function CreateRolePage() {
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

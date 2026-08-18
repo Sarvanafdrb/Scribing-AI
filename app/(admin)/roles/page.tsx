@@ -14,6 +14,8 @@ import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useWorkspaceSelection } from "@/hooks/useWorkspaceSelection";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { AccessDenied } from "@/components/shared/AccessDenied";
 import {
   ALL_ORGANIZATIONS_WORKSPACE,
   ALL_ORGANIZATIONS_WORKSPACE_ID,
@@ -37,6 +39,7 @@ const organizationToWorkspace = (org: Organization): Workspace => {
 
 export default function RolesPage() {
   const searchParams = useSearchParams();
+  const { canViewRoles, canCreateRole } = useAccessControl();
   const organizationIdFromUrl = searchParams.get("organizationId") || "";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -179,6 +182,12 @@ export default function RolesPage() {
     name: org.name,
   }));
 
+  if (!canViewRoles()) {
+    return (
+      <AccessDenied message="You do not have permission to view roles." />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -186,12 +195,14 @@ export default function RolesPage() {
           <h1 className="text-3xl font-bold">Roles</h1>
           <p className="text-muted-foreground">Manage roles - {total} total</p>
         </div>
-        <Link href="/roles/create">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" />
-            New Role
-          </Button>
-        </Link>
+        {canCreateRole() ? (
+          <Link href="/roles/create">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              New Role
+            </Button>
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

@@ -10,11 +10,12 @@ import { OrganizationTable } from "./components/OrganizationTable";
 import { useOrganizations } from "@/hooks/organizations/useOrganizations";
 import { OrganizationSkeleton } from "./components/OrganizationSkeleton";
 import { useAccessControl } from "@/hooks/useAccessControl";
+import { AccessDenied } from "@/components/shared/AccessDenied";
 
 const PAGE_SIZE = 5;
 
 export default function OrganizationsPage() {
-  const { canCreateOrganization } = useAccessControl();
+  const { canCreateOrganization, canViewOrganizations } = useAccessControl();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
@@ -44,6 +45,12 @@ export default function OrganizationsPage() {
     setStatus("all");
     setPage(1);
   };
+
+  if (!canViewOrganizations()) {
+    return (
+      <AccessDenied message="You do not have permission to view organizations." />
+    );
+  }
 
   return (
     <div className="space-y-6">

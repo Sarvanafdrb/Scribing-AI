@@ -16,6 +16,7 @@ import { usePatientMutations } from "@/hooks/patients/usePatientMutations";
 import { CreatePatientData, UpdatePatientData } from "@/types/patient.types";
 import { healthcareGlass, healthcareSolid } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
 
 export default function CreatePatientPage() {
   const router = useRouter();
@@ -27,7 +28,11 @@ export default function CreatePatientPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <PermissionGuard
+      permission="PATIENT_CREATE"
+      message="You do not have permission to create patients."
+    >
+      <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <Link href="/patients">
           <Button variant="ghost" className={cn("rounded-xl pl-0", healthcareGlass.button)}>
@@ -61,5 +66,6 @@ export default function CreatePatientPage() {
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

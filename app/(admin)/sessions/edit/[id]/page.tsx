@@ -15,6 +15,7 @@ import { SessionForm } from "../../components/SessionForm";
 import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
 import { useSession } from "@/hooks/sessions/useSession";
 import { CreateSessionData, UpdateSessionData } from "@/types/session.types";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
 
 export default function EditSessionPage() {
   const { id } = useParams();
@@ -40,7 +41,11 @@ export default function EditSessionPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <PermissionGuard
+      permission="SESSION_EDIT"
+      message="You do not have permission to edit consultations."
+    >
+      <div className="max-w-2xl mx-auto">
       <div className="mb-6">
         <Link href={`/sessions/${sessionId}`}>
           <Button variant="ghost" className="pl-0">
@@ -74,5 +79,6 @@ export default function EditSessionPage() {
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

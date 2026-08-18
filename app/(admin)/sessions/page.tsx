@@ -14,7 +14,7 @@ import { useAccessControl } from "@/hooks/useAccessControl";
 const PAGE_SIZE = 5;
 
 export default function SessionsPage() {
-  const { canViewSessions } = useAccessControl();
+  const { canViewSessions, canCreateSession } = useAccessControl();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [sessionType, setSessionType] = useState("all");
@@ -68,12 +68,14 @@ export default function SessionsPage() {
             Manage scribing consultations • {total} total
           </p>
         </div>
-        <Link href="/sessions/create">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" />
-            New Consultation
-          </Button>
-        </Link>
+        {canCreateSession() ? (
+          <Link href="/sessions/create">
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              New Consultation
+            </Button>
+          </Link>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">

@@ -56,7 +56,10 @@ export function hasPermissionCode(
 
 export const PERMISSION_VIEW = "PERMISSION_VIEW";
 export const PERMISSION_EDIT = "PERMISSION_EDIT";
+export const ROLE_VIEW = "ROLE_VIEW";
+export const ROLE_CREATE = "ROLE_CREATE";
 export const ROLE_EDIT = "ROLE_EDIT";
+export const ROLE_DELETE = "ROLE_DELETE";
 
 export const ORGANIZATION_VIEW = "ORGANIZATION_VIEW";
 export const ORGANIZATION_CREATE = "ORGANIZATION_CREATE";

@@ -30,6 +30,8 @@ import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { NotificationBell } from "@/components/shared/NotificationBell";
+import { AccessDenied } from "@/components/shared/AccessDenied";
+import { resolveRouteAccess } from "@/utils/routePermissions";
 
 const menuItems = [
   {
@@ -199,6 +201,8 @@ export default function AdminLayout({
   if (pathname === "/dashboard" && home !== "/dashboard") {
     return null;
   }
+
+  const routeAccess = resolveRouteAccess(pathname, user, token);
   return (
     <div className="min-h-screen bg-transparent">
       {/* Mobile Menu Button */}
@@ -247,12 +251,7 @@ export default function AdminLayout({
           {/* Navigation */}
           <nav className="flex-1 space-y-1 p-4">
             {menuItems
-              .filter((item) => {
-                if (item.path === "/settings") {
-                  return true;
-                }
-                return hasPermission(user, item.permission);
-              })
+              .filter((item) => hasPermission(user, item.permission, token))
               .map((item) => {
                 const Icon = item.icon;
                 const isActive =
@@ -297,7 +296,13 @@ export default function AdminLayout({
             <NotificationBell />
           </AppHeader>
         )}
-        <div className={isPreviewPage ? "" : "p-6"}>{children}</div>
+        <div className={isPreviewPage ? "" : "p-6"}>
+          {!routeAccess.allowed ? (
+            <AccessDenied message={routeAccess.message} />
+          ) : (
+            children
+          )}
+        </div>
       </main>
     </div>
   );

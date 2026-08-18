@@ -17,6 +17,7 @@ import { usePatientMutations } from "@/hooks/patients/usePatientMutations";
 import { CreatePatientData, UpdatePatientData } from "@/types/patient.types";
 import { healthcareGlass, healthcareSolid } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
 
 export default function EditPatientPage() {
   const params = useParams();
@@ -42,7 +43,11 @@ export default function EditPatientPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <PermissionGuard
+      permission="PATIENT_EDIT"
+      message="You do not have permission to edit patients."
+    >
+      <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <Link href={`/patients/${patientId}`}>
           <Button variant="ghost" className={cn("rounded-xl pl-0", healthcareGlass.button)}>
@@ -75,5 +80,6 @@ export default function EditPatientPage() {
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
 import { Session, SessionStatus } from "@/types/session.types";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import {
   Edit,
   Eye,
@@ -47,8 +48,27 @@ export function SessionActions({
   const router = useRouter();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { deleteSession, updateSessionStatus } = useSessionMutations();
+  const {
+    canViewSessions,
+    canEditSession,
+    canDeleteSession,
+    canManageSessionStatus,
+    canViewRecording,
+    canViewTranscript,
+  } = useAccessControl();
 
   const sessionId = session.id || session._id || "";
+  const hasAnyAction =
+    canViewRecording() ||
+    canViewTranscript() ||
+    canViewSessions() ||
+    canEditSession() ||
+    canManageSessionStatus() ||
+    canDeleteSession();
+
+  if (!hasAnyAction) {
+    return null;
+  }
 
   const handleDelete = async () => {
     try {
@@ -79,55 +99,69 @@ export function SessionActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem
-            onClick={() => router.push(`/sessions/${sessionId}/recording`)}
-          >
-            <Mic className="mr-2 h-4 w-4" />
-            Record
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push(`/sessions/${sessionId}/transcript`)}
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            View Transcript
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push(`/sessions/${sessionId}`)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            View Details
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push(`/sessions/${sessionId}/edit`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              <Activity className="mr-2 h-4 w-4" />
-              Update Status
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              {SESSION_STATUS_OPTIONS.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  onClick={() => handleStatusUpdate(option.value)}
-                  disabled={session.status === option.value}
-                >
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-red-600 focus:text-red-600"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
+          {canViewRecording() ? (
+            <DropdownMenuItem
+              onClick={() => router.push(`/sessions/${sessionId}/recording`)}
+            >
+              <Mic className="mr-2 h-4 w-4" />
+              Record
+            </DropdownMenuItem>
+          ) : null}
+          {canViewTranscript() ? (
+            <DropdownMenuItem
+              onClick={() => router.push(`/sessions/${sessionId}/transcript`)}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              View Transcript
+            </DropdownMenuItem>
+          ) : null}
+          {canViewSessions() ? (
+            <DropdownMenuItem
+              onClick={() => router.push(`/sessions/${sessionId}`)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </DropdownMenuItem>
+          ) : null}
+          {canEditSession() ? (
+            <DropdownMenuItem
+              onClick={() => router.push(`/sessions/${sessionId}/edit`)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          ) : null}
+          {canManageSessionStatus() ? (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Activity className="mr-2 h-4 w-4" />
+                Update Status
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {SESSION_STATUS_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => handleStatusUpdate(option.value)}
+                    disabled={session.status === option.value}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          ) : null}
+          {canDeleteSession() ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 

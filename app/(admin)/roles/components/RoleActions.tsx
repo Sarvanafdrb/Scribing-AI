@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRoleMutations } from "@/hooks/roles/useRoleMutations";
 import { Role } from "@/types/role.types";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { Edit, MoreHorizontal, Power } from "lucide-react";
 
 interface RoleActionsProps {
@@ -32,9 +33,16 @@ export function RoleActions({ role, onStatusChange }: RoleActionsProps) {
   const router = useRouter();
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const { activateRole, deactivateRole } = useRoleMutations();
+  const { canEditRole, canManageRoleStatus } = useAccessControl();
 
   const roleId = role.id || role._id || "";
   const isActive = role.isActive !== false;
+  const canEdit = canEditRole();
+  const canToggleStatus = canManageRoleStatus();
+
+  if (!canEdit && !canToggleStatus) {
+    return null;
+  }
 
   const handleStatusToggle = async () => {
     try {
@@ -60,23 +68,27 @@ export function RoleActions({ role, onStatusChange }: RoleActionsProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem
-            disabled={!isActive}
-            onClick={() => {
-              if (isActive) router.push(`/roles/edit/${roleId}`);
-            }}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => setShowStatusDialog(true)}
-            className={isActive ? "text-red-600 focus:text-red-600" : undefined}
-          >
-            <Power className="mr-2 h-4 w-4" />
-            {isActive ? "Deactivate" : "Activate"}
-          </DropdownMenuItem>
+          {canEdit ? (
+            <DropdownMenuItem
+              disabled={!isActive}
+              onClick={() => {
+                if (isActive) router.push(`/roles/edit/${roleId}`);
+              }}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          ) : null}
+          {canEdit && canToggleStatus ? <DropdownMenuSeparator /> : null}
+          {canToggleStatus ? (
+            <DropdownMenuItem
+              onClick={() => setShowStatusDialog(true)}
+              className={isActive ? "text-red-600 focus:text-red-600" : undefined}
+            >
+              <Power className="mr-2 h-4 w-4" />
+              {isActive ? "Deactivate" : "Activate"}
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 

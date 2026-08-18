@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound, LogOut, Pill, User } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import type { AuthUser } from "@/types/auth.types";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -52,6 +53,7 @@ export function UserProfileDropdown({
 }: UserProfileDropdownProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const { canViewMedicines } = useAccessControl();
 
   if (!user) return null;
 
@@ -120,15 +122,14 @@ export function UserProfileDropdown({
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          asChild
-          className="cursor-pointer"
-        >
-          <Link href={medicinesHref}>
-            <Pill className="h-4 w-4" />
-            Medicines
-          </Link>
-        </DropdownMenuItem>
+        {canViewMedicines() ? (
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href={medicinesHref}>
+              <Pill className="h-4 w-4" />
+              Medicines
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
 
         <DropdownMenuItem
           asChild

@@ -58,12 +58,20 @@ export const useWorkspaceBootstrap = () => {
 
         setHasWorkspaceAccess(true);
 
+        const selectedIsAccessible = isWorkspaceAccessible(
+          selectedWorkspace,
+          workspaces,
+          { isSuperAdmin },
+        );
+        const shouldResetNonSuperAdminOrg =
+          !isSuperAdmin &&
+          selectedWorkspace &&
+          selectedWorkspace.id !== defaultWorkspace.id;
+
         if (
           !selectedWorkspace ||
-          selectedWorkspace.id !== defaultWorkspace.id ||
-          !isWorkspaceAccessible(selectedWorkspace, workspaces, {
-            isSuperAdmin,
-          })
+          !selectedIsAccessible ||
+          shouldResetNonSuperAdminOrg
         ) {
           setSelectedWorkspace(defaultWorkspace);
         }

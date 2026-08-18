@@ -94,6 +94,11 @@ const ROUTE_PERMISSION_RULES: RoutePermissionRule[] = [
     message: "You do not have permission to view patients.",
   },
   {
+    pattern: /^\/medicines\/?$/,
+    permission: "MEDICINE_VIEW",
+    message: "You do not have permission to view medicines.",
+  },
+  {
     pattern: /^\/roles\/create\/?$/,
     permission: "ROLE_CREATE",
     message: "You do not have permission to create roles.",

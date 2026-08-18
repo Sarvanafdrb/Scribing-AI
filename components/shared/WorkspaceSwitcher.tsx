@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import {
   ALL_ORGANIZATIONS_WORKSPACE,
   isAllOrganizationsWorkspace,
+  isSameWorkspace,
 } from "@/utils/workspace.utils";
 
 interface WorkspaceSwitcherProps {
@@ -137,7 +138,10 @@ export function WorkspaceSwitcher({
             <>
               <DropdownMenuItem
                 onSelect={() => handleSelect(ALL_ORGANIZATIONS_WORKSPACE)}
-                className="flex cursor-pointer items-start gap-3 rounded-md p-3"
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-md p-3",
+                  isAllSelected && "bg-blue-50",
+                )}
               >
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700">
                   <Globe2 className="h-4 w-4" />
@@ -165,13 +169,16 @@ export function WorkspaceSwitcher({
             </p>
           ) : (
             filteredWorkspaces.map((workspace) => {
-              const isSelected = workspace.id === selectedWorkspace.id;
+              const isSelected = isSameWorkspace(workspace, selectedWorkspace);
 
               return (
                 <DropdownMenuItem
                   key={workspace.id}
                   onSelect={() => handleSelect(workspace)}
-                  className="flex cursor-pointer items-start gap-3 rounded-md p-3"
+                  className={cn(
+                    "flex cursor-pointer items-start gap-3 rounded-md p-3",
+                    isSelected && "bg-blue-50",
+                  )}
                 >
                   <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-600">
                     <Building2 className="h-4 w-4" />

@@ -20,6 +20,7 @@ import { workspaceService } from "@/services/workspace.service";
 import {
   getDefaultWorkspace,
   isAllOrganizationsWorkspace,
+  isSameWorkspace,
 } from "@/utils/workspace.utils";
 
 export const invalidateWorkspaceData = (
@@ -56,7 +57,7 @@ export const useWorkspaceSelection = () => {
         return;
       }
 
-      if (selectedWorkspace?.id === workspace.id) return;
+      if (isSameWorkspace(selectedWorkspace, workspace)) return;
 
       selectWorkspace(workspace);
       toast.success("Workspace switched", {

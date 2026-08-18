@@ -14,6 +14,20 @@ export const isAllOrganizationsWorkspace = (
   workspace: Workspace | null | undefined,
 ): boolean => workspace?.id === ALL_ORGANIZATIONS_WORKSPACE_ID;
 
+export const isSameWorkspace = (
+  left: Workspace | null | undefined,
+  right: Workspace | null | undefined,
+): boolean => {
+  if (!left || !right) return false;
+  if (
+    isAllOrganizationsWorkspace(left) &&
+    isAllOrganizationsWorkspace(right)
+  ) {
+    return true;
+  }
+  return left.id === right.id;
+};
+
 export const getActiveWorkspaces = (workspaces: Workspace[]) =>
   workspaces.filter((workspace) => workspace.status === "active");
 

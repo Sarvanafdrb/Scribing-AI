@@ -20,6 +20,7 @@ import {
   HeartPulse,
   BarChart3,
   Mail,
+  Pill,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/types/auth.types";
@@ -75,6 +76,12 @@ const menuItems = [
     label: "Patients",
     icon: HeartPulse,
     permission: "PATIENT_VIEW",
+  },
+  {
+    path: "/medicines",
+    label: "Medicines",
+    icon: Pill,
+    permission: "MEDICINE_VIEW",
   },
   {
     path: "/roles",

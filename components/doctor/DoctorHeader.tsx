@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -21,6 +21,7 @@ import { EncounterStatusBadge } from "@/components/doctor/EncounterStatusBadge";
 import { AiNotesPreviewModal } from "@/components/ai-notes/AiNotesPreviewModal";
 import { RoundsDrawer } from "@/components/doctor/RoundsDrawer";
 import { SaveConsultationDialog } from "@/components/doctor/SaveConsultationDialog";
+import { IncompletePrescriptionCompletionDialog } from "@/components/doctor/IncompletePrescriptionCompletionDialog";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
 import { sessionService } from "@/services/session.service";
 import { recordingService } from "@/services/recording.service";
@@ -30,6 +31,7 @@ import {
   buildAiNotesExportContent,
   downloadAiNotesPdf,
   hasExportableAiNotes,
+  resolveCompletionExportContent,
 } from "@/utils/ai-notes-export.utils";
 import {
   isConsultationCompleted,
@@ -40,8 +42,13 @@ import {
 import { getPatientAge, getPatientFullName } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
 import type { AiNotes } from "@/types/ai-notes.types";
+import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import { getSessionDepartmentName } from "@/types/session.types";
 import { cn } from "@/lib/utils";
+import {
+  findPrescriptionCompletionIssues,
+  type PrescriptionCompletionIssue,
+} from "@/utils/prescriptionMedication.utils";
 
 const EMPTY_AI_NOTES: AiNotes = {
   status: "completed",
@@ -94,6 +101,19 @@ export function DoctorHeader({
   const setRoundsOpen = useEncounterUiStore((s) => s.setRoundsDrawerOpen);
   const saveDialogOpen = useEncounterUiStore((s) => s.saveDialogOpen);
   const setSaveDialogOpen = useEncounterUiStore((s) => s.setSaveDialogOpen);
+  const [incompletePrescriptionOpen, setIncompletePrescriptionOpen] =
+    useState(false);
+  const [prescriptionCompletionIssues, setPrescriptionCompletionIssues] =
+    useState<PrescriptionCompletionIssue[]>([]);
+  const [previewEditingContent, setPreviewEditingContent] =
+    useState<AiNotesExportContent | null>(null);
+
+  const handlePreviewEditingContentChange = useCallback(
+    (content: AiNotesExportContent | null) => {
+      setPreviewEditingContent(content);
+    },
+    [],
+  );
 
   const patient =
     session && typeof session.patientId === "object"
@@ -168,6 +188,64 @@ export function DoctorHeader({
     setIsPreviewOpen(true);
   };
 
+  const getCompletionExportContent = (): AiNotesExportContent | null =>
+    resolveCompletionExportContent(exportContent, previewEditingContent);
+
+  const getCompletionMedications = () =>
+    getCompletionExportContent()?.medications ?? aiNotes?.medications ?? [];
+
+  const completeConsultation = async (allowIncompletePrescription = false) => {
+    if (!sessionId || !session) return;
+
+    setIsSaving(true);
+    try {
+      const contentToSave = getCompletionExportContent();
+      const medications = getCompletionMedications();
+      const issues = findPrescriptionCompletionIssues(medications);
+      const hasIncompletePrescription = issues.length > 0;
+
+      if (contentToSave && canExport) {
+        await saveExportContent(contentToSave, {
+          omitMedications:
+            allowIncompletePrescription && hasIncompletePrescription,
+        });
+      }
+
+      await sessionService.updateStatus(sessionId, "completed");
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: sessionKeys.detail(sessionId),
+        }),
+        queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: sessionKeys.stats() }),
+        queryClient.invalidateQueries({
+          queryKey: aiNotesKeys.detail(sessionId),
+        }),
+      ]);
+      await refetch();
+
+      setPreviewEditingContent(null);
+      setIsPreviewOpen(false);
+      setIncompletePrescriptionOpen(false);
+      setPrescriptionCompletionIssues([]);
+      toast.success("Consultation saved and marked as completed.");
+      setSaveDialogOpen(true);
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to save consultation",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!sessionId || !session) return;
 
@@ -191,30 +269,18 @@ export function DoctorHeader({
           queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
         ]);
         await refetch();
-        setIsSaving(false);
         return;
       }
 
-      if (exportContent && canExport) {
-        await saveExportContent(exportContent);
+      const medications = getCompletionMedications();
+      const issues = findPrescriptionCompletionIssues(medications);
+      if (issues.length > 0) {
+        setPrescriptionCompletionIssues(issues);
+        setIncompletePrescriptionOpen(true);
+        return;
       }
 
-      await sessionService.updateStatus(sessionId, "completed");
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: sessionKeys.detail(sessionId),
-        }),
-        queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
-        queryClient.invalidateQueries({ queryKey: sessionKeys.stats() }),
-        queryClient.invalidateQueries({
-          queryKey: aiNotesKeys.detail(sessionId),
-        }),
-      ]);
-      await refetch();
-
-      toast.success("Consultation saved and marked as completed.");
-      setSaveDialogOpen(true);
+      await completeConsultation(false);
     } catch (error: unknown) {
       const err = error as {
         response?: { data?: { message?: string } };
@@ -228,6 +294,16 @@ export function DoctorHeader({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleReviewIncompletePrescription = () => {
+    setIncompletePrescriptionOpen(false);
+    setPrescriptionCompletionIssues([]);
+    openPreview(undefined, { manualEdit: true });
+  };
+
+  const handleCompleteAnywayWithIncompletePrescription = async () => {
+    await completeConsultation(true);
   };
 
   const handleExportPdf = async () => {
@@ -361,11 +437,13 @@ export function DoctorHeader({
               setPreviewAutoAction(undefined);
               setPreviewAutoVoiceEdit(false);
               setPreviewAutoManualEdit(false);
+              setPreviewEditingContent(null);
             }
           }}
           initialContent={exportContent}
           session={session}
           onSave={saveExportContent}
+          onEditingContentChange={handlePreviewEditingContentChange}
           onNotesUpdated={(notes) => {
             queryClient.setQueryData(aiNotesKeys.detail(sessionId), notes);
             queryClient.setQueryData(
@@ -402,6 +480,20 @@ export function DoctorHeader({
           sessionId={sessionId}
         />
       )}
+
+      <IncompletePrescriptionCompletionDialog
+        open={incompletePrescriptionOpen}
+        onOpenChange={(open) => {
+          setIncompletePrescriptionOpen(open);
+          if (!open) {
+            setPrescriptionCompletionIssues([]);
+          }
+        }}
+        issues={prescriptionCompletionIssues}
+        isCompleting={isSaving}
+        onReviewPrescription={handleReviewIncompletePrescription}
+        onCompleteAnyway={handleCompleteAnywayWithIncompletePrescription}
+      />
     </>
   );
 }

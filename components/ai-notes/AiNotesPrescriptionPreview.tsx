@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Download,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +29,6 @@ import type {
   VoiceEditPreviewResult,
 } from "@/types/ai-notes.types";
 import type { MedicineSearchResult } from "@/types/medicine.types";
-import { formatMedicineCost } from "@/components/shared/medicine/medicineForm.utils";
 import type { Session } from "@/types/session.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import {
@@ -41,6 +42,22 @@ import {
 } from "@/utils/ai-notes-export.utils";
 import { cn } from "@/lib/utils";
 import { isConsultationCompleted } from "@/utils/session-status.utils";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { medicineService } from "@/services/medicine.service";
+import { medicineKeys } from "@/services/medicine.queries";
+import {
+  formatMedicationDuplicateLabel,
+  validatePrescriptionMedications,
+  wouldDuplicateMedication,
+} from "@/utils/prescriptionMedication.utils";
+import {
+  formatEditableMedicationPrice,
+  formatPrescriptionPrice,
+  getEditableMedicationPrice,
+  getMedicationDisplayName,
+  getSavedMedicationPrice,
+  isUnsavedCatalogMedicationPrice,
+} from "@/utils/prescriptionPrice.utils";
 
 interface AiNotesPrescriptionPreviewProps {
   initialContent: AiNotesExportContent;
@@ -55,6 +72,8 @@ interface AiNotesPrescriptionPreviewProps {
   autoManualEdit?: boolean;
   /** Parent Preview modal must stay open while Voice Edit / Review is active. */
   onVoiceFlowActiveChange?: (active: boolean) => void;
+  /** Reports in-progress manual edit content for consultation completion sync. */
+  onEditingContentChange?: (content: AiNotesExportContent | null) => void;
 }
 
 const ZOOM_MIN = 0.75;
@@ -73,9 +92,17 @@ export function AiNotesPrescriptionPreview({
   autoVoiceEdit = false,
   autoManualEdit = false,
   onVoiceFlowActiveChange,
+  onEditingContentChange,
 }: AiNotesPrescriptionPreviewProps) {
+  const { canEditAiNotes } = useAccessControl();
+  const isCompleted = isConsultationCompleted(session.status);
+  const canEditPrescription = canEditAiNotes() && !isCompleted;
+  const canVoiceEdit = isCompleted && canEditAiNotes();
+
   const [content, setContent] = useState(initialContent);
-  const [isEditing, setIsEditing] = useState(Boolean(autoManualEdit));
+  const [isEditing, setIsEditing] = useState(
+    Boolean(autoManualEdit && canEditPrescription),
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -85,19 +112,40 @@ export function AiNotesPrescriptionPreview({
   const [isVoiceReviewOpen, setIsVoiceReviewOpen] = useState(false);
   const [voicePreview, setVoicePreview] =
     useState<VoiceEditPreviewResult | null>(null);
+  const [medicationValidation, setMedicationValidation] = useState<{
+    index: number;
+    message: string;
+  } | null>(null);
   const hasAutoActionRun = useRef(false);
   const hasAutoVoiceEditRun = useRef(false);
   const hasAutoManualEditRun = useRef(Boolean(autoManualEdit));
   const paperRef = useRef<HTMLDivElement>(null);
 
   const sessionId = String(session._id || session.id || "");
-  const canVoiceEdit = isConsultationCompleted(session.status);
 
   // Sync latest notes into the viewer, but never wipe in-progress Manual Edit.
   useEffect(() => {
     if (isEditing) return;
     setContent(initialContent);
   }, [initialContent, isEditing]);
+
+  useEffect(() => {
+    if (!canEditPrescription && isEditing) {
+      setIsEditing(false);
+    }
+  }, [canEditPrescription, isEditing]);
+
+  useEffect(() => {
+    if (!onEditingContentChange) return;
+    onEditingContentChange(isEditing ? content : null);
+  }, [content, isEditing, onEditingContentChange]);
+
+  useEffect(
+    () => () => {
+      onEditingContentChange?.(null);
+    },
+    [onEditingContentChange],
+  );
 
   const previewHtml = useMemo(
     () => buildAiNotesPrescriptionBodyHtml(content),
@@ -116,6 +164,7 @@ export function AiNotesPrescriptionPreview({
   }, [previewHtml, isEditing, mode]);
 
   const updateSection = (key: keyof AiNotesExportContent, value: string) => {
+    if (!canEditPrescription) return;
     setContent((current) => ({ ...current, [key]: value }));
   };
 
@@ -124,6 +173,8 @@ export function AiNotesPrescriptionPreview({
     field: keyof AiNotesMedication,
     value: string,
   ) => {
+    if (!canEditPrescription) return;
+    setMedicationValidation(null);
     setContent((current) => ({
       ...current,
       medications: current.medications.map((medication, medIndex) =>
@@ -133,6 +184,8 @@ export function AiNotesPrescriptionPreview({
   };
 
   const addMedication = () => {
+    if (!canEditPrescription) return;
+    setMedicationValidation(null);
     setContent((current) => ({
       ...current,
       medications: [...current.medications, createEmptyMedication()],
@@ -140,33 +193,35 @@ export function AiNotesPrescriptionPreview({
   };
 
   const addMedicineFromCatalog = (medicine: MedicineSearchResult) => {
+    if (!canEditPrescription) {
+      toast.info("Prescription editing is not available.");
+      return;
+    }
+    setMedicationValidation(null);
     setContent((current) => {
-      const alreadyAdded = current.medications.some(
-        (row) =>
-          (row.medicineId && row.medicineId === medicine.id) ||
-          row.medicine.trim().toLowerCase() === medicine.name.trim().toLowerCase(),
-      );
-      if (alreadyAdded) {
-        toast.info(`${medicine.name} is already on this prescription.`);
-        return current;
-      }
-
       const displayName = medicine.strength
         ? `${medicine.name} ${medicine.strength}`.trim()
         : medicine.name;
 
+      const candidate = {
+        ...createEmptyMedication(),
+        medicine: displayName,
+        medicineId: medicine.id,
+        medicineNameSnapshot: medicine.name,
+        strengthSnapshot: medicine.strength || "",
+        catalogCostPreview: medicine.cost,
+      };
+
+      if (wouldDuplicateMedication(candidate, current.medications)) {
+        toast.error(
+          `Duplicate medication: ${formatMedicationDuplicateLabel(candidate)} is already in this prescription.`,
+        );
+        return current;
+      }
+
       return {
         ...current,
-        medications: [
-          ...current.medications,
-          {
-            ...createEmptyMedication(),
-            medicine: displayName,
-            medicineId: medicine.id,
-            medicineNameSnapshot: medicine.name,
-            strengthSnapshot: medicine.strength || "",
-          },
-        ],
+        medications: [...current.medications, candidate],
       };
     });
     if (!isEditing) {
@@ -176,6 +231,8 @@ export function AiNotesPrescriptionPreview({
   };
 
   const removeMedication = (index: number) => {
+    if (!canEditPrescription) return;
+    setMedicationValidation(null);
     setContent((current) => ({
       ...current,
       medications: current.medications.filter(
@@ -205,7 +262,87 @@ export function AiNotesPrescriptionPreview({
     [content.medications],
   );
 
+  const catalogMedicineIds = useMemo(
+    () =>
+      [
+        ...new Set(
+          content.medications
+            .map((medication) => medication.medicineId?.trim())
+            .filter(Boolean),
+        ),
+      ] as string[],
+    [content.medications],
+  );
+
+  const medicineStatusQuery = useQuery({
+    queryKey: [...medicineKeys.all, "prescription-status", catalogMedicineIds],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        catalogMedicineIds.map(async (id) => {
+          try {
+            const medicine = await medicineService.getById(id);
+            return [id, medicine.isActive !== false] as const;
+          } catch {
+            return [id, true] as const;
+          }
+        }),
+      );
+      return new Map(entries);
+    },
+    enabled: catalogMedicineIds.length > 0,
+    staleTime: 30_000,
+  });
+
+  const isCatalogMedicineInactive = (medicineId?: string) =>
+    Boolean(
+      medicineId &&
+        medicineStatusQuery.data?.get(medicineId.trim()) === false,
+    );
+
+  const renderInactiveMedicineBadge = (medicineId?: string) =>
+    isCatalogMedicineInactive(medicineId) ? (
+      <Badge variant="secondary" className="ml-2 rounded-full text-[10px]">
+        Inactive
+      </Badge>
+    ) : null;
+
+  const renderMedicationPrice = (medication: AiNotesMedication) => {
+    const displayPrice = getEditableMedicationPrice(medication);
+    if (displayPrice === undefined) return null;
+
+    const isSaved = getSavedMedicationPrice(medication) !== undefined;
+    const label = isSaved
+      ? "Price at prescription"
+      : isUnsavedCatalogMedicationPrice(medication)
+        ? "Current cost"
+        : "Price";
+
+    return (
+      <p className="text-xs font-medium text-teal-700 md:col-span-6">
+        {label}: {formatPrescriptionPrice(displayPrice)}
+      </p>
+    );
+  };
+
   const handleSave = async () => {
+    if (!canEditPrescription) {
+      toast.info("Prescription editing is not available.");
+      return;
+    }
+
+    const validation = validatePrescriptionMedications(content.medications);
+    if (!validation.valid) {
+      if (validation.medicationIndex !== undefined) {
+        setMedicationValidation({
+          index: validation.medicationIndex,
+          message: validation.message,
+        });
+      }
+      toast.error(validation.message);
+      return;
+    }
+
+    setMedicationValidation(null);
     try {
       setIsSaving(true);
       if (onSave) {
@@ -218,8 +355,14 @@ export function AiNotesPrescriptionPreview({
       }
       setIsEditing(false);
       toast.success("Changes saved successfully.");
-    } catch {
-      toast.error("Unable to save changes. Please try again.");
+    } catch (error: unknown) {
+      const apiMessage = (
+        error as { response?: { data?: { message?: string } } }
+      )?.response?.data?.message;
+      // useAiNotes.saveExportContent already toasts API errors.
+      if (!apiMessage) {
+        toast.error("Unable to save changes. Please try again.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -258,6 +401,7 @@ export function AiNotesPrescriptionPreview({
 
   const handleCancelEdit = () => {
     setContent(initialContent);
+    setMedicationValidation(null);
     setIsEditing(false);
   };
 
@@ -314,10 +458,12 @@ export function AiNotesPrescriptionPreview({
   }, [autoVoiceEdit, canVoiceEdit, isEditing]);
 
   useEffect(() => {
-    if (!autoManualEdit || hasAutoManualEditRun.current) return;
+    if (!autoManualEdit || hasAutoManualEditRun.current || !canEditPrescription) {
+      return;
+    }
     hasAutoManualEditRun.current = true;
     setIsEditing(true);
-  }, [autoManualEdit]);
+  }, [autoManualEdit, canEditPrescription]);
 
   const handleOpenVoiceEdit = () => {
     if (!canVoiceEdit) {
@@ -369,6 +515,7 @@ export function AiNotesPrescriptionPreview({
         open={isVoiceReviewOpen}
         sessionId={sessionId}
         preview={voicePreview}
+        isConsultationCompleted={isCompleted}
         onOpenChange={setIsVoiceReviewOpen}
         onAccepted={handleVoiceAccepted}
         onContinueVoiceEdit={() => setIsVoiceEditOpen(true)}
@@ -431,27 +578,30 @@ export function AiNotesPrescriptionPreview({
         </Button>
       ) : (
         <>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-xl border-gray-200"
-            onClick={() => setIsEditing(true)}
-          >
-            <Edit3 className="mr-2 h-4 w-4" />
-            Manual Edit
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-xl border-teal-200 text-teal-700 hover:bg-teal-50"
-            onClick={handleOpenVoiceEdit}
-            disabled={!canVoiceEdit}
-          >
-            <Mic className="mr-2 h-4 w-4" />
-            Voice Edit
-          </Button>
+          {canEditPrescription ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-gray-200"
+              onClick={() => setIsEditing(true)}
+            >
+              <Edit3 className="mr-2 h-4 w-4" />
+              Manual Edit
+            </Button>
+          ) : null}
+          {canVoiceEdit ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-teal-200 text-teal-700 hover:bg-teal-50"
+              onClick={handleOpenVoiceEdit}
+            >
+              <Mic className="mr-2 h-4 w-4" />
+              Voice Edit
+            </Button>
+          ) : null}
         </>
       )}
 
@@ -531,11 +681,13 @@ export function AiNotesPrescriptionPreview({
           <Label className="text-base font-semibold tracking-wide">
             MEDICATIONS
           </Label>
-          <MedicationConditionSearch
-            organizationId={organizationId}
-            excludedMedicineIds={excludedMedicineIds}
-            onAdd={addMedicineFromCatalog}
-          />
+          {canEditPrescription ? (
+            <MedicationConditionSearch
+              organizationId={organizationId}
+              excludedMedicineIds={excludedMedicineIds}
+              onAdd={addMedicineFromCatalog}
+            />
+          ) : null}
         </div>
 
         {content.medications.length === 0 ? (
@@ -560,7 +712,12 @@ export function AiNotesPrescriptionPreview({
             {content.medications.map((medication, index) => (
               <div
                 key={`medication-${index}-${medication.medicineId || medication.medicine}`}
-                className="grid gap-2 rounded-lg border border-teal-100 bg-white p-3 md:grid-cols-6"
+                className={cn(
+                  "grid gap-2 rounded-lg border bg-white p-3 md:grid-cols-6",
+                  medicationValidation?.index === index
+                    ? "border-red-300"
+                    : "border-teal-100",
+                )}
               >
                 <Input
                   placeholder="Medicine"
@@ -570,12 +727,8 @@ export function AiNotesPrescriptionPreview({
                   }
                   className="md:col-span-2"
                 />
-                {typeof medication.priceAtPrescription === "number" ? (
-                  <p className="text-xs font-medium text-teal-700 md:col-span-6">
-                    Price at prescription:{" "}
-                    {formatMedicineCost(medication.priceAtPrescription)}
-                  </p>
-                ) : null}
+                {renderInactiveMedicineBadge(medication.medicineId)}
+                {renderMedicationPrice(medication)}
                 <Input
                   placeholder="Morning"
                   value={medication.morning || ""}
@@ -618,24 +771,32 @@ export function AiNotesPrescriptionPreview({
                   size="sm"
                   className="md:col-span-1"
                   onClick={() => removeMedication(index)}
+                  disabled={!canEditPrescription}
                 >
                   Remove
                 </Button>
+                {medicationValidation?.index === index ? (
+                  <p className="text-xs text-red-600 md:col-span-6">
+                    {medicationValidation.message}
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
         )}
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="rounded-full"
-          onClick={addMedication}
-        >
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Add Medicine (manual)
-        </Button>
+        {canEditPrescription ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            onClick={addMedication}
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Add Medicine (manual)
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -718,15 +879,18 @@ export function AiNotesPrescriptionPreview({
                         MEDICATIONS
                       </h3>
                       <p className="text-xs text-muted-foreground">
-                        Search your organization formulary by condition or
-                        symptom, then save changes.
+                        {canEditPrescription
+                          ? "Search your organization formulary by condition or symptom, then save changes."
+                          : "Prescription medications for this consultation."}
                       </p>
                     </div>
-                    <MedicationConditionSearch
-                      organizationId={organizationId}
-                      excludedMedicineIds={excludedMedicineIds}
-                      onAdd={addMedicineFromCatalog}
-                    />
+                    {canEditPrescription ? (
+                      <MedicationConditionSearch
+                        organizationId={organizationId}
+                        excludedMedicineIds={excludedMedicineIds}
+                        onAdd={addMedicineFromCatalog}
+                      />
+                    ) : null}
                   </div>
                   {content.medications.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
@@ -737,11 +901,13 @@ export function AiNotesPrescriptionPreview({
                     <ul className="space-y-1 text-sm text-foreground">
                       {content.medications.map((medication, index) => (
                         <li key={`view-med-${index}`}>
-                          {medication.medicine}
+                          {getMedicationDisplayName(medication)}
+                          {renderInactiveMedicineBadge(medication.medicineId)}
                           {medication.days ? ` · ${medication.days} days` : ""}
-                          {typeof medication.priceAtPrescription === "number" ? (
+                          {getEditableMedicationPrice(medication) !==
+                          undefined ? (
                             <span className="ml-2 text-teal-700">
-                              {formatMedicineCost(medication.priceAtPrescription)}
+                              {formatEditableMedicationPrice(medication)}
                             </span>
                           ) : null}
                         </li>
@@ -776,25 +942,28 @@ export function AiNotesPrescriptionPreview({
         </Button>
       ) : (
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            <Edit3 className="mr-2 h-4 w-4" />
-            Manual Edit
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleOpenVoiceEdit}
-            disabled={!canVoiceEdit}
-          >
-            <Mic className="mr-2 h-4 w-4" />
-            Voice Edit
-          </Button>
+          {canEditPrescription ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+            >
+              <Edit3 className="mr-2 h-4 w-4" />
+              Manual Edit
+            </Button>
+          ) : null}
+          {canVoiceEdit ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenVoiceEdit}
+            >
+              <Mic className="mr-2 h-4 w-4" />
+              Voice Edit
+            </Button>
+          ) : null}
           <span className="hidden text-slate-300 sm:inline" aria-hidden="true">
             |
           </span>

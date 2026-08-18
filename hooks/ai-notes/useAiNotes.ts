@@ -7,7 +7,10 @@ import { sessionKeys } from "@/services/session.queries";
 import { useSession } from "@/hooks/sessions/useSession";
 import { AiNotes } from "@/types/ai-notes.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
-import { exportContentToAiNotesUpdate } from "@/utils/ai-notes-export.utils";
+import {
+  exportContentToAiNotesUpdate,
+  type AiNotesExportUpdateOptions,
+} from "@/utils/ai-notes-export.utils";
 
 const hasTranscript = (session?: {
   transcript?: string;
@@ -60,8 +63,17 @@ export const useAiNotes = (sessionId: string) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (content: AiNotesExportContent) =>
-      aiNotesService.update(sessionId, exportContentToAiNotesUpdate(content)),
+    mutationFn: ({
+      content,
+      options,
+    }: {
+      content: AiNotesExportContent;
+      options?: AiNotesExportUpdateOptions;
+    }) =>
+      aiNotesService.update(
+        sessionId,
+        exportContentToAiNotesUpdate(content, options),
+      ),
     onSuccess: (updatedNotes) => {
       queryClient.setQueryData(aiNotesKeys.detail(sessionId), updatedNotes);
       queryClient.setQueryData(sessionKeys.detail(sessionId), (current: any) =>
@@ -140,8 +152,10 @@ export const useAiNotes = (sessionId: string) => {
     isCompleted,
     transcriptReady,
     generate: (force = false) => generateMutation.mutate(force),
-    saveExportContent: (content: AiNotesExportContent) =>
-      updateMutation.mutateAsync(content),
+    saveExportContent: (
+      content: AiNotesExportContent,
+      options?: AiNotesExportUpdateOptions,
+    ) => updateMutation.mutateAsync({ content, options }),
     refetch: aiNotesQuery.refetch,
   };
 };

@@ -16,11 +16,15 @@ import type {
   AiNotes,
   VoiceEditPreviewResult,
 } from "@/types/ai-notes.types";
+import {
+  assertVoiceEditMedicationsAllowedForCompletedSession,
+} from "@/utils/prescriptionMedication.utils";
 
 interface VoiceEditReviewProps {
   open: boolean;
   sessionId: string;
   preview: VoiceEditPreviewResult | null;
+  isConsultationCompleted?: boolean;
   onOpenChange: (open: boolean) => void;
   onAccepted: (aiNotes: AiNotes) => void;
   onContinueVoiceEdit: () => void;
@@ -30,6 +34,7 @@ export function VoiceEditReview({
   open,
   sessionId,
   preview,
+  isConsultationCompleted = false,
   onOpenChange,
   onAccepted,
   onContinueVoiceEdit,
@@ -38,7 +43,19 @@ export function VoiceEditReview({
 
   if (!preview) return null;
 
+  const medicationGuard = isConsultationCompleted
+    ? assertVoiceEditMedicationsAllowedForCompletedSession(
+        preview.currentNotes.medications,
+        preview.proposedNotes.medications,
+      )
+    : { allowed: true as const };
+
   const handleAccept = async () => {
+    if (isConsultationCompleted && !medicationGuard.allowed) {
+      toast.error(medicationGuard.message);
+      return;
+    }
+
     try {
       setIsAccepting(true);
       const result = await aiNotesService.acceptVoiceEdit(sessionId, {
@@ -49,7 +66,9 @@ export function VoiceEditReview({
           assessment: preview.proposedNotes.assessment,
           plan: preview.proposedNotes.plan,
           remarks: preview.proposedNotes.remarks,
-          medications: preview.proposedNotes.medications,
+          medications: isConsultationCompleted
+            ? preview.currentNotes.medications
+            : preview.proposedNotes.medications,
         },
         instructionText: preview.instructionText,
         changedSections: preview.changedSections,
@@ -107,6 +126,14 @@ export function VoiceEditReview({
               <p className="mt-2 text-xs text-teal-700">{preview.changeSummary}</p>
             ) : null}
           </div>
+
+          {!medicationGuard.allowed ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {medicationGuard.message} Accept is disabled because this voice
+              edit would modify prescription medications on a completed
+              consultation.
+            </div>
+          ) : null}
 
           {preview.changes.map((change) => (
             <section
@@ -170,7 +197,10 @@ export function VoiceEditReview({
             type="button"
             className="rounded-xl bg-teal-600 hover:bg-teal-700"
             onClick={handleAccept}
-            disabled={isAccepting}
+            disabled={
+              isAccepting ||
+              (isConsultationCompleted && !medicationGuard.allowed)
+            }
           >
             {isAccepting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

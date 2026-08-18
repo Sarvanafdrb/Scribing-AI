@@ -22,6 +22,7 @@ interface AiNotesPreviewModalProps {
   autoAction?: "print" | "pdf";
   autoVoiceEdit?: boolean;
   autoManualEdit?: boolean;
+  onEditingContentChange?: (content: AiNotesExportContent | null) => void;
 }
 
 export function AiNotesPreviewModal({
@@ -34,6 +35,7 @@ export function AiNotesPreviewModal({
   autoAction,
   autoVoiceEdit,
   autoManualEdit,
+  onEditingContentChange,
 }: AiNotesPreviewModalProps) {
   const [voiceFlowActive, setVoiceFlowActive] = useState(false);
 
@@ -80,6 +82,7 @@ export function AiNotesPreviewModal({
             autoVoiceEdit={autoVoiceEdit}
             autoManualEdit={autoManualEdit}
             onVoiceFlowActiveChange={setVoiceFlowActive}
+            onEditingContentChange={onEditingContentChange}
           />
         )}
       </DialogContent>

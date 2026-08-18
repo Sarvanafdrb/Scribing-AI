@@ -19,7 +19,12 @@ import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import { sessionService } from "@/services/session.service";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
-import { formatMedicineCost } from "@/components/shared/medicine/medicineForm.utils";
+import { PrescriptionMedicationHistoryTable } from "@/components/shared/prescription/PrescriptionMedicationHistoryTable";
+import {
+  formatSavedMedicationPrice,
+  getMedicationDisplayName,
+  getMedicationDoseLabel,
+} from "@/utils/prescriptionPrice.utils";
 import type { PreviousHistoryItem } from "@/types/session.types";
 import type { AdmissionTimelineItem } from "@/types/encounter.types";
 import type { Patient } from "@/types/patient.types";
@@ -73,25 +78,20 @@ const formatMedications = (medications?: AiNotesMedication[]) => {
       {medications.map((med, i) => (
         <li key={`${med.medicine}-${i}`}>
           <span className="font-medium">
-            {i + 1}. {med.medicine}
+            {i + 1}. {getMedicationDisplayName(med)}
           </span>
-          {(med.morning || med.afternoon || med.night) && (
-            <span className="text-gray-500">
-              {" "}
-              — {med.morning || "0"}-{med.afternoon || "0"}-{med.night || "0"}
-            </span>
-          )}
-          {med.days && (
-            <span className="text-gray-500"> for {med.days} days</span>
-          )}
-          {med.instructions && (
-            <p className="text-xs text-gray-500">{med.instructions}</p>
-          )}
-          {typeof med.priceAtPrescription === "number" ? (
-            <p className="text-xs font-medium text-teal-700">
-              {formatMedicineCost(med.priceAtPrescription)}
-            </p>
+          {getMedicationDoseLabel(med) ? (
+            <span className="text-gray-500"> — {getMedicationDoseLabel(med)}</span>
           ) : null}
+          {med.days ? (
+            <span className="text-gray-500"> for {med.days} days</span>
+          ) : null}
+          {med.instructions ? (
+            <p className="text-xs text-gray-500">{med.instructions}</p>
+          ) : null}
+          <p className="text-xs font-medium text-teal-700">
+            {formatSavedMedicationPrice(med)}
+          </p>
         </li>
       ))}
     </ol>
@@ -109,12 +109,6 @@ const formatConsultationDate = (value?: string | null) => {
   });
 };
 
-const getMedicationNames = (medications?: AiNotesMedication[]) =>
-  (medications || [])
-    .map((med) => med.medicine?.trim())
-    .filter(Boolean)
-    .join(", ");
-
 const formatPreviousHistory = (
   items: PreviousHistoryItem[] | undefined,
   onSelect?: (sessionId: string) => void,
@@ -130,7 +124,7 @@ const formatPreviousHistory = (
   return (
     <div className="space-y-2.5">
       {items.map((item) => {
-        const medicationNames = getMedicationNames(item.aiNotes?.medications);
+        const medications = item.aiNotes?.medications;
         const assessment = item.aiNotes?.assessment?.trim();
         const summary = item.aiNotes?.summary?.trim();
 
@@ -181,7 +175,9 @@ const formatPreviousHistory = (
                 <dt className="text-[11px] font-medium text-gray-400 uppercase">
                   Medications
                 </dt>
-                <dd className="text-gray-700">{medicationNames || "—"}</dd>
+                <dd className="text-gray-700">
+                  <PrescriptionMedicationHistoryTable medications={medications} />
+                </dd>
               </div>
             </dl>
           </article>

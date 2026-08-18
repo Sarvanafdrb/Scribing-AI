@@ -5,6 +5,8 @@ export interface AiNotesMedication {
   medicineId?: string;
   medicineNameSnapshot?: string;
   strengthSnapshot?: string;
+  /** Frontend-only preview of current catalog cost before save. Never persisted. */
+  catalogCostPreview?: number;
   priceAtPrescription?: number;
   morning?: string;
   afternoon?: string;

@@ -23,6 +23,11 @@ import {
   getPatientAge,
   getPatientFullName,
 } from "@/utils/patient.utils";
+import {
+  formatSavedMedicationPrice,
+  getMedicationDisplayName,
+  getMedicationDoseLabel,
+} from "@/utils/prescriptionPrice.utils";
 import type { Patient } from "@/types/patient.types";
 import type { LastVisit, SessionVitals } from "@/types/session.types";
 import { getSessionDepartmentName } from "@/types/session.types";
@@ -237,11 +242,25 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
           Medications
         </h3>
         {medications.length > 0 ? (
-          <ul className="space-y-1.5 text-sm text-gray-700">
+          <ul className="space-y-2 text-sm text-gray-700">
             {medications.map((med, i) => (
               <li key={`${med.medicine}-${i}`} className="flex items-start gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                {med.medicine}
+                <span>
+                  <span className="font-medium">{getMedicationDisplayName(med)}</span>
+                  {getMedicationDoseLabel(med) ? (
+                    <span className="text-gray-500">
+                      {" "}
+                      · {getMedicationDoseLabel(med)}
+                    </span>
+                  ) : null}
+                  {med.days ? (
+                    <span className="text-gray-500"> · {med.days} days</span>
+                  ) : null}
+                  <span className="ml-2 text-xs font-medium text-teal-700">
+                    {formatSavedMedicationPrice(med)}
+                  </span>
+                </span>
               </li>
             ))}
           </ul>

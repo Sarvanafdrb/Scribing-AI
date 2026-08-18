@@ -222,13 +222,13 @@ export default function AdminLayout({
 
       {/* Sidebar */}
       <aside
-        className={`glass fixed top-0 left-0 z-40 h-screen w-64 border-r border-sidebar-border transform transition-transform duration-200 ease-in-out ${
+        className={`glass fixed top-0 left-0 z-40 h-screen w-64 overflow-hidden border-r border-sidebar-border transform transition-transform duration-200 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="flex h-full flex-col">
+        <div className="flex h-full min-h-0 flex-col">
           {/* Logo */}
-          <div className="border-b border-sidebar-border p-4">
+          <div className="shrink-0 border-b border-sidebar-border p-4">
             <h1 className="bg-gradient-to-r from-primary to-[var(--glow)] bg-clip-text text-xl font-bold text-transparent">
               Scribble AI
             </h1>
@@ -236,7 +236,7 @@ export default function AdminLayout({
           </div>
 
           {/* User Info */}
-          <div className="glass-tint mx-3 mt-3 rounded-2xl border-0 p-4">
+          <div className="glass-tint mx-3 mt-3 shrink-0 rounded-2xl border-0 p-4">
             <p className="font-medium text-foreground">
               {user?.isSuperAdmin
                 ? "Super Admin"
@@ -249,7 +249,7 @@ export default function AdminLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 p-4">
+          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
             {menuItems
               .filter((item) => hasPermission(user, item.permission, token))
               .map((item) => {
@@ -277,7 +277,7 @@ export default function AdminLayout({
           </nav>
 
           {/* Logout Button */}
-          <div className="border-t border-sidebar-border p-4">
+          <div className="shrink-0 border-t border-sidebar-border bg-sidebar/80 p-4 backdrop-blur-sm">
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-full px-3 py-2 text-destructive transition-colors hover:bg-destructive/10"

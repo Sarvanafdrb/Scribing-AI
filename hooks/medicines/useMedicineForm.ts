@@ -9,6 +9,7 @@ import {
   collectConditions,
   emptyMedicineFormState,
   mapMedicineToFormState,
+  parseMedicineCost,
   type MedicineFormState,
 } from "@/components/shared/medicine/medicineForm.utils";
 
@@ -95,7 +96,18 @@ export const useMedicineForm = (organizationId: string) => {
       return;
     }
 
-    const payload = buildMedicinePayload(fields, organizationId, conditionDraft);
+    const parsedCost = parseMedicineCost(fields.cost);
+    if (parsedCost === null) {
+      toast.error("Cost must be a valid non-negative number");
+      return;
+    }
+
+    const payload = buildMedicinePayload(
+      fields,
+      organizationId,
+      conditionDraft,
+      parsedCost,
+    );
 
     try {
       if (editingId) {

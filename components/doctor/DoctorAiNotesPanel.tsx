@@ -19,6 +19,7 @@ import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import { sessionService } from "@/services/session.service";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
+import { formatMedicineCost } from "@/components/shared/medicine/medicineForm.utils";
 import type { PreviousHistoryItem } from "@/types/session.types";
 import type { AdmissionTimelineItem } from "@/types/encounter.types";
 import type { Patient } from "@/types/patient.types";
@@ -86,6 +87,11 @@ const formatMedications = (medications?: AiNotesMedication[]) => {
           {med.instructions && (
             <p className="text-xs text-gray-500">{med.instructions}</p>
           )}
+          {typeof med.priceAtPrescription === "number" ? (
+            <p className="text-xs font-medium text-teal-700">
+              {formatMedicineCost(med.priceAtPrescription)}
+            </p>
+          ) : null}
         </li>
       ))}
     </ol>

@@ -5,6 +5,7 @@ export interface AiNotesMedication {
   medicineId?: string;
   medicineNameSnapshot?: string;
   strengthSnapshot?: string;
+  priceAtPrescription?: number;
   morning?: string;
   afternoon?: string;
   night?: string;

@@ -187,6 +187,29 @@ export function MedicineFormPanel({
             ))}
           </select>
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="medicine-cost">Cost</Label>
+          <Input
+            id="medicine-cost"
+            name="medicineCost"
+            type="number"
+            min={0}
+            step="0.01"
+            autoComplete="off"
+            value={fields.cost}
+            onChange={(event) =>
+              onFieldsChange((current) => ({
+                ...current,
+                cost: event.target.value,
+              }))
+            }
+            placeholder="e.g. 25.00"
+            className="rounded-xl"
+          />
+          <p className="text-xs text-muted-foreground">
+            Enter amount in rupees (numeric value only).
+          </p>
+        </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="medicine-condition-draft">Applicable Conditions *</Label>
           <div className="flex gap-2">

@@ -220,9 +220,15 @@ export const exportContentToAiNotesUpdate = (
   assessment: content.observation,
   plan: content.suggestedTreatment,
   remarks: content.remarks,
-  medications: content.medications.filter((medication) =>
-    medication.medicine.trim(),
-  ),
+  medications: content.medications
+    .filter((medication) => medication.medicine.trim())
+    .map((medication) => {
+      if (!medication.medicineId) {
+        return medication;
+      }
+      const { priceAtPrescription: _ignored, ...catalogMedication } = medication;
+      return catalogMedication;
+    }),
   summary: content.summary,
 });
 
@@ -439,6 +445,11 @@ const renderSectionBodyHtml = (body?: string) => {
   return `<p>${escapeHtml(body.trim()).replace(/\n/g, "<br />")}</p>`;
 };
 
+const formatPrescriptionPrice = (price?: number) => {
+  if (typeof price !== "number" || !Number.isFinite(price)) return "—";
+  return `₹${price.toFixed(2)}`;
+};
+
 const renderMedicationTableHtml = (medications: AiNotesMedication[]) => {
   if (!medications.length) {
     return '<p class="empty">No medications added yet. Use Manual Edit to search conditions and add medicines.</p>';
@@ -449,6 +460,7 @@ const renderMedicationTableHtml = (medications: AiNotesMedication[]) => {
       (med) => `
       <tr>
         <td>${escapeHtml(med.medicine || "—")}</td>
+        <td>${escapeHtml(formatPrescriptionPrice(med.priceAtPrescription))}</td>
         <td>${escapeHtml(med.morning || "—")}</td>
         <td>${escapeHtml(med.afternoon || "—")}</td>
         <td>${escapeHtml(med.night || "—")}</td>
@@ -464,6 +476,7 @@ const renderMedicationTableHtml = (medications: AiNotesMedication[]) => {
       <thead>
         <tr>
           <th>Medicine</th>
+          <th>Price</th>
           <th>Morning</th>
           <th>Afternoon</th>
           <th>Night</th>
@@ -641,7 +654,7 @@ export const formatAiNotesPlainText = (content: AiNotesExportContent) => {
     lines.push("", "Medications");
     content.medications.forEach((med, index) => {
       lines.push(
-        `${index + 1}. ${med.medicine} | M:${med.morning || "-"} A:${med.afternoon || "-"} N:${med.night || "-"} | ${med.days || "-"} days | ${med.instructions || ""}`,
+        `${index + 1}. ${med.medicine} | Price: ${formatPrescriptionPrice(med.priceAtPrescription)} | M:${med.morning || "-"} A:${med.afternoon || "-"} N:${med.night || "-"} | ${med.days || "-"} days | ${med.instructions || ""}`,
       );
     });
   }
@@ -964,6 +977,7 @@ export const downloadAiNotesDocx = async (
               new TableRow({
                 children: [
                   "Medicine",
+                  "Price",
                   "Morning",
                   "Afternoon",
                   "Night",
@@ -987,6 +1001,7 @@ export const downloadAiNotesDocx = async (
                   new TableRow({
                     children: [
                       med.medicine,
+                      formatPrescriptionPrice(med.priceAtPrescription),
                       med.morning || "—",
                       med.afternoon || "—",
                       med.night || "—",
@@ -1061,6 +1076,7 @@ export const createEmptyMedication = (): AiNotesMedication => ({
   medicineId: undefined,
   medicineNameSnapshot: "",
   strengthSnapshot: "",
+  priceAtPrescription: undefined,
   morning: "",
   afternoon: "",
   night: "",

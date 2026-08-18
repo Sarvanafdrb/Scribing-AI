@@ -27,6 +27,7 @@ import type {
   VoiceEditPreviewResult,
 } from "@/types/ai-notes.types";
 import type { MedicineSearchResult } from "@/types/medicine.types";
+import { formatMedicineCost } from "@/components/shared/medicine/medicineForm.utils";
 import type { Session } from "@/types/session.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import {
@@ -208,7 +209,12 @@ export function AiNotesPrescriptionPreview({
     try {
       setIsSaving(true);
       if (onSave) {
-        await onSave(content);
+        const savedNotes = (await onSave(content)) as AiNotes | undefined;
+        if (savedNotes?.medications) {
+          const nextSession = { ...session, aiNotes: savedNotes };
+          setContent(buildAiNotesExportContent(savedNotes, nextSession));
+          onNotesUpdated?.(savedNotes);
+        }
       }
       setIsEditing(false);
       toast.success("Changes saved successfully.");
@@ -564,6 +570,12 @@ export function AiNotesPrescriptionPreview({
                   }
                   className="md:col-span-2"
                 />
+                {typeof medication.priceAtPrescription === "number" ? (
+                  <p className="text-xs font-medium text-teal-700 md:col-span-6">
+                    Price at prescription:{" "}
+                    {formatMedicineCost(medication.priceAtPrescription)}
+                  </p>
+                ) : null}
                 <Input
                   placeholder="Morning"
                   value={medication.morning || ""}
@@ -727,6 +739,11 @@ export function AiNotesPrescriptionPreview({
                         <li key={`view-med-${index}`}>
                           {medication.medicine}
                           {medication.days ? ` · ${medication.days} days` : ""}
+                          {typeof medication.priceAtPrescription === "number" ? (
+                            <span className="ml-2 text-teal-700">
+                              {formatMedicineCost(medication.priceAtPrescription)}
+                            </span>
+                          ) : null}
                         </li>
                       ))}
                     </ul>

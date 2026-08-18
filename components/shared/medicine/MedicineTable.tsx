@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import type { Medicine } from "@/types/medicine.types";
+import { formatMedicineCost } from "@/components/shared/medicine/medicineForm.utils";
 
 interface MedicineTableProps {
   medicines: Medicine[];
@@ -53,6 +54,7 @@ export function MedicineTable({
               <TableHead>Medicine</TableHead>
               <TableHead>Strength</TableHead>
               <TableHead>Form / Route</TableHead>
+              {variant === "admin" ? <TableHead>Cost</TableHead> : null}
               <TableHead>Conditions</TableHead>
               <TableHead>Status</TableHead>
               {(canEdit || canToggleStatus) && (
@@ -68,9 +70,22 @@ export function MedicineTable({
                   <TableCell>
                     <div>
                       <p className="font-medium">{medicine.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {medicine.genericName || medicine.brandName || "—"}
-                      </p>
+                      {variant === "doctor" ? (
+                        <>
+                          <p className="text-xs text-muted-foreground">
+                            {[medicine.strength, medicine.form]
+                              .filter(Boolean)
+                              .join(" ") || "—"}
+                          </p>
+                          <p className="mt-0.5 text-xs font-medium text-teal-700">
+                            {formatMedicineCost(medicine.cost)}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {medicine.genericName || medicine.brandName || "—"}
+                        </p>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>{medicine.strength || "—"}</TableCell>
@@ -78,6 +93,9 @@ export function MedicineTable({
                     {[medicine.form, medicine.route].filter(Boolean).join(" · ") ||
                       "—"}
                   </TableCell>
+                  {variant === "admin" ? (
+                    <TableCell>{formatMedicineCost(medicine.cost)}</TableCell>
+                  ) : null}
                   <TableCell>
                     <div className="flex max-w-[240px] flex-wrap gap-1">
                       {(medicine.indications || []).length === 0 ? (

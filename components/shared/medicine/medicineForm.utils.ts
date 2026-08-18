@@ -9,6 +9,7 @@ export type MedicineFormState = {
   dosageForm: string;
   strength: string;
   route: string;
+  cost: string;
   conditions: string[];
 };
 
@@ -19,8 +20,22 @@ export const emptyMedicineFormState = (): MedicineFormState => ({
   dosageForm: "",
   strength: "",
   route: "",
+  cost: "",
   conditions: [],
 });
+
+export const formatMedicineCost = (cost?: number | null) => {
+  const value = typeof cost === "number" && Number.isFinite(cost) ? cost : 0;
+  return `₹${value.toFixed(2)}`;
+};
+
+export const parseMedicineCost = (value: string): number | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return parsed;
+};
 
 export const medicineSelectClassName =
   "flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35";
@@ -53,6 +68,10 @@ export const mapMedicineToFormState = (medicine: Medicine): MedicineFormState =>
     dosageForm: medicine.form || "",
     strength: medicine.strength || "",
     route: medicine.route || "",
+    cost:
+      typeof medicine.cost === "number" && Number.isFinite(medicine.cost)
+        ? String(medicine.cost)
+        : "",
     conditions: (medicine.indications || []).map((item) => item.name),
   };
 };
@@ -61,6 +80,7 @@ export const buildMedicinePayload = (
   fields: MedicineFormState,
   organizationId: string,
   conditionDraft = "",
+  cost = 0,
 ): CreateMedicineData => {
   const conditions = collectConditions(fields.conditions, conditionDraft);
 
@@ -85,6 +105,7 @@ export const buildMedicinePayload = (
     form: dosageForm || undefined,
     strength: fields.strength.trim() || undefined,
     route: fields.route || undefined,
+    cost,
     conditions,
     indications: conditions.map((name) => ({ name })),
   };

@@ -15,6 +15,7 @@ export interface Medicine {
   form?: string;
   strength?: string;
   route?: string;
+  cost: number;
   indications: MedicineIndication[];
   isActive: boolean;
   createdBy?: string;
@@ -37,6 +38,7 @@ export interface CreateMedicineData {
   form?: string;
   strength?: string;
   route?: string;
+  cost?: number;
   conditions?: string[];
   indications?: Array<{ name: string; aliases?: string[] }>;
 }
@@ -48,6 +50,7 @@ export interface UpdateMedicineData {
   form?: string;
   strength?: string;
   route?: string;
+  cost?: number;
   conditions?: string[];
   indications?: Array<{ name: string; aliases?: string[] }>;
   isActive?: boolean;

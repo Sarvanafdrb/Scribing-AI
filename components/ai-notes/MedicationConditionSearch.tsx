@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { medicineService } from "@/services/medicine.service";
 import { medicineKeys } from "@/services/medicine.queries";
 import type { MedicineSearchResult } from "@/types/medicine.types";
+import { formatMedicineCost } from "@/components/shared/medicine/medicineForm.utils";
 import { cn } from "@/lib/utils";
 
 interface MedicationConditionSearchProps {
@@ -86,6 +87,14 @@ export function MedicationConditionSearch({
                       {medicine.strength ? (
                         <span className="ml-1 font-normal text-muted-foreground">
                           {medicine.strength}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-xs font-medium text-teal-700">
+                      {formatMedicineCost(medicine.cost)}
+                      {medicine.form ? (
+                        <span className="ml-2 font-normal text-muted-foreground">
+                          {medicine.form}
                         </span>
                       ) : null}
                     </p>

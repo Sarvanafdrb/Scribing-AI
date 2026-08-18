@@ -11,6 +11,7 @@ import { DoctorLiveTranscript } from "@/components/doctor/DoctorLiveTranscript";
 import { DoctorAiNotesPanel } from "@/components/doctor/DoctorAiNotesPanel";
 import { DispositionPanel } from "@/components/doctor/DispositionPanel";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
+import { setLastDoctorWorkspaceSessionId } from "@/utils/doctorWorkspaceNavigation";
 
 interface DoctorWorkspaceProps {
   sessionId: string;
@@ -26,6 +27,7 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
 
   // Never leak the previous consultation's timer / modal overlays.
   useEffect(() => {
+    setLastDoctorWorkspaceSessionId(sessionId);
     setRecordingState({ isRecording: false, elapsedSeconds: 0 });
     resetEncounterUi();
     // Clear any leftover dialog scroll/pointer locks from a stuck overlay.

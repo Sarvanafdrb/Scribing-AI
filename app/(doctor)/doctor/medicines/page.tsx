@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { MedicineManagementPanel } from "@/components/shared/medicine/MedicineManagementPanel";
 import { useAuthStore } from "@/store/auth.store";
 import type { AuthUser } from "@/types/auth.types";
+import { getDoctorWorkspaceBackPath } from "@/utils/doctorWorkspaceNavigation";
 
 export default function DoctorMedicinesPage() {
   const user = useAuthStore((state) => state.user) as AuthUser | null;
+  const backPath = getDoctorWorkspaceBackPath();
   const organizationId =
     user?.organizationId ||
     user?.organization?.id ||
@@ -23,7 +25,7 @@ export default function DoctorMedicinesPage() {
           organization to manage the formulary.
         </p>
         <Button asChild variant="outline" className="rounded-full">
-          <Link href="/doctor/workspace">Back to workspace</Link>
+          <Link href={backPath}>Back to workspace</Link>
         </Button>
       </div>
     );
@@ -32,7 +34,7 @@ export default function DoctorMedicinesPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
       <Link
-        href="/doctor/workspace"
+        href={backPath}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-teal-700"
       >
         <ArrowLeft className="h-4 w-4" />

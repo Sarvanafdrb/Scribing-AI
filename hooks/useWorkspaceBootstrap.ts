@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useWorkspaceStore } from "@/store/workspace.store";
 import { workspaceService } from "@/services/workspace.service";
 import { workspaceKeys } from "@/services/workspace.queries";
+import { Workspace } from "@/types/workspace.types";
 import { isSuperAdminUser, getUserOrganizationId } from "@/types/auth.types";
 import {
   getDefaultWorkspace,
@@ -16,7 +17,6 @@ export const useWorkspaceBootstrap = () => {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
   const authHydrated = useAuthStore((state) => state._hasHydrated);
-  const selectedWorkspace = useWorkspaceStore((state) => state.selectedWorkspace);
   const workspaceHydrated = useWorkspaceStore((state) => state._hasHydrated);
   const clearWorkspace = useWorkspaceStore((state) => state.clearWorkspace);
   const setSelectedWorkspace = useWorkspaceStore(
@@ -39,8 +39,17 @@ export const useWorkspaceBootstrap = () => {
       setIsBootstrapping(true);
 
       try {
-        const workspaces = await workspaceService.getAll();
-        queryClient.setQueryData(workspaceKeys.list(), workspaces);
+        const cachedWorkspaces = queryClient.getQueryData<Workspace[]>(
+          workspaceKeys.list(),
+        );
+        const workspaces =
+          cachedWorkspaces && cachedWorkspaces.length > 0
+            ? cachedWorkspaces
+            : await workspaceService.getAll();
+
+        if (!cachedWorkspaces?.length) {
+          queryClient.setQueryData(workspaceKeys.list(), workspaces);
+        }
 
         if (cancelled) return;
 
@@ -58,25 +67,27 @@ export const useWorkspaceBootstrap = () => {
 
         setHasWorkspaceAccess(true);
 
+        const currentSelected =
+          useWorkspaceStore.getState().selectedWorkspace;
         const selectedIsAccessible = isWorkspaceAccessible(
-          selectedWorkspace,
+          currentSelected,
           workspaces,
           { isSuperAdmin },
         );
         const shouldResetNonSuperAdminOrg =
           !isSuperAdmin &&
-          selectedWorkspace &&
-          selectedWorkspace.id !== defaultWorkspace.id;
+          currentSelected &&
+          currentSelected.id !== defaultWorkspace.id;
 
         if (
-          !selectedWorkspace ||
+          !currentSelected ||
           !selectedIsAccessible ||
           shouldResetNonSuperAdminOrg
         ) {
           setSelectedWorkspace(defaultWorkspace);
         }
       } catch {
-        if (!selectedWorkspace) {
+        if (!useWorkspaceStore.getState().selectedWorkspace) {
           setHasWorkspaceAccess(false);
         }
       } finally {
@@ -96,10 +107,9 @@ export const useWorkspaceBootstrap = () => {
     clearWorkspace,
     isSuperAdmin,
     queryClient,
-    selectedWorkspace,
     setSelectedWorkspace,
     token,
-    user,
+    user?.id,
     workspaceHydrated,
   ]);
 

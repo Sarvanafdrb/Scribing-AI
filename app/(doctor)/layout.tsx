@@ -8,7 +8,6 @@ import { useAuthValidation } from "@/hooks/useAuthValidation";
 import { useAutoLogin } from "@/hooks/useAutoLogin";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
-import { useWorkspaceBootstrap } from "@/hooks/useWorkspaceBootstrap";
 import { recordDiagEvent } from "@/hooks/recording/recordingFailureDiagnostics";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
 import { isSuperAdminUser } from "@/types/auth.types";
@@ -53,7 +52,6 @@ export default function DoctorLayout({
   const { isValidating } = useAuthValidation();
   const { shouldShowLoading: workspaceGuardLoading, shouldBlock } =
     useWorkspaceGuard();
-  useWorkspaceBootstrap();
 
   useAutoLogin();
   useSessionExpiry();

@@ -9,6 +9,7 @@ import {
   ComboboxOption,
   SearchableCombobox,
 } from "@/components/ui/searchable-combobox";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { patientService } from "@/services/patient.service";
 import { patientKeys } from "@/services/patient.queries";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -36,6 +37,7 @@ export function PatientCombobox({
   disabled = false,
   className,
 }: PatientComboboxProps) {
+  const { canCreatePatient } = useAccessControl();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -128,17 +130,19 @@ export function PatientCombobox({
               Try a different name, patient ID, or phone number.
             </p>
           )}
-          <Button
-            asChild
-            variant="link"
-            size="sm"
-            className="mt-2 h-auto p-0 text-blue-600"
-          >
-            <Link href="/patients/create">
-              <Plus className="mr-1 size-3.5" />
-              Add New Patient
-            </Link>
-          </Button>
+          {canCreatePatient() ? (
+            <Button
+              asChild
+              variant="link"
+              size="sm"
+              className="mt-2 h-auto p-0 text-blue-600"
+            >
+              <Link href="/patients/create">
+                <Plus className="mr-1 size-3.5" />
+                Add New Patient
+              </Link>
+            </Button>
+          ) : null}
         </div>
       }
       footer={

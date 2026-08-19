@@ -27,6 +27,7 @@ import { usePatients } from "@/hooks/patients/usePatients";
 import { useSessions } from "@/hooks/sessions/useSessions";
 import { useRoles } from "@/hooks/roles/useRoles";
 import { useDepartments } from "@/hooks/departments/useDepartments";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 type RelatedKey =
   | "users"
@@ -153,10 +154,21 @@ export function OrganizationRelatedTab({
   organizationId,
 }: OrganizationRelatedTabProps) {
   const [expanded, setExpanded] = useState<RelatedKey | null>("users");
+  const { canCreatePatient } = useAccessControl();
+  const canCreate = canCreatePatient();
+  const sections = useMemo(
+    () =>
+      SECTIONS.map((section) =>
+        section.key === "patients" && !canCreate
+          ? { ...section, addHref: undefined }
+          : section,
+      ),
+    [canCreate],
+  );
 
   return (
     <div className="space-y-3">
-      {SECTIONS.map((section) => (
+      {sections.map((section) => (
         <RelatedSection
           key={section.key}
           section={section}

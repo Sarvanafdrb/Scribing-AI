@@ -145,20 +145,43 @@ export function CreatePatientDialog({
     const patient = await createPatient.mutateAsync(data as CreatePatientData);
 
     const patientId = String(patient._id || patient.id || "");
-    if (patientId) {
-      try {
-        await createConsultationForPatient(patientId);
-      } catch {
-        // Patient was created; session creation failure is non-blocking
-      }
+    if (!patientId) {
+      onCreated?.();
+      onOpenChange(false);
+      return;
+    }
+
+    try {
+      const started = await createConsultationForPatient(patientId);
+      if (!started) return;
+
+      toast.success(
+        `Consultation started for ${getPatientFullName(patient) || "patient"}`,
+      );
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(
+        err?.response?.data?.message || "Failed to start consultation",
+      );
+      toast.message("Patient was created. Start a consultation from the queue.");
+      onCreated?.();
+      onOpenChange(false);
+      return;
     }
 
     onCreated?.();
     onOpenChange(false);
   };
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && (isStartingConsultation || createPatient.isPending)) {
+      return;
+    }
+    onOpenChange(nextOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton
         data-solid="true"

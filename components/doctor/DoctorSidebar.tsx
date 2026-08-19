@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarClock, History, Loader2, Plus, UserRound } from "lucide-react";
+import { History, Loader2, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -326,6 +326,25 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
     }
   };
 
+  const handleFutureAppointmentClick = (appointment: Appointment) => {
+    const patient = getAppointmentPatient(appointment);
+    const start = new Date(appointment.scheduledStart);
+    const dateLabel = start.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    });
+    const name = patient ? getPatientFullName(patient) : "Patient";
+    const reason = appointment.reason?.trim();
+
+    toast.info(
+      `${name} is scheduled for ${dateLabel} at ${formatAppointmentTime(appointment)}.${
+        reason ? ` Reason: ${reason}.` : ""
+      } Consultation opens on that day after Check-in — not before.`,
+      { duration: 6000 },
+    );
+  };
+
   return (
     <>
       <aside className="glass flex h-full w-[260px] shrink-0 flex-col border-r border-border/50">
@@ -523,9 +542,11 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
 
           {canViewAppointments() && upcomingAppointments.length > 0 ? (
             <div className="mt-6">
-              <p className="mb-3 flex items-center gap-1.5 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                <CalendarClock className="h-3 w-3" />
+              <p className="mb-1 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                 Future appointments — {upcomingAppointments.length}
+              </p>
+              <p className="mb-3 px-2 text-[10px] text-muted-foreground/80">
+                Tap for details · Check-in on visit day
               </p>
               <nav className="space-y-1">
                 {upcomingAppointments.map((appointment, index) => {
@@ -534,9 +555,11 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   const start = new Date(appointment.scheduledStart);
 
                   return (
-                    <div
+                    <button
                       key={aptId}
-                      className="glass-row flex w-full items-center gap-3 px-3 py-2 text-left opacity-90"
+                      type="button"
+                      onClick={() => handleFutureAppointmentClick(appointment)}
+                      className="glass-row flex w-full items-center gap-3 px-3 py-2 text-left opacity-90 transition-opacity hover:opacity-100"
                     >
                       <div
                         className={cn(
@@ -558,7 +581,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                           · {formatAppointmentTime(appointment)}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </nav>

@@ -25,8 +25,14 @@ import {
 import { LinkCell } from "@/components/shared/LinkCell";
 import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
+import { useAppointments } from "@/hooks/appointments/useAppointments";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import type { Patient } from "@/types/patient.types";
 import type { Session, SessionUser } from "@/types/session.types";
+import {
+  formatAppointmentStatus,
+  getAppointmentId,
+} from "@/types/appointment.types";
 import { getPatientFullName } from "@/utils/patient.utils";
 
 interface PatientRelatedTabProps {
@@ -104,6 +110,7 @@ export function PatientRelatedTab({
   patient,
   patientId,
 }: PatientRelatedTabProps) {
+  const { canViewAppointments } = useAccessControl();
   const org =
     typeof patient.organizationId === "object" ? patient.organizationId : null;
   const orgId = org?.id || org?._id || "";
@@ -122,6 +129,17 @@ export function PatientRelatedTab({
 
   const sessions = sessionsQuery.data?.sessions || [];
   const totalSessions = sessionsQuery.data?.total || sessions.length;
+
+  const upcomingQuery = useAppointments({
+    organizationId: orgId,
+    patientId,
+    upcoming: true,
+    limit: 20,
+    enabled: canViewAppointments() && Boolean(orgId),
+  });
+  const upcomingAppointments = upcomingQuery.appointments;
+
+  const pastSessions = sessions.filter((s) => s.status === "completed");
 
   const activityItems = useMemo(() => {
     const items: Array<{
@@ -177,9 +195,81 @@ export function PatientRelatedTab({
 
   return (
     <div className="space-y-4">
+      {canViewAppointments() ? (
+        <RelatedCard
+          title="Upcoming Appointments"
+          description={`${upcomingAppointments.length} scheduled visit${upcomingAppointments.length === 1 ? "" : "s"}`}
+          action={
+            <Button asChild variant="outline" size="sm" className="rounded-full">
+              <Link href={`/appointments?patientId=${patientId}`}>
+                View schedule
+                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          }
+        >
+          {upcomingQuery.isLoading ? (
+            <LoadingState />
+          ) : upcomingAppointments.length === 0 ? (
+            <EmptyState message="No upcoming appointments for this patient." />
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-border/50">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Doctor</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {upcomingAppointments.map((appointment) => {
+                    const aptId = getAppointmentId(appointment);
+                    const doctor =
+                      typeof appointment.doctorId === "object"
+                        ? appointment.doctorId
+                        : null;
+                    const when = new Date(appointment.scheduledStart);
+                    return (
+                      <TableRow key={aptId}>
+                        <TableCell>
+                          <LinkCell href={`/appointments/${aptId}`}>
+                            {when.toLocaleString(undefined, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                          </LinkCell>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {doctor
+                            ? `${doctor.firstName || ""} ${doctor.lastName || ""}`.trim()
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-sm capitalize">
+                          {(appointment.appointmentType || "consultation").replace(
+                            /_/g,
+                            " ",
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="font-normal">
+                            {formatAppointmentStatus(appointment.status)}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </RelatedCard>
+      ) : null}
+
       <RelatedCard
-        title="Sessions"
-        description={`${totalSessions} consultation session${totalSessions === 1 ? "" : "s"} linked to this patient`}
+        title="Past Consultations"
+        description={`${pastSessions.length > 0 ? pastSessions.length : totalSessions} consultation session${totalSessions === 1 ? "" : "s"} linked to this patient`}
         action={
           <Button asChild variant="outline" size="sm" className="rounded-full">
             <Link href={`/sessions?patientId=${patientId}`}>

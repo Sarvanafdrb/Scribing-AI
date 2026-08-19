@@ -149,6 +149,16 @@ const ROUTE_PERMISSION_RULES: RoutePermissionRule[] = [
     message: "You do not have permission to view consultations.",
   },
   {
+    pattern: /^\/appointments\/create\/?$/,
+    permission: "APPOINTMENT_CREATE",
+    message: "You do not have permission to schedule appointments.",
+  },
+  {
+    pattern: /^\/appointments(\/|$)/,
+    permission: "APPOINTMENT_VIEW",
+    message: "You do not have permission to view appointments.",
+  },
+  {
     pattern: /^\/settings\/?$/,
     permission: "SETTINGS_VIEW",
     message: "You do not have permission to view settings.",

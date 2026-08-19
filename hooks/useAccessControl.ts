@@ -34,6 +34,10 @@ import {
   ROLE_DELETE,
   PERMISSION_VIEW,
   PERMISSION_EDIT,
+  APPOINTMENT_VIEW,
+  APPOINTMENT_CREATE,
+  APPOINTMENT_EDIT,
+  APPOINTMENT_DELETE,
 } from "@/constants/permissions";
 
 const getCurrentUserId = (user?: AuthUser | null): string =>
@@ -209,5 +213,22 @@ export const useAccessControl = () => {
       hasPermission(user, "MEDICINE_EDIT", token) ||
       hasPermission(user, "medicine:delete", token) ||
       hasPermission(user, "medicine:update", token),
+    canViewAppointments: () =>
+      hasPermission(user, APPOINTMENT_VIEW, token) ||
+      hasPermission(user, "appointment:read", token),
+    canCreateAppointment: () =>
+      hasPermission(user, APPOINTMENT_CREATE, token) ||
+      hasPermission(user, "appointment:create", token),
+    canEditAppointment: () =>
+      hasPermission(user, APPOINTMENT_EDIT, token) ||
+      hasPermission(user, "appointment:update", token),
+    canDeleteAppointment: () =>
+      hasPermission(user, APPOINTMENT_DELETE, token) ||
+      hasPermission(user, "appointment:delete", token),
+    canCheckInAppointment: () =>
+      (hasPermission(user, APPOINTMENT_EDIT, token) ||
+        hasPermission(user, "appointment:update", token)) &&
+      (hasPermission(user, "SESSION_CREATE", token) ||
+        hasPermission(user, "session:create", token)),
   };
 };

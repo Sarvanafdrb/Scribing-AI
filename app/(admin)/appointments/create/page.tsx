@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Mic } from "lucide-react";
+import { ArrowLeft, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,44 +11,38 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { SessionForm } from "../components/SessionForm";
-import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
+import { AppointmentForm } from "../components/AppointmentForm";
+import { useAppointmentMutations } from "@/hooks/appointments/useAppointmentMutations";
 import { useAccessControl } from "@/hooks/useAccessControl";
-import { CreateSessionData, UpdateSessionData } from "@/types/session.types";
 import { healthcareGlass, healthcareSolid } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
 
-export default function CreateSessionPage() {
+export default function CreateAppointmentPage() {
   const router = useRouter();
-  const { createSession } = useSessionMutations();
-  const { canCreateSession } = useAccessControl();
+  const { createAppointment } = useAppointmentMutations();
+  const { canCreateAppointment } = useAccessControl();
 
-  if (!canCreateSession()) {
+  if (!canCreateAppointment()) {
     return (
       <div className="glass mx-auto max-w-xl rounded-3xl p-8 text-center">
         <h1 className="text-xl font-semibold text-foreground">Access Denied</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          You do not have permission to create consultations.
+          You do not have permission to schedule appointments.
         </p>
       </div>
     );
   }
 
-  const handleSubmit = async (data: CreateSessionData | UpdateSessionData) => {
-    await createSession.mutateAsync(data as CreateSessionData);
-    router.push("/sessions");
-  };
-
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
-        <Link href="/sessions">
+        <Link href="/appointments">
           <Button
             variant="ghost"
             className={cn("rounded-xl pl-0", healthcareGlass.button)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Consultations
+            Back to Appointments
           </Button>
         </Link>
       </div>
@@ -56,26 +50,27 @@ export default function CreateSessionPage() {
       <Card className={healthcareSolid.formCard}>
         <CardHeader>
           <div className="flex items-center gap-4">
-            <div className="rounded-xl bg-blue-50 p-3">
-              <Mic className="h-6 w-6 text-blue-600" />
+            <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-950/40">
+              <CalendarDays className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <CardTitle>Start Today&apos;s Consultation</CardTitle>
+              <CardTitle>Book Future Appointment</CardTitle>
               <CardDescription>
-                Start an immediate consultation for a patient visiting today.
-                The patient will appear in the Doctor Workspace queue right
-                away. To book a visit on a future date, use Appointments
-                instead.
+                Schedule a patient visit on a future date. On the day of the
+                appointment, the doctor checks in from the workspace. For an
+                immediate today consultation, use New Consultation instead.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <SessionForm
-            onSubmit={handleSubmit}
-            isLoading={createSession.isPending}
-            submitLabel="Create Consultation"
-            onCancel={() => router.push("/sessions")}
+          <AppointmentForm
+            onSubmit={async (data) => {
+              await createAppointment.mutateAsync(data);
+              router.push("/appointments");
+            }}
+            isLoading={createAppointment.isPending}
+            onCancel={() => router.push("/appointments")}
           />
         </CardContent>
       </Card>

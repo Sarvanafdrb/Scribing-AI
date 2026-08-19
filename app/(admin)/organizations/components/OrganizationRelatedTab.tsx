@@ -27,7 +27,13 @@ import { usePatients } from "@/hooks/patients/usePatients";
 import { useSessions } from "@/hooks/sessions/useSessions";
 import { useRoles } from "@/hooks/roles/useRoles";
 import { useDepartments } from "@/hooks/departments/useDepartments";
+import { useAppointments } from "@/hooks/appointments/useAppointments";
 import { useAccessControl } from "@/hooks/useAccessControl";
+import {
+  formatAppointmentStatus,
+  getAppointmentId,
+} from "@/types/appointment.types";
+import { getPatientFullName } from "@/utils/patient.utils";
 
 type RelatedKey =
   | "users"
@@ -114,7 +120,9 @@ const SECTIONS: RelatedSectionConfig[] = [
     key: "appointments",
     title: "Appointments",
     description: "Scheduled appointments",
-    available: false,
+    addHref: "/appointments/create",
+    viewAllHref: "/appointments",
+    available: true,
   },
   {
     key: "admissions",
@@ -375,6 +383,19 @@ function RelatedSectionBody({
           setSearch(value);
           setPage(1);
         }}
+        onPageChange={setPage}
+        addHref={addHref}
+        viewAllHref={viewAllHref}
+      />
+    );
+  }
+
+  if (sectionKey === "appointments") {
+    return (
+      <AppointmentsRelatedTable
+        organizationId={organizationId}
+        page={page}
+        limit={limit}
         onPageChange={setPage}
         addHref={addHref}
         viewAllHref={viewAllHref}
@@ -999,6 +1020,110 @@ function LoadingBlock() {
     <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
       Loading…
+    </div>
+  );
+}
+
+function AppointmentsRelatedTable({
+  organizationId,
+  page,
+  limit,
+  onPageChange,
+  addHref,
+  viewAllHref,
+}: {
+  organizationId: string;
+  page: number;
+  limit: number;
+  onPageChange: (page: number) => void;
+  addHref?: string;
+  viewAllHref?: string;
+}) {
+  const { canCreateAppointment } = useAccessControl();
+  const { appointments, total, totalPages, isLoading } = useAppointments({
+    organizationId,
+    page,
+    limit,
+    upcoming: true,
+  });
+
+  return (
+    <div>
+      <RelatedToolbar
+        search=""
+        onSearchChange={() => {}}
+        total={total}
+        addHref={canCreateAppointment() ? addHref : undefined}
+        viewAllHref={viewAllHref}
+        addLabel="Book Appointment"
+      />
+      {isLoading ? (
+        <LoadingBlock />
+      ) : appointments.length === 0 ? (
+        <EmptyRelated message="No upcoming appointments." />
+      ) : (
+        <>
+          <div className="overflow-hidden rounded-2xl border border-border/60">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Patient</TableHead>
+                  <TableHead>Doctor</TableHead>
+                  <TableHead>When</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {appointments.map((appointment) => {
+                  const id = getAppointmentId(appointment);
+                  const patient =
+                    typeof appointment.patientId === "object"
+                      ? appointment.patientId
+                      : null;
+                  const doctor =
+                    typeof appointment.doctorId === "object"
+                      ? appointment.doctorId
+                      : null;
+                  const when = new Date(appointment.scheduledStart);
+
+                  return (
+                    <TableRow key={id}>
+                      <TableCell>
+                        <LinkCell href={`/appointments/${id}`}>
+                          {patient
+                            ? getPatientFullName(patient)
+                            : appointment.appointmentCode || id.slice(0, 8)}
+                        </LinkCell>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {doctor
+                          ? `${doctor.firstName || ""} ${doctor.lastName || ""}`.trim()
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {when.toLocaleString(undefined, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="font-normal">
+                          {formatAppointmentStatus(appointment.status)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          <PaginationBar
+            page={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </>
+      )}
     </div>
   );
 }

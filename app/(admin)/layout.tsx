@@ -21,6 +21,7 @@ import {
   BarChart3,
   Mail,
   Pill,
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/types/auth.types";
@@ -100,6 +101,12 @@ const menuItems = [
     label: "Consultation",
     icon: Mic,
     permission: "SESSION_VIEW",
+  },
+  {
+    path: "/appointments",
+    label: "Appointments",
+    icon: CalendarDays,
+    permission: "APPOINTMENT_VIEW",
   },
   {
     path: "/settings",

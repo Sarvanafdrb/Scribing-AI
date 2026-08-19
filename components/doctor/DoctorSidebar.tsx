@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { History, Loader2, Plus, UserRound } from "lucide-react";
+import { CalendarClock, History, Loader2, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -11,6 +11,8 @@ import {
   getQueueItemKey,
   useDoctorQueue,
 } from "@/hooks/doctor/useDoctorQueue";
+import { useAppointments } from "@/hooks/appointments/useAppointments";
+import { useAppointmentMutations } from "@/hooks/appointments/useAppointmentMutations";
 import { useConsultationNavigationGuard } from "@/hooks/doctor/useConsultationNavigationGuard";
 import { RecordingSwitchDialog } from "@/components/doctor/RecordingSwitchDialog";
 import { CreatePatientDialog } from "@/components/doctor/CreatePatientDialog";
@@ -20,6 +22,8 @@ import { sessionKeys } from "@/services/session.queries";
 import { encounterService } from "@/services/encounter.service";
 import type { DoctorQueueItem } from "@/types/encounter.types";
 import type { Session, SessionStatus } from "@/types/session.types";
+import type { Appointment } from "@/types/appointment.types";
+import { getAppointmentId } from "@/types/appointment.types";
 import { cn } from "@/lib/utils";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
 
@@ -144,9 +148,39 @@ interface DoctorSidebarProps {
 export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
-  const { canCreatePatient } = useAccessControl();
+  const { canCreatePatient, canViewAppointments, canCheckInAppointment } =
+    useAccessControl();
   const { data: activeSession } = useSession(activeSessionId);
-  const { items } = useDoctorQueue();
+  const { items, doctorId, organizationId: scopedOrgId } = useDoctorQueue();
+  const { checkInAppointment } = useAppointmentMutations();
+  const [checkingInId, setCheckingInId] = useState<string | null>(null);
+
+  const { appointments: todayAppointments } = useAppointments({
+    doctorId,
+    organizationId: scopedOrgId,
+    today: true,
+    limit: 20,
+    enabled: canViewAppointments() && Boolean(doctorId) && Boolean(scopedOrgId),
+  });
+
+  const { appointments: upcomingAppointments } = useAppointments({
+    doctorId,
+    organizationId: scopedOrgId,
+    upcoming: true,
+    limit: 10,
+    enabled: canViewAppointments() && Boolean(doctorId) && Boolean(scopedOrgId),
+  });
+
+  const scheduledToday = todayAppointments.filter((apt) => {
+    if (apt.status !== "scheduled") return false;
+    const patient = getAppointmentPatient(apt);
+    const patientId = String(patient?._id || patient?.id || "");
+    if (!patientId) return true;
+    return !items.some((item) => {
+      const queuePatientId = String(item.patient?._id || item.patient?.id || "");
+      return queuePatientId === patientId;
+    });
+  });
   const [openingKey, setOpeningKey] = useState<string | null>(null);
   const [isCreatePatientOpen, setIsCreatePatientOpen] = useState(false);
   const liveSessionId = useActiveRecordingStore((state) => state.sessionId);
@@ -252,6 +286,46 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
     }
   };
 
+  const formatAppointmentTime = (appointment: Appointment) => {
+    const start = new Date(appointment.scheduledStart);
+    return start.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getAppointmentPatient = (appointment: Appointment) => {
+    if (
+      appointment.patientId &&
+      typeof appointment.patientId === "object"
+    ) {
+      return appointment.patientId;
+    }
+    return null;
+  };
+
+  const handleCheckIn = async (appointment: Appointment) => {
+    const id = getAppointmentId(appointment);
+    setCheckingInId(id);
+    try {
+      const result = await checkInAppointment.mutateAsync(id);
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) &&
+          query.queryKey.includes("doctor-queue"),
+      });
+      const sessionId = String(result.session?.id || result.session?._id || "");
+      if (sessionId) {
+        requestNavigateToSession(sessionId);
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message || "Failed to check in");
+    } finally {
+      setCheckingInId(null);
+    }
+  };
+
   return (
     <>
       <aside className="glass flex h-full w-[260px] shrink-0 flex-col border-r border-border/50">
@@ -275,7 +349,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
 
         <div className="flex-1 overflow-y-auto px-3 py-4">
           <p className="mb-3 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Today — {items.length} patient
+            Today&apos;s Consultations — {items.length} patient
             {items.length !== 1 ? "s" : ""}
           </p>
 
@@ -389,9 +463,107 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
 
           {items.length === 0 && (
             <p className="px-2 text-sm text-gray-500">
-              No consultations scheduled for today.
+              No consultations for today.
             </p>
           )}
+
+          {canViewAppointments() && scheduledToday.length > 0 ? (
+            <div className="mt-6">
+              <p className="mb-3 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                Awaiting check-in — {scheduledToday.length}
+              </p>
+              <nav className="space-y-1">
+                {scheduledToday.map((appointment, index) => {
+                  const patient = getAppointmentPatient(appointment);
+                  const aptId = getAppointmentId(appointment);
+                  const isCheckingIn = checkingInId === aptId;
+
+                  return (
+                    <div
+                      key={aptId}
+                      className="glass-row flex w-full items-center gap-3 px-3 py-2.5"
+                    >
+                      <div
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold",
+                          AVATAR_COLORS[index % AVATAR_COLORS.length],
+                        )}
+                      >
+                        {getInitials(patient?.firstName, patient?.lastName)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {patient ? getPatientFullName(patient) : "Patient"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatAppointmentTime(appointment)}
+                          {appointment.reason ? ` · ${appointment.reason}` : ""}
+                        </p>
+                      </div>
+                      {canCheckInAppointment() ? (
+                        <button
+                          type="button"
+                          disabled={isCheckingIn}
+                          onClick={() => handleCheckIn(appointment)}
+                          className="shrink-0 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary hover:bg-primary/20"
+                        >
+                          {isCheckingIn ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            "Check-in"
+                          )}
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </nav>
+            </div>
+          ) : null}
+
+          {canViewAppointments() && upcomingAppointments.length > 0 ? (
+            <div className="mt-6">
+              <p className="mb-3 flex items-center gap-1.5 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                <CalendarClock className="h-3 w-3" />
+                Future appointments — {upcomingAppointments.length}
+              </p>
+              <nav className="space-y-1">
+                {upcomingAppointments.map((appointment, index) => {
+                  const patient = getAppointmentPatient(appointment);
+                  const aptId = getAppointmentId(appointment);
+                  const start = new Date(appointment.scheduledStart);
+
+                  return (
+                    <div
+                      key={aptId}
+                      className="glass-row flex w-full items-center gap-3 px-3 py-2 text-left opacity-90"
+                    >
+                      <div
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-semibold",
+                          AVATAR_COLORS[(index + 2) % AVATAR_COLORS.length],
+                        )}
+                      >
+                        {getInitials(patient?.firstName, patient?.lastName)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-foreground">
+                          {patient ? getPatientFullName(patient) : "Patient"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {start.toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}{" "}
+                          · {formatAppointmentTime(appointment)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </nav>
+            </div>
+          ) : null}
         </div>
 
         <div className="border-t border-border/50 px-3 py-4">

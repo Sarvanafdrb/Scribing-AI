@@ -14,6 +14,7 @@ export const PERMISSION_MODULES = [
   { id: "patients", label: "Patients", prefix: "PATIENT", legacySlug: "patient" },
   { id: "medicines", label: "Medicines", prefix: "MEDICINE", legacySlug: "medicine" },
   { id: "sessions", label: "Sessions", prefix: "SESSION", legacySlug: "session" },
+  { id: "appointments", label: "Appointments", prefix: "APPOINTMENT", legacySlug: "appointment" },
   { id: "reports", label: "Reports", prefix: "REPORT", legacySlug: "report" },
   { id: "settings", label: "Settings", prefix: "SETTINGS", legacySlug: "settings" },
   { id: "recording", label: "Recording", prefix: "RECORDING", legacySlug: "recording" },
@@ -80,6 +81,11 @@ export const PATIENT_VIEW = "PATIENT_VIEW";
 export const PATIENT_CREATE = "PATIENT_CREATE";
 export const PATIENT_EDIT = "PATIENT_EDIT";
 export const PATIENT_DELETE = "PATIENT_DELETE";
+
+export const APPOINTMENT_VIEW = "APPOINTMENT_VIEW";
+export const APPOINTMENT_CREATE = "APPOINTMENT_CREATE";
+export const APPOINTMENT_EDIT = "APPOINTMENT_EDIT";
+export const APPOINTMENT_DELETE = "APPOINTMENT_DELETE";
 
 export function canManageAllUsersFromPermissions(
   permissions: string[],

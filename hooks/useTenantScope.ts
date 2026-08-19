@@ -4,6 +4,7 @@ import {
   canManageAllOrganizations,
   getUserOrganizationId,
   getUserOrganizationName,
+  isSingleOrganizationStaffUser,
   isSuperAdminUser,
 } from "@/types/auth.types";
 import { isAllOrganizationsWorkspace } from "@/utils/workspace.utils";
@@ -13,17 +14,24 @@ export const useTenantScope = () => {
   const token = useAuthStore((state) => state.token);
   const selectedWorkspace = useWorkspaceStore((state) => state.selectedWorkspace);
   const isSuperAdmin = isSuperAdminUser(user, token);
-  const isAllOrganizations = isAllOrganizationsWorkspace(selectedWorkspace);
+  const isSingleOrgStaff = isSingleOrganizationStaffUser(user);
+  const isAllOrganizations = isSingleOrgStaff
+    ? false
+    : isAllOrganizationsWorkspace(selectedWorkspace);
 
-  const organizationId =
-    selectedWorkspace && !isAllOrganizations
+  const userOrganizationId = getUserOrganizationId(user);
+
+  const organizationId = isSingleOrgStaff
+    ? userOrganizationId
+    : selectedWorkspace && !isAllOrganizations
       ? selectedWorkspace.id
       : isSuperAdmin
         ? ""
-        : getUserOrganizationId(user);
+        : userOrganizationId;
 
-  const organizationName =
-    selectedWorkspace && !isAllOrganizations
+  const organizationName = isSingleOrgStaff
+    ? getUserOrganizationName(user)
+    : selectedWorkspace && !isAllOrganizations
       ? selectedWorkspace.name
       : isSuperAdmin
         ? isAllOrganizations
@@ -39,6 +47,7 @@ export const useTenantScope = () => {
     selectedWorkspace,
     isSuperAdmin,
     isAllOrganizations,
+    isSingleOrgStaff,
     canManageAllOrganizations: canManageAllOrganizations(user, token),
   };
 };

@@ -41,11 +41,10 @@ export const useDoctorQueue = () => {
   const user = useAuthStore((state) => state.user);
   const authHydrated = useAuthStore((state) => state._hasHydrated);
   const workspaceHydrated = useWorkspaceStore((state) => state._hasHydrated);
-  const selectedWorkspace = useWorkspaceStore((state) => state.selectedWorkspace);
   const { organizationId } = useTenantScope();
 
   const doctorId = String(user?.id || user?._id || "");
-  const scopedOrganizationId = organizationId || selectedWorkspace?.id || "";
+  const scopedOrganizationId = organizationId || "";
   const todayKey = getLocalDayKey();
 
   const isScopeReady =

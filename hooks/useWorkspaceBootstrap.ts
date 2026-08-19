@@ -7,7 +7,7 @@ import { useWorkspaceStore } from "@/store/workspace.store";
 import { workspaceService } from "@/services/workspace.service";
 import { workspaceKeys } from "@/services/workspace.queries";
 import { Workspace } from "@/types/workspace.types";
-import { isSuperAdminUser, getUserOrganizationId } from "@/types/auth.types";
+import { isSuperAdminUser, getUserOrganizationId, isSingleOrganizationStaffUser } from "@/types/auth.types";
 import {
   getDefaultWorkspace,
   isWorkspaceAccessible,
@@ -26,6 +26,7 @@ export const useWorkspaceBootstrap = () => {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [hasWorkspaceAccess, setHasWorkspaceAccess] = useState(true);
   const isSuperAdmin = isSuperAdminUser(user, token);
+  const isSingleOrgStaff = isSingleOrganizationStaffUser(user);
 
   useEffect(() => {
     if (!authHydrated || !workspaceHydrated || !token) {
@@ -55,7 +56,7 @@ export const useWorkspaceBootstrap = () => {
 
         const organizationId = getUserOrganizationId(user);
         const defaultWorkspace = getDefaultWorkspace(workspaces, {
-          isSuperAdmin,
+          isSuperAdmin: isSuperAdmin && !isSingleOrgStaff,
           organizationId,
         });
 
@@ -78,11 +79,16 @@ export const useWorkspaceBootstrap = () => {
           !isSuperAdmin &&
           currentSelected &&
           currentSelected.id !== defaultWorkspace.id;
+        const shouldResetSingleOrgStaff =
+          isSingleOrgStaff &&
+          currentSelected &&
+          currentSelected.id !== defaultWorkspace.id;
 
         if (
           !currentSelected ||
           !selectedIsAccessible ||
-          shouldResetNonSuperAdminOrg
+          shouldResetNonSuperAdminOrg ||
+          shouldResetSingleOrgStaff
         ) {
           setSelectedWorkspace(defaultWorkspace);
         }

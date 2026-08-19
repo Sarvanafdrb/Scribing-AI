@@ -48,13 +48,25 @@ const NAV_ITEMS = [
 interface DoctorNavProps {
   className?: string;
   onNavigate?: (href: string) => boolean;
+  inline?: boolean;
 }
 
-export function DoctorNav({ className, onNavigate }: DoctorNavProps) {
+export function DoctorNav({
+  className,
+  onNavigate,
+  inline = false,
+}: DoctorNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav className={cn("flex flex-wrap gap-1", className)}>
+    <nav
+      className={cn(
+        inline
+          ? "flex items-center gap-0.5 sm:gap-1"
+          : "flex flex-wrap gap-1",
+        className,
+      )}
+    >
       {NAV_ITEMS.map((item) => {
         const isActive = item.match(pathname);
         const Icon = item.icon;
@@ -69,14 +81,17 @@ export function DoctorNav({ className, onNavigate }: DoctorNavProps) {
               }
             }}
             className={cn(
-              "inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors",
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full font-medium transition-colors",
+              inline ? "px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm" : "px-3 py-2 text-sm",
               isActive
                 ? "bg-primary text-primary-foreground shadow-glow"
                 : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">{item.label}</span>
+            <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+            <span className={cn(inline ? "hidden md:inline" : "hidden sm:inline")}>
+              {item.label}
+            </span>
           </Link>
         );
       })}

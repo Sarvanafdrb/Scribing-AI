@@ -5,6 +5,8 @@ import { Building2, Check, ChevronsUpDown, Globe2, Search } from "lucide-react";
 import { useWorkspaces } from "@/hooks/useWorkspaces";
 import { useWorkspaceSelection } from "@/hooks/useWorkspaceSelection";
 import { useAccessControl } from "@/hooks/useAccessControl";
+import { useAuthStore } from "@/store/auth.store";
+import { isSingleOrganizationStaffUser } from "@/types/auth.types";
 import { Workspace } from "@/types/workspace.types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +62,8 @@ export function WorkspaceSwitcher({
   const { workspaces, isLoading } = useWorkspaces();
   const { selectedWorkspace, switchWorkspace } = useWorkspaceSelection();
   const { isSuperAdmin } = useAccessControl();
+  const user = useAuthStore((state) => state.user);
+  const isSingleOrgStaff = isSingleOrganizationStaffUser(user);
 
   const filteredWorkspaces = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -90,6 +94,32 @@ export function WorkspaceSwitcher({
   }
 
   const isAllSelected = isAllOrganizationsWorkspace(selectedWorkspace);
+
+  if (isSingleOrgStaff) {
+    return (
+      <div
+        className={cn(
+          "flex h-auto min-h-9 max-w-xs items-center gap-2 rounded-lg border border-border bg-card/80 px-3 py-2",
+          compact && "max-w-[220px]",
+          className,
+        )}
+      >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground">
+          <Building2 className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">
+            {selectedWorkspace.name}
+          </p>
+          {!compact && (
+            <p className="truncate text-xs text-muted-foreground">
+              Your organization
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

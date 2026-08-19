@@ -230,6 +230,12 @@ export const isReceptionistUser = (user?: AuthUser | null): boolean =>
 export const isClinicalRoleUser = (user?: AuthUser | null): boolean =>
   isDoctorUser(user);
 
+/** Staff locked to a single organization (no child-org / workspace switching). */
+export const isSingleOrganizationStaffUser = (
+  user?: AuthUser | null,
+): boolean =>
+  isDoctorUser(user) || isNurseUser(user) || isReceptionistUser(user);
+
 export const canManageAllOrganizations = (
   user?: AuthUser | null,
   token?: string | null,

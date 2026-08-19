@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useWorkspaceStore } from "@/store/workspace.store";
 import { useAuthStore } from "@/store/auth.store";
 import { Workspace } from "@/types/workspace.types";
-import { isSuperAdminUser, getUserOrganizationId } from "@/types/auth.types";
+import { isSuperAdminUser, getUserOrganizationId, isSingleOrganizationStaffUser } from "@/types/auth.types";
 import { resolveAuthenticatedHomePath } from "@/utils/authRedirect";
 import { organizationKeys } from "@/services/organization.queries";
 import { userKeys } from "@/services/user.queries";
@@ -50,6 +50,11 @@ export const useWorkspaceSelection = () => {
 
   const switchWorkspace = useCallback(
     (workspace: Workspace) => {
+      const user = useAuthStore.getState().user;
+      if (isSingleOrganizationStaffUser(user)) {
+        return;
+      }
+
       if (workspace.status !== "active") {
         toast.error("Workspace unavailable", {
           description: "This workspace is inactive. Contact your administrator.",

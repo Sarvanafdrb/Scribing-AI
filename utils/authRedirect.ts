@@ -28,7 +28,7 @@ export function resolveOperationalHomePath(
     includeDoctorWorkspace &&
     canAccessDoctorWorkspace(permissions, isSuperAdmin)
   ) {
-    return "/doctor/workspace";
+    return "/doctor";
   }
 
   if (hasPermissionCode(permissions, "PATIENT_VIEW")) {
@@ -62,7 +62,7 @@ export function resolveAuthenticatedHomePath(
     isDoctorUser(user) &&
     canAccessDoctorWorkspace(permissions, isSuperAdmin)
   ) {
-    return "/doctor/workspace";
+    return "/doctor";
   }
 
   if (isNurseUser(user) || isReceptionistUser(user)) {
@@ -80,7 +80,7 @@ export function resolveAuthenticatedHomePath(
   }
 
   if (canAccessDoctorWorkspace(permissions, isSuperAdmin)) {
-    return "/doctor/workspace";
+    return "/doctor";
   }
 
   const operational = resolveOperationalHomePath(permissions, isSuperAdmin);

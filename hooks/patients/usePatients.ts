@@ -9,10 +9,12 @@ export const usePatients = (params?: {
   organizationId?: string;
   page?: number;
   limit?: number;
+  enabled?: boolean;
 }) => {
   const { organizationId: scopedOrgId, isSuperAdmin } = useTenantScope();
   const search = (params?.search || "").trim().replace(/\s+/g, " ");
   const organizationId = params?.organizationId || scopedOrgId || "";
+  const enabled = params?.enabled !== false;
 
   const query = useQuery({
     queryKey: patientKeys.list({
@@ -27,7 +29,7 @@ export const usePatients = (params?: {
         organizationId: organizationId || undefined,
         isActive: params?.isActive,
       }),
-    enabled: Boolean(organizationId) || isSuperAdmin,
+    enabled: enabled && (Boolean(organizationId) || isSuperAdmin),
   });
 
   return {

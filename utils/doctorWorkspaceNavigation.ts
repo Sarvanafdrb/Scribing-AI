@@ -13,5 +13,5 @@ export const getLastDoctorWorkspaceSessionId = (): string | null => {
 /** Prefer returning to the last open consultation instead of the queue bootstrap page. */
 export const getDoctorWorkspaceBackPath = (): string => {
   const sessionId = getLastDoctorWorkspaceSessionId();
-  return sessionId ? `/doctor/workspace/${sessionId}` : "/doctor/workspace";
+  return sessionId ? `/doctor/workspace/${sessionId}` : "/doctor/consultations";
 };

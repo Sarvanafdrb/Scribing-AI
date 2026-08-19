@@ -93,6 +93,7 @@ interface AppointmentTableProps {
   showDoctor?: boolean;
   onCheckIn?: (appointment: Appointment) => void;
   onCancel?: (appointment: Appointment) => void;
+  onAppointmentSelect?: (appointment: Appointment) => void;
   checkInLoadingId?: string | null;
   cancelLoadingId?: string | null;
   canCheckIn?: boolean;
@@ -104,6 +105,7 @@ export function AppointmentTable({
   showDoctor = true,
   onCheckIn,
   onCancel,
+  onAppointmentSelect,
   checkInLoadingId,
   cancelLoadingId,
   canCheckIn = false,
@@ -139,14 +141,30 @@ export function AppointmentTable({
               appointment.status === "checked_in";
 
             return (
-              <TableRow key={id}>
+              <TableRow
+                key={id}
+                className={onAppointmentSelect ? "cursor-pointer" : undefined}
+                onClick={
+                  onAppointmentSelect
+                    ? () => onAppointmentSelect(appointment)
+                    : undefined
+                }
+              >
                 <TableCell>
                   <div>
-                    <LinkCell href={`/appointments/${id}`}>
-                      {patient
-                        ? getPatientFullName(patient)
-                        : appointment.appointmentCode || id.slice(0, 8)}
-                    </LinkCell>
+                    {onAppointmentSelect ? (
+                      <span className="font-medium text-primary">
+                        {patient
+                          ? getPatientFullName(patient)
+                          : appointment.appointmentCode || id.slice(0, 8)}
+                      </span>
+                    ) : (
+                      <LinkCell href={`/appointments/${id}`}>
+                        {patient
+                          ? getPatientFullName(patient)
+                          : appointment.appointmentCode || id.slice(0, 8)}
+                      </LinkCell>
+                    )}
                     {appointment.reason ? (
                       <p className="mt-0.5 max-w-[200px] truncate text-xs text-muted-foreground">
                         {appointment.reason}
@@ -175,7 +193,10 @@ export function AppointmentTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
+                  <div
+                    className="flex justify-end gap-1"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <Button asChild variant="ghost" size="sm" className="rounded-full">
                       <Link href={`/appointments/${id}`}>View</Link>
                     </Button>

@@ -8,9 +8,15 @@ interface UseSessionsParams {
   status?: string;
   sessionType?: string;
   organizationId?: string;
+  patientId?: string;
+  userId?: string;
   isActive?: string;
+  today?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
+  enabled?: boolean;
 }
 
 export const useSessions = (params?: UseSessionsParams) => {
@@ -19,9 +25,15 @@ export const useSessions = (params?: UseSessionsParams) => {
   const status = params?.status || "";
   const sessionType = params?.sessionType || "";
   const organizationId = params?.organizationId || scopedOrgId || "";
+  const patientId = params?.patientId || "";
+  const userId = params?.userId || "";
   const isActive = params?.isActive || "";
+  const today = params?.today || "";
+  const dateFrom = params?.dateFrom || "";
+  const dateTo = params?.dateTo || "";
   const page = params?.page || 1;
   const limit = params?.limit || 10;
+  const enabled = params?.enabled !== false;
 
   const query = useQuery({
     queryKey: sessionKeys.list({
@@ -29,7 +41,12 @@ export const useSessions = (params?: UseSessionsParams) => {
       status,
       sessionType,
       organizationId,
+      patientId,
+      userId,
       isActive,
+      today,
+      dateFrom,
+      dateTo,
       page,
       limit,
     }),
@@ -39,10 +56,16 @@ export const useSessions = (params?: UseSessionsParams) => {
         status: status || undefined,
         sessionType: sessionType || undefined,
         organizationId: organizationId || undefined,
+        patientId: patientId || undefined,
+        userId: userId || undefined,
         isActive: isActive || undefined,
+        today: today || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
         page,
         limit,
       }),
+    enabled,
     staleTime: 60 * 1000,
   });
 

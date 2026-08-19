@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { History, Loader2, Plus, UserRound } from "lucide-react";
+import { History, Home, Loader2, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -26,6 +26,7 @@ import type { Appointment } from "@/types/appointment.types";
 import { getAppointmentId } from "@/types/appointment.types";
 import { cn } from "@/lib/utils";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
+import { QUEUE_STATUS_STYLES } from "@/utils/doctor-queue.utils";
 
 const AVATAR_COLORS = [
   "bg-primary/20 text-primary",
@@ -86,59 +87,6 @@ const formatQueueDuration = (
     .padStart(2, "0");
   const secs = (seconds % 60).toString().padStart(2, "0");
   return `${mins}:${secs}`;
-};
-
-const QUEUE_STATUS_STYLES: Partial<
-  Record<SessionStatus, { label: string; className: string }>
-> = {
-  recording: {
-    label: "Recording",
-    className: "bg-red-50 text-red-700",
-  },
-  paused: {
-    label: "Paused",
-    className: "bg-amber-50 text-amber-800",
-  },
-  interrupted: {
-    label: "Interrupted",
-    className: "bg-yellow-50 text-yellow-800",
-  },
-  resumed: {
-    label: "Resumed",
-    className: "bg-emerald-50 text-emerald-800",
-  },
-  uploading: {
-    label: "Uploading",
-    className: "bg-blue-50 text-blue-700",
-  },
-  processing: {
-    label: "Processing",
-    className: "bg-amber-50 text-amber-700",
-  },
-  transcript_ready: {
-    label: "Transcript Ready",
-    className: "bg-primary/10 text-primary",
-  },
-  ai_notes_generated: {
-    label: "AI Notes Generated",
-    className: "bg-primary/10 text-primary",
-  },
-  ready_for_review: {
-    label: "Ready for Review",
-    className: "bg-primary/10 text-primary",
-  },
-  completed: {
-    label: "Completed",
-    className: "bg-primary/10 text-primary",
-  },
-  failed: {
-    label: "Failed",
-    className: "bg-red-50 text-red-700",
-  },
-  created: {
-    label: "WAIT",
-    className: "bg-amber-50 text-amber-700",
-  },
 };
 
 interface DoctorSidebarProps {
@@ -600,6 +548,15 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
               Add Patient
             </button>
           ) : null}
+
+          <button
+            type="button"
+            onClick={() => requestNavigateToHref("/doctor")}
+            className="mb-2 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          >
+            <Home className="h-4 w-4" />
+            Doctor Home
+          </button>
 
           <button
             type="button"

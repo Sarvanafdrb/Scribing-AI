@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ import { usePatient } from "@/hooks/patients/usePatients";
 import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
 import { getPatientFullName } from "@/utils/patient.utils";
+import { recordDoctorRecentlyViewedPatient } from "@/utils/doctorRecentlyViewed";
 import { getEncounterType } from "@/utils/encounter.utils";
 import type { Session } from "@/types/session.types";
 import type { SessionUser } from "@/types/session.types";
@@ -70,6 +71,12 @@ export default function PatientPreviousHistoryPage() {
 
   const { data: patient, isLoading: patientLoading } = usePatient(id);
 
+  useEffect(() => {
+    if (id) {
+      recordDoctorRecentlyViewedPatient(id);
+    }
+  }, [id]);
+
   const historyQuery = useQuery({
     queryKey: sessionKeys.list({
       patientId: id,
@@ -109,11 +116,11 @@ export default function PatientPreviousHistoryPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link
-            href="/doctor/workspace"
+            href={`/doctor/patients/${id}`}
             className="mb-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Workspace
+            Back to Patient Profile
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Previous History
@@ -121,7 +128,7 @@ export default function PatientPreviousHistoryPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {patientLoading
               ? "Loading patient…"
-              : `${patientName} · ${total} completed visit${total === 1 ? "" : "s"}`}
+              : `${patientName}${patient?.patientCode ? ` · ${patient.patientCode}` : ""} · ${total} completed visit${total === 1 ? "" : "s"}`}
           </p>
         </div>
         <Badge variant="secondary" className="rounded-full">

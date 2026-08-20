@@ -39,11 +39,11 @@ import {
   isResumableRecording,
   isTranscriptAvailable,
 } from "@/utils/session-status.utils";
-import { getPatientAge, getPatientFullName } from "@/utils/patient.utils";
 import type { Patient } from "@/types/patient.types";
 import type { AiNotes } from "@/types/ai-notes.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import { getSessionDepartmentName } from "@/types/session.types";
+import { DoctorWorkspacePatientIdentity } from "@/components/doctor/DoctorWorkspacePatientIdentity";
 import { cn } from "@/lib/utils";
 import {
   findPrescriptionCompletionIssues,
@@ -59,11 +59,6 @@ const EMPTY_AI_NOTES: AiNotes = {
   plan: "",
   remarks: "",
   medications: [],
-};
-
-const formatGender = (gender?: string) => {
-  if (!gender) return "—";
-  return gender.charAt(0).toUpperCase() + gender.slice(1);
 };
 
 const formatTimer = (seconds: number) => {
@@ -120,7 +115,6 @@ export function DoctorHeader({
       ? (session.patientId as Patient)
       : null;
 
-  const patientAge = getPatientAge(patient);
   const hasRecording =
     (session?.recordingSegments?.length || 0) > 0 || Boolean(session?.audioUrl);
   const transcriptReady = isTranscriptAvailable(session?.status);
@@ -335,20 +329,13 @@ export function DoctorHeader({
   return (
     <>
       <header className="glass flex flex-wrap items-center justify-between gap-3 border-b border-border/50 px-4 py-3 sm:px-6">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="truncate text-lg font-semibold text-foreground">
-              {getPatientFullName(patient)}
-            </h2>
-            <EncounterStatusBadge session={session} />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {patientAge !== null ? `${patientAge} yrs` : "—"}
-            {patient?.gender ? ` · ${formatGender(patient.gender)}` : ""}
-            {getSessionDepartmentName(session)
-              ? ` · ${getSessionDepartmentName(session)}`
-              : ""}
-          </p>
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <DoctorWorkspacePatientIdentity
+            patient={patient}
+            departmentName={getSessionDepartmentName(session)}
+            className="min-w-0 flex-1"
+          />
+          <EncounterStatusBadge session={session} />
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">

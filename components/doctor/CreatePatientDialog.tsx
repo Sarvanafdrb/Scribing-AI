@@ -15,11 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PatientForm } from "@/app/(admin)/patients/components/PatientForm";
 import { usePatientMutations } from "@/hooks/patients/usePatientMutations";
+import { useStartConsultation } from "@/hooks/doctor/useStartConsultation";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { patientService } from "@/services/patient.service";
 import { patientKeys } from "@/services/patient.queries";
-import { sessionService } from "@/services/session.service";
+import { recordDoctorRecentlyViewedPatient } from "@/utils/doctorRecentlyViewed";
 import {
   formatPatientOptionLabel,
   getPatientFullName,
@@ -51,7 +52,8 @@ export function CreatePatientDialog({
   onCreated,
 }: CreatePatientDialogProps) {
   const { createPatient } = usePatientMutations();
-  const { user, organizationId } = useTenantScope();
+  const { startConsultation } = useStartConsultation();
+  const { organizationId } = useTenantScope();
   const [step, setStep] = useState<DialogStep>("search");
   const [search, setSearch] = useState("");
   const [isStartingConsultation, setIsStartingConsultation] = useState(false);
@@ -99,20 +101,15 @@ export function CreatePatientDialog({
   };
 
   const createConsultationForPatient = async (patientId: string) => {
-    const userId = String(user?._id || user?.id || "");
-    if (!patientId || !userId || !organizationId) {
+    if (!patientId) {
       toast.error(
         "Unable to start consultation. Missing doctor or organization.",
       );
       return false;
     }
 
-    await sessionService.create({
-      organizationId,
-      patientId,
-      userId,
-      sessionType: "consultation",
-    });
+    recordDoctorRecentlyViewedPatient(patientId);
+    await startConsultation(patientId);
     return true;
   };
 

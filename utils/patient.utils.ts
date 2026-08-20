@@ -96,3 +96,28 @@ export const formatPatientOptionLabel = (patient: Patient) => {
   const ageLabel = age !== null ? `Age ${age}` : "Age —";
   return `${fullName} · ${patient.patientCode} · ${patient.phoneNumber} · ${ageLabel}`;
 };
+
+export const formatPatientDateOfBirth = (dateOfBirth?: string | null) => {
+  if (!dateOfBirth) return "—";
+  try {
+    return new Date(dateOfBirth).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+};
+
+export const getNormalizedAllergies = (
+  patient: Patient | null | undefined,
+): string[] =>
+  (patient?.allergies || [])
+    .map((allergy) => allergy.trim())
+    .filter(Boolean);
+
+export const getHomeMedications = (
+  patient: Patient | null | undefined,
+): string[] =>
+  (patient?.medications || []).map((med) => med.trim()).filter(Boolean);

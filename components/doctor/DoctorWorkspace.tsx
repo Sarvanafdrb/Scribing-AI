@@ -72,7 +72,7 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
 
           <main className="min-h-0 flex-1 overflow-hidden p-4">
             <div className="grid h-full grid-cols-1 gap-4 xl:grid-cols-[280px_1fr_340px]">
-              <div className="hidden overflow-y-auto xl:block">
+              <div className="max-h-[min(42vh,440px)] overflow-y-auto xl:max-h-none">
                 <DoctorPatientPanel sessionId={sessionId} />
               </div>
 

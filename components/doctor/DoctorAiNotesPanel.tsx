@@ -20,6 +20,8 @@ import { useSession } from "@/hooks/sessions/useSession";
 import { sessionService } from "@/services/session.service";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
 import { PrescriptionMedicationHistoryTable } from "@/components/shared/prescription/PrescriptionMedicationHistoryTable";
+import { PatientAllergyBanner } from "@/components/doctor/PatientAllergyBanner";
+import { PatientHomeMedicationsList } from "@/components/doctor/PatientHomeMedicationsList";
 import {
   formatSavedMedicationPrice,
   getMedicationDisplayName,
@@ -69,7 +71,9 @@ const renderContent = (content?: string) => {
 const formatMedications = (medications?: AiNotesMedication[]) => {
   if (!medications?.length) {
     return (
-      <p className="text-sm text-gray-400 italic">No prescriptions yet.</p>
+      <p className="text-sm text-gray-400 italic">
+        No medications prescribed during this visit yet.
+      </p>
     );
   }
 
@@ -318,6 +322,11 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
         )
       : String(session?.patientId || "");
 
+  const patient =
+    session && typeof session.patientId === "object"
+      ? (session.patientId as Patient)
+      : null;
+
   // Lightweight count only — widget body still uses session.previousHistory (latest 3).
   const historyCountQuery = useQuery({
     queryKey: ["patient-previous-history-count", patientId, sessionId],
@@ -449,6 +458,8 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
       </div>
 
       <div className="flex-1 space-y-1 overflow-y-auto p-3">
+        <PatientAllergyBanner patient={patient} compact className="mb-3" />
+
         {!transcriptReady && (
           <p className="px-2 py-4 text-sm text-gray-400">
             Complete recording to generate AI notes.
@@ -510,7 +521,20 @@ export function DoctorAiNotesPanel({ sessionId }: DoctorAiNotesPanelProps) {
               {isOpen && (
                 <div className="border-t border-gray-100 px-3 py-3">
                   {section.key === "prescription" ? (
-                    formatMedications(aiNotes?.medications)
+                    <div className="space-y-3">
+                      <PatientAllergyBanner patient={patient} compact />
+                      <PatientHomeMedicationsList
+                        patient={patient}
+                        compact
+                        className="rounded-xl border border-border/60 bg-white/80 p-3 shadow-none"
+                      />
+                      <div>
+                        <p className="mb-2 text-[11px] font-semibold tracking-wide text-gray-400 uppercase">
+                          Current Visit Prescription
+                        </p>
+                        {formatMedications(aiNotes?.medications)}
+                      </div>
+                    </div>
                   ) : section.key === "previous_history" ? (
                     <div className="space-y-3">
                       {isIp ? (

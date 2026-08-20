@@ -26,6 +26,7 @@ interface PatientTableProps {
   total: number;
   pageSize: number;
   onPageChange: (page: number) => void;
+  getPatientHref?: (patientId: string) => string;
 }
 
 const formatGender = (gender?: string) => {
@@ -41,6 +42,7 @@ export function PatientTable({
   total,
   pageSize,
   onPageChange,
+  getPatientHref = (patientId) => `/patients/${patientId}`,
 }: PatientTableProps) {
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
@@ -76,16 +78,17 @@ export function PatientTable({
                 const patientId = patient.id || patient._id || "";
                 const isActive = patient.isActive !== false;
                 const age = getPatientAge(patient);
+                const profileHref = getPatientHref(patientId);
 
                 return (
                   <TableRow key={patientId}>
                     <TableCell>
-                      <LinkCell href={`/patients/${patientId}`} mono>
+                      <LinkCell href={profileHref} mono>
                         {patient.patientCode}
                       </LinkCell>
                     </TableCell>
                     <TableCell>
-                      <LinkCell href={`/patients/${patientId}`}>
+                      <LinkCell href={profileHref}>
                         {getPatientFullName(patient)}
                       </LinkCell>
                     </TableCell>

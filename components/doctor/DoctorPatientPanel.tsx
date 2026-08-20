@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  AlertTriangle,
   Building2,
   Calendar,
   Droplets,
@@ -18,8 +17,11 @@ import { useSession } from "@/hooks/sessions/useSession";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { EditPatientDialog } from "@/components/doctor/EditPatientDialog";
+import { PatientAllergyBanner } from "@/components/doctor/PatientAllergyBanner";
+import { PatientHomeMedicationsList } from "@/components/doctor/PatientHomeMedicationsList";
 import { Button } from "@/components/ui/button";
 import {
+  formatPatientDateOfBirth,
   getPatientAge,
   getPatientFullName,
 } from "@/utils/patient.utils";
@@ -95,9 +97,8 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
 
   const patientAge = getPatientAge(patient);
   const showEdit = Boolean(patient) && canEditPatient();
-  const medications = aiNotes?.medications?.filter((m) => m.medicine) || [];
-  const allergies =
-    patient?.allergies?.map((allergy) => allergy.trim()).filter(Boolean) || [];
+  const visitPrescriptions =
+    aiNotes?.medications?.filter((m) => m.medicine) || [];
   const vitals = session?.vitals;
   const temperatureValue = formatTemperature(vitals?.temperature);
   const bloodPressureValue = formatBloodPressure(vitals);
@@ -134,6 +135,20 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
             <dt className="text-gray-500">Name</dt>
             <dd className="ml-auto font-medium text-gray-800">
               {getPatientFullName(patient)}
+            </dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <User className="h-3.5 w-3.5 text-gray-400" />
+            <dt className="text-gray-500">Patient Code</dt>
+            <dd className="ml-auto font-mono text-xs font-medium text-gray-800">
+              {patient?.patientCode || "—"}
+            </dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 text-gray-400" />
+            <dt className="text-gray-500">DOB</dt>
+            <dd className="ml-auto font-medium text-gray-800">
+              {formatPatientDateOfBirth(patient?.dateOfBirth)}
             </dd>
           </div>
           <div className="flex items-center gap-2">
@@ -215,35 +230,18 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
         </dl>
       </section>
 
-      <section className="rounded-xl border border-red-100 bg-red-50 px-3 py-3">
-        <div className="mb-2 flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <span className="text-sm font-medium text-red-700">Allergies</span>
-        </div>
-        {allergies.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {allergies.map((allergy) => (
-              <span
-                key={allergy}
-                className="rounded-md bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
-              >
-                {allergy}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-red-600">No allergies recorded.</p>
-        )}
-      </section>
+      <PatientAllergyBanner patient={patient} />
+
+      <PatientHomeMedicationsList patient={patient} />
 
       <section className="glass rounded-3xl p-4">
         <h3 className="mb-3 flex items-center gap-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
           <Pill className="h-3.5 w-3.5" />
-          Medications
+          Current Visit Prescription
         </h3>
-        {medications.length > 0 ? (
+        {visitPrescriptions.length > 0 ? (
           <ul className="space-y-2 text-sm text-gray-700">
-            {medications.map((med, i) => (
+            {visitPrescriptions.map((med, i) => (
               <li key={`${med.medicine}-${i}`} className="flex items-start gap-2">
                 <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
                 <span>
@@ -265,12 +263,9 @@ export function DoctorPatientPanel({ sessionId }: DoctorPatientPanelProps) {
             ))}
           </ul>
         ) : (
-          <ul className="space-y-1.5 text-sm text-gray-500">
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
-              No medications on file
-            </li>
-          </ul>
+          <p className="text-sm text-gray-500">
+            No medications prescribed during this visit yet
+          </p>
         )}
       </section>
 

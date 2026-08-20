@@ -24,8 +24,8 @@ const STAT_CARDS: StatCardConfig[] = [
   },
   {
     key: "todayPatients",
-    title: "Today's Patients",
-    description: "Distinct patients consulted today",
+    title: "Selected Day Patients",
+    description: "Distinct patients consulted on the selected end day",
     icon: Clock3,
     iconClass: "bg-slate-800 dark:bg-slate-700",
     chartColor: "#3b82f6",
@@ -34,8 +34,8 @@ const STAT_CARDS: StatCardConfig[] = [
   },
   {
     key: "weekPatients",
-    title: "This Week's Patients",
-    description: "Monday–Sunday (local week)",
+    title: "Period Patients",
+    description: "Distinct patients consulted in the selected date range",
     icon: CalendarDays,
     iconClass: "bg-violet-500",
     chartColor: "#8b5cf6",
@@ -45,7 +45,7 @@ const STAT_CARDS: StatCardConfig[] = [
   {
     key: "monthPatients",
     title: "This Month's Patients",
-    description: "Calendar month to date",
+    description: "Distinct patients consulted month-to-date through range end",
     icon: CalendarDays,
     iconClass: "bg-pink-500",
     chartColor: "#ec4899",
@@ -54,17 +54,12 @@ const STAT_CARDS: StatCardConfig[] = [
   },
 ];
 
-const EMPTY_CHARTS = {
-  weekTrend: [],
-  todayByHour: [],
-  weekByDay: [],
-  monthTrend: [],
-};
-
 export default function DoctorDashboardPage() {
   const [dateRange, setDateRange] = useState(getDefaultDoctorDateRange);
-  const { data: stats, isLoading, isError, error } =
+  const { data: stats, isLoading, isFetching, isError, error } =
     useDoctorDashboardStats(dateRange);
+
+  const showLoading = isLoading || isFetching;
 
   return (
     <DoctorShell
@@ -74,7 +69,7 @@ export default function DoctorDashboardPage() {
         <DoctorDateRangePicker value={dateRange} onChange={setDateRange} />
       }
     >
-      {isLoading ? (
+      {showLoading ? (
         <div className="flex h-48 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -82,26 +77,9 @@ export default function DoctorDashboardPage() {
         <div className="glass rounded-3xl p-8 text-center text-sm text-muted-foreground">
           {(error as Error)?.message || "Failed to load dashboard metrics."}
         </div>
-      ) : (
-        <DoctorDashboardView
-          stats={{
-            totalPatients: stats?.totalPatients ?? 0,
-            todayPatients: stats?.todayPatients ?? 0,
-            weekPatients: stats?.weekPatients ?? 0,
-            monthPatients: stats?.monthPatients ?? 0,
-            scheduledSurgery: stats?.scheduledSurgery ?? null,
-            surgeryAvailable: stats?.surgeryAvailable ?? false,
-            boundaries: stats?.boundaries ?? {
-              todayStart: "",
-              weekStart: "",
-              monthStart: "",
-              weekEnd: "",
-            },
-            charts: stats?.charts ?? EMPTY_CHARTS,
-          }}
-          cards={STAT_CARDS}
-        />
-      )}
+      ) : stats ? (
+        <DoctorDashboardView stats={stats} cards={STAT_CARDS} />
+      ) : null}
     </DoctorShell>
   );
 }

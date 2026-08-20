@@ -192,73 +192,57 @@ function StatChartCard({
   );
 }
 
-function SurgeryCard({ stats }: { stats: DoctorDashboardStats }) {
+function FutureAppointmentsCard({ stats }: { stats: DoctorDashboardStats }) {
   const theme = useDoctorChartTheme();
-  const scheduled = stats.surgeryAvailable ? (stats.scheduledSurgery ?? 0) : 0;
-  const surgeryData = [
-    { name: "Completed", value: 0, color: theme.colors.green },
-    { name: "Scheduled", value: scheduled, color: theme.colors.blue },
-    { name: "In Progress", value: 0, color: theme.colors.orange },
-    { name: "Cancelled", value: 0, color: theme.colors.red },
-  ];
-  const total = surgeryData.reduce((sum, item) => sum + item.value, 0);
+  const chartData = stats.charts.appointmentsByDay?.length
+    ? stats.charts.appointmentsByDay
+    : [{ label: "-", value: 0 }];
+  const total = stats.futureAppointments ?? 0;
 
   return (
     <Card className="glass h-full border-border/50 shadow-none">
       <CardContent className="flex h-full flex-col gap-6 p-5 lg:flex-row lg:items-center">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground">Scheduled Surgery</p>
-          <p className="mt-1 text-xs text-muted-foreground">Requires surgery module</p>
-          {!stats.surgeryAvailable ? (
-            <p className="mt-3 text-sm font-medium text-amber-600 dark:text-amber-400">
-              Surgery scheduling is not configured yet.
-            </p>
-          ) : null}
+          <p className="text-sm font-medium text-muted-foreground">
+            Future Appointments
+          </p>
+          <p className="mt-2 text-4xl font-bold tracking-tight text-foreground">
+            {total}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Scheduled visits in the selected period (appointments, not sessions)
+          </p>
         </div>
 
-        <div className="relative mx-auto h-44 w-44 shrink-0">
+        <div className="h-36 w-full min-w-0 flex-1">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={surgeryData}
+            <BarChart data={chartData} margin={{ top: 8, right: 0, left: -28, bottom: 0 }}>
+              <CartesianGrid stroke={theme.grid} strokeDasharray="3 3" vertical={false} />
+              <XAxis
+                dataKey="label"
+                tick={{ fill: theme.axis, fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+              />
+              <YAxis allowDecimals={false} tick={{ fill: theme.axis, fontSize: 10 }} />
+              <Tooltip
+                contentStyle={{
+                  background: theme.tooltipBg,
+                  border: `1px solid ${theme.tooltipBorder}`,
+                  borderRadius: 12,
+                  color: theme.tooltipText,
+                  fontSize: 12,
+                }}
+              />
+              <Bar
                 dataKey="value"
-                cx="50%"
-                cy="50%"
-                innerRadius={58}
-                outerRadius={78}
-                paddingAngle={2}
-                stroke="none"
-              >
-                {surgeryData.map((entry) => (
-                  <Cell
-                    key={entry.name}
-                    fill={total ? entry.color : theme.donutEmpty}
-                  />
-                ))}
-              </Pie>
-            </PieChart>
+                fill={theme.colors.blue}
+                radius={[6, 6, 0, 0]}
+                maxBarSize={28}
+              />
+            </BarChart>
           </ResponsiveContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-foreground">{scheduled}</span>
-            <span className="text-xs text-muted-foreground">Scheduled</span>
-          </div>
-        </div>
-
-        <div className="min-w-[160px] space-y-3">
-          {surgeryData.map((item) => (
-            <div key={item.name} className="flex items-center justify-between gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-muted-foreground">{item.name}</span>
-              </div>
-              <span className="font-medium text-foreground">
-                {item.value} ({pct(item.value, total || 1)})
-              </span>
-            </div>
-          ))}
         </div>
       </CardContent>
     </Card>
@@ -350,7 +334,7 @@ function TrendOverviewCard({ data }: { data: DoctorDashboardChartPoint[] }) {
       <CardContent className="p-5">
         <div>
           <p className="text-sm font-medium text-muted-foreground">Trend Overview</p>
-          <p className="text-xs text-muted-foreground">(This Week)</p>
+          <p className="text-xs text-muted-foreground">(Selected period)</p>
         </div>
         <div className="mt-4 h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -427,7 +411,7 @@ export function DoctorDashboardView({ stats, cards }: DoctorDashboardViewProps) 
             chartData={stats.charts[monthCard.dataKey]}
           />
         ) : null}
-        <SurgeryCard stats={stats} />
+        <FutureAppointmentsCard stats={stats} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

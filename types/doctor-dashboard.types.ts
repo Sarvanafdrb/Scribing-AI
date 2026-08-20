@@ -8,18 +8,20 @@ export interface DoctorDashboardStats {
   todayPatients: number;
   weekPatients: number;
   monthPatients: number;
+  futureAppointments: number;
   scheduledSurgery: number | null;
   surgeryAvailable: boolean;
   boundaries: {
-    todayStart: string;
-    weekStart: string;
+    selectedDayStart: string;
+    periodStart: string;
+    periodEnd: string;
     monthStart: string;
-    weekEnd: string;
   };
   charts: {
     weekTrend: DoctorDashboardChartPoint[];
     todayByHour: DoctorDashboardChartPoint[];
     weekByDay: DoctorDashboardChartPoint[];
     monthTrend: DoctorDashboardChartPoint[];
+    appointmentsByDay: DoctorDashboardChartPoint[];
   };
 }

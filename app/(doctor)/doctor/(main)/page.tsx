@@ -25,7 +25,8 @@ const STAT_CARDS: StatCardConfig[] = [
   {
     key: "todayPatients",
     title: "Selected Day Patients",
-    description: "Distinct patients consulted on the selected end day",
+    description:
+      "Distinct patients consulted today (when today is in the selected range)",
     icon: Clock3,
     iconClass: "bg-slate-800 dark:bg-slate-700",
     chartColor: "#3b82f6",

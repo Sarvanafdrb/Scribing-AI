@@ -1,3 +1,8 @@
+export interface DoctorDashboardChartPoint {
+  label: string;
+  value: number;
+}
+
 export interface DoctorDashboardStats {
   totalPatients: number;
   todayPatients: number;
@@ -9,5 +14,12 @@ export interface DoctorDashboardStats {
     todayStart: string;
     weekStart: string;
     monthStart: string;
+    weekEnd: string;
+  };
+  charts: {
+    weekTrend: DoctorDashboardChartPoint[];
+    todayByHour: DoctorDashboardChartPoint[];
+    weekByDay: DoctorDashboardChartPoint[];
+    monthTrend: DoctorDashboardChartPoint[];
   };
 }

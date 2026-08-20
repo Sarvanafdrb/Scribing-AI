@@ -1,48 +1,63 @@
 "use client";
 
-import { Loader2, CalendarDays, Users, Scissors, Stethoscope } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CalendarDays, Clock3, Loader2, Users } from "lucide-react";
 import { DoctorShell } from "@/components/doctor/DoctorShell";
+import { DoctorDateRangePicker } from "@/components/doctor/dashboard/DoctorDateRangePicker";
+import {
+  DoctorDashboardView,
+  type StatCardConfig,
+} from "@/components/doctor/dashboard/DoctorDashboardView";
 import { useDoctorDashboardStats } from "@/hooks/doctor/useDoctorDashboardStats";
-import { cn } from "@/lib/utils";
 
-const STAT_CARDS = [
+const STAT_CARDS: StatCardConfig[] = [
   {
     key: "totalPatients",
     title: "Total Patients",
     description: "Active patients in your organization",
     icon: Users,
-    color: "bg-indigo-500/80",
+    iconClass: "bg-indigo-500",
+    chartColor: "#6366f1",
+    chartType: "area",
+    dataKey: "weekTrend",
   },
   {
     key: "todayPatients",
     title: "Today's Patients",
     description: "Distinct patients consulted today",
-    icon: Stethoscope,
-    color: "bg-primary/80",
+    icon: Clock3,
+    iconClass: "bg-slate-800 dark:bg-slate-700",
+    chartColor: "#3b82f6",
+    chartType: "bar",
+    dataKey: "todayByHour",
   },
   {
     key: "weekPatients",
     title: "This Week's Patients",
     description: "Monday–Sunday (local week)",
     icon: CalendarDays,
-    color: "bg-violet-500/80",
+    iconClass: "bg-violet-500",
+    chartColor: "#8b5cf6",
+    chartType: "bar",
+    dataKey: "weekByDay",
   },
   {
     key: "monthPatients",
     title: "This Month's Patients",
     description: "Calendar month to date",
     icon: CalendarDays,
-    color: "bg-fuchsia-500/80",
+    iconClass: "bg-pink-500",
+    chartColor: "#ec4899",
+    chartType: "line",
+    dataKey: "monthTrend",
   },
-  {
-    key: "scheduledSurgery",
-    title: "Scheduled Surgery",
-    description: "Requires surgery module",
-    icon: Scissors,
-    color: "bg-slate-500/80",
-  },
-] as const;
+];
+
+const EMPTY_CHARTS = {
+  weekTrend: [],
+  todayByHour: [],
+  weekByDay: [],
+  monthTrend: [],
+};
 
 export default function DoctorDashboardPage() {
   const { data: stats, isLoading, isError, error } = useDoctorDashboardStats();
@@ -51,6 +66,14 @@ export default function DoctorDashboardPage() {
     <DoctorShell
       title="Dashboard"
       description="Overview of your patient activity and schedule."
+      actions={
+        stats?.boundaries ? (
+          <DoctorDateRangePicker
+            start={stats.boundaries.weekStart}
+            end={stats.boundaries.weekEnd}
+          />
+        ) : null
+      }
     >
       {isLoading ? (
         <div className="flex h-48 items-center justify-center">
@@ -61,46 +84,24 @@ export default function DoctorDashboardPage() {
           {(error as Error)?.message || "Failed to load dashboard metrics."}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {STAT_CARDS.map((card) => {
-            const Icon = card.icon;
-            const value =
-              card.key === "scheduledSurgery"
-                ? stats?.surgeryAvailable
-                  ? String(stats?.scheduledSurgery ?? 0)
-                  : "—"
-                : String(stats?.[card.key as keyof typeof stats] ?? 0);
-
-            return (
-              <Card key={card.key} className="glass border-border/50">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {card.title}
-                  </CardTitle>
-                  <div
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-lg text-white",
-                      card.color,
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold text-foreground">{value}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {card.description}
-                  </p>
-                  {card.key === "scheduledSurgery" && !stats?.surgeryAvailable ? (
-                    <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                      Surgery scheduling is not configured yet.
-                    </p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <DoctorDashboardView
+          stats={{
+            totalPatients: stats?.totalPatients ?? 0,
+            todayPatients: stats?.todayPatients ?? 0,
+            weekPatients: stats?.weekPatients ?? 0,
+            monthPatients: stats?.monthPatients ?? 0,
+            scheduledSurgery: stats?.scheduledSurgery ?? null,
+            surgeryAvailable: stats?.surgeryAvailable ?? false,
+            boundaries: stats?.boundaries ?? {
+              todayStart: "",
+              weekStart: "",
+              monthStart: "",
+              weekEnd: "",
+            },
+            charts: stats?.charts ?? EMPTY_CHARTS,
+          }}
+          cards={STAT_CARDS}
+        />
       )}
     </DoctorShell>
   );

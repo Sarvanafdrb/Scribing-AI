@@ -58,6 +58,8 @@ export const sessionService = {
   getDoctorDashboardStats: async (params?: {
     organizationId?: string;
     doctorId?: string;
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<DoctorDashboardStats> => {
     const response = await api.get("/sessions/doctor-dashboard-stats", {
       params,

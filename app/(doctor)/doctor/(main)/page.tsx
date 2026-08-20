@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CalendarDays, Clock3, Loader2, Users } from "lucide-react";
 import { DoctorShell } from "@/components/doctor/DoctorShell";
 import { DoctorDateRangePicker } from "@/components/doctor/dashboard/DoctorDateRangePicker";
@@ -8,6 +9,7 @@ import {
   type StatCardConfig,
 } from "@/components/doctor/dashboard/DoctorDashboardView";
 import { useDoctorDashboardStats } from "@/hooks/doctor/useDoctorDashboardStats";
+import { getDefaultDoctorDateRange } from "@/lib/doctor-dashboard-date-range";
 
 const STAT_CARDS: StatCardConfig[] = [
   {
@@ -60,19 +62,16 @@ const EMPTY_CHARTS = {
 };
 
 export default function DoctorDashboardPage() {
-  const { data: stats, isLoading, isError, error } = useDoctorDashboardStats();
+  const [dateRange, setDateRange] = useState(getDefaultDoctorDateRange);
+  const { data: stats, isLoading, isError, error } =
+    useDoctorDashboardStats(dateRange);
 
   return (
     <DoctorShell
       title="Dashboard"
       description="Overview of your patient activity and schedule."
       actions={
-        stats?.boundaries ? (
-          <DoctorDateRangePicker
-            start={stats.boundaries.weekStart}
-            end={stats.boundaries.weekEnd}
-          />
-        ) : null
+        <DoctorDateRangePicker value={dateRange} onChange={setDateRange} />
       }
     >
       {isLoading ? (

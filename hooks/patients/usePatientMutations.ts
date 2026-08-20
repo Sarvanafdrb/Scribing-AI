@@ -1,23 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { patientService } from "@/services/patient.service";
 import { patientKeys } from "@/services/patient.queries";
-import { sessionKeys } from "@/services/session.queries";
 import {
   CreatePatientData,
   Patient,
   UpdatePatientData,
 } from "@/types/patient.types";
 import { toast } from "sonner";
-
-const invalidateDoctorWorkspaceQueries = (
-  queryClient: ReturnType<typeof useQueryClient>,
-) => {
-  queryClient.invalidateQueries({ queryKey: sessionKeys.all });
-  queryClient.invalidateQueries({
-    predicate: (query) =>
-      Array.isArray(query.queryKey) && query.queryKey.includes("doctor-queue"),
-  });
-};
+import { invalidateDoctorWorkspaceQueries } from "@/lib/invalidate-doctor-workspace";
 
 export const usePatientMutations = () => {
   const queryClient = useQueryClient();
@@ -55,6 +45,7 @@ export const usePatientMutations = () => {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       queryClient.invalidateQueries({ queryKey: patientKeys.detail(id) });
+      invalidateDoctorWorkspaceQueries(queryClient);
       toast.success("Patient activated successfully");
     },
     onError: (error: any) => {
@@ -69,6 +60,7 @@ export const usePatientMutations = () => {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       queryClient.invalidateQueries({ queryKey: patientKeys.detail(id) });
+      invalidateDoctorWorkspaceQueries(queryClient);
       toast.success("Patient deactivated successfully");
     },
     onError: (error: any) => {

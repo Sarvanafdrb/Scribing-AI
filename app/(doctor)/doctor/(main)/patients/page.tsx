@@ -157,7 +157,7 @@ export default function DoctorPatientsPage() {
   const tableTotalPages = usesServerPagination
     ? totalPages
     : Math.max(1, Math.ceil(displayPatients.length / PAGE_SIZE));
-  const tablePage = usesServerPagination ? page : 1;
+  const tablePage = page;
   const pagedPatients = usesServerPagination
     ? displayPatients
     : displayPatients.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -235,34 +235,9 @@ export default function DoctorPatientsPage() {
           pageSize={PAGE_SIZE}
           onPageChange={setPage}
           getPatientHref={(id) => `/doctor/patients/${id}`}
+          actionsVariant="doctor"
         />
       )}
-
-      {!usesServerPagination && displayPatients.length > PAGE_SIZE ? (
-        <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Page {page} · {displayPatients.length} in view
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page * PAGE_SIZE >= displayPatients.length}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      ) : null}
 
       {view === "recent" && !listLoading && recentIds.length === 0 ? (
         <p className="mt-4 text-center text-sm text-muted-foreground">

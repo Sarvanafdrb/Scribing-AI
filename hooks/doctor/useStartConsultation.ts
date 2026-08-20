@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
 import { useTenantScope } from "@/hooks/useTenantScope";
+import { invalidateDoctorWorkspaceQueries } from "@/lib/invalidate-doctor-workspace";
 
 export function useStartConsultation() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export function useStartConsultation() {
 
         await queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
         await queryClient.invalidateQueries({ queryKey: sessionKeys.stats() });
+        invalidateDoctorWorkspaceQueries(queryClient);
 
         router.push(`/doctor/workspace/${sessionId}`);
         return session;

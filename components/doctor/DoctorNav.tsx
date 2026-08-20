@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 const NAV_ITEMS = [
   {
@@ -57,6 +58,11 @@ export function DoctorNav({
   inline = false,
 }: DoctorNavProps) {
   const pathname = usePathname();
+  const { canViewPatients } = useAccessControl();
+
+  const navItems = NAV_ITEMS.filter(
+    (item) => item.href !== "/doctor/patients" || canViewPatients(),
+  );
 
   return (
     <nav
@@ -67,7 +73,7 @@ export function DoctorNav({
         className,
       )}
     >
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const isActive = item.match(pathname);
         const Icon = item.icon;
 

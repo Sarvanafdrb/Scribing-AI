@@ -27,6 +27,7 @@ interface PatientTableProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   getPatientHref?: (patientId: string) => string;
+  actionsVariant?: "admin" | "doctor";
 }
 
 const formatGender = (gender?: string) => {
@@ -43,6 +44,7 @@ export function PatientTable({
   pageSize,
   onPageChange,
   getPatientHref = (patientId) => `/patients/${patientId}`,
+  actionsVariant = "admin",
 }: PatientTableProps) {
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
@@ -113,6 +115,7 @@ export function PatientTable({
                       <PatientActions
                         patient={patient}
                         onStatusChange={onStatusChange}
+                        variant={actionsVariant}
                       />
                     </TableCell>
                   </TableRow>

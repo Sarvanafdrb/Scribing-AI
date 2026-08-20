@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { patientService } from "@/services/patient.service";
 import { patientKeys } from "@/services/patient.queries";
 import { useTenantScope } from "@/hooks/useTenantScope";
+import { useAccessControl } from "@/hooks/useAccessControl";
 
 export const usePatients = (params?: {
   search?: string;
@@ -47,6 +48,7 @@ export const usePatients = (params?: {
 };
 
 export const usePatient = (id?: string | string[]) => {
+  const { canViewPatients } = useAccessControl();
   const patientId = Array.isArray(id)
     ? String(id[0] || "").trim()
     : String(id || "").trim();
@@ -54,7 +56,7 @@ export const usePatient = (id?: string | string[]) => {
   return useQuery({
     queryKey: patientKeys.detail(patientId),
     queryFn: () => patientService.getById(patientId),
-    enabled: Boolean(patientId),
+    enabled: Boolean(patientId) && canViewPatients(),
     staleTime: 5 * 60 * 1000,
   });
 };

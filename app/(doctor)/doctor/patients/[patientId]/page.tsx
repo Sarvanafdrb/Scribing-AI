@@ -35,7 +35,7 @@ export default function DoctorPatientProfilePage() {
   const { data: patient, isLoading, isError } = usePatient(patientId);
   const { updatePatient, activatePatient, deactivatePatient } =
     usePatientMutations();
-  const { canEditPatient, canManagePatientStatus, canCreateSession } =
+  const { canEditPatient, canManagePatientStatus, canCreateSession, canViewPatients } =
     useAccessControl();
   const { startConsultation, isStarting } = useStartConsultation();
 
@@ -51,8 +51,21 @@ export default function DoctorPatientProfilePage() {
   );
 
   const isActive = patient?.isActive !== false;
-  const canEdit = canEditPatient() && isActive;
+  const canEditDemographics = canEditPatient() && isActive;
+  const canManageStatus = canManagePatientStatus();
   const canStart = canCreateSession() && isActive;
+
+  if (!canViewPatients()) {
+    return (
+      <DoctorShell title="Patient Profile">
+        <div className="glass rounded-3xl p-8 text-center">
+          <p className="text-muted-foreground">
+            You do not have permission to view patients.
+          </p>
+        </div>
+      </DoctorShell>
+    );
+  }
 
   const handleInlineUpdate = async (data: UpdatePatientData) => {
     if (typeof data.isActive === "boolean" && Object.keys(data).length === 1) {
@@ -209,7 +222,8 @@ export default function DoctorPatientProfilePage() {
       <PatientDetailsTab
         patient={patient}
         patientId={recordId}
-        canEdit={canEdit}
+        canEdit={canEditDemographics}
+        canManageStatus={canManageStatus}
         onUpdateField={handleInlineUpdate}
       />
     </DoctorShell>

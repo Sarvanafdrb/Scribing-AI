@@ -79,6 +79,7 @@ interface PatientDetailsTabProps {
   patient: Patient;
   patientId: string;
   canEdit: boolean;
+  canManageStatus?: boolean;
   onUpdateField: (data: UpdatePatientData) => Promise<void>;
 }
 
@@ -86,6 +87,7 @@ export function PatientDetailsTab({
   patient,
   patientId,
   canEdit,
+  canManageStatus = false,
   onUpdateField,
 }: PatientDetailsTabProps) {
   const [savingField, setSavingField] = useState<string | null>(null);
@@ -245,7 +247,7 @@ export function PatientDetailsTab({
             <OrganizationInlineField
               label="Status"
               value={statusValue}
-              editable={canEdit}
+              editable={canManageStatus}
               type="select"
               options={[
                 { value: "active", label: "Active" },
@@ -253,7 +255,16 @@ export function PatientDetailsTab({
               ]}
               isSaving={savingField === "status"}
               onSave={async (value) => {
-                await saveField("status", { isActive: value === "active" });
+                if (!canManageStatus) {
+                  toast.info("You don't have permission to change patient status.");
+                  return;
+                }
+                setSavingField("status");
+                try {
+                  await onUpdateField({ isActive: value === "active" });
+                } finally {
+                  setSavingField(null);
+                }
               }}
               displayValue={
                 <Badge

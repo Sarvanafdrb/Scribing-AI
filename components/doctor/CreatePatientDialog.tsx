@@ -18,6 +18,7 @@ import { usePatientMutations } from "@/hooks/patients/usePatientMutations";
 import { useStartConsultation } from "@/hooks/doctor/useStartConsultation";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useTenantScope } from "@/hooks/useTenantScope";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { patientService } from "@/services/patient.service";
 import { patientKeys } from "@/services/patient.queries";
 import { recordDoctorRecentlyViewedPatient } from "@/utils/doctorRecentlyViewed";
@@ -54,6 +55,7 @@ export function CreatePatientDialog({
   const { createPatient } = usePatientMutations();
   const { startConsultation } = useStartConsultation();
   const { organizationId } = useTenantScope();
+  const { canCreatePatient } = useAccessControl();
   const [step, setStep] = useState<DialogStep>("search");
   const [search, setSearch] = useState("");
   const [isStartingConsultation, setIsStartingConsultation] = useState(false);
@@ -195,7 +197,15 @@ export function CreatePatientDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {open && step === "search" ? (
+        {!canCreatePatient() ? (
+          <div className="px-6 py-8 text-center text-sm text-muted-foreground">
+            You do not have permission to create patients.
+          </div>
+        ) : !organizationId ? (
+          <div className="px-6 py-8 text-center text-sm text-muted-foreground">
+            Select an organization workspace to add patients.
+          </div>
+        ) : open && step === "search" ? (
           <>
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-white px-6 py-5">
               <div className="relative">
@@ -285,7 +295,7 @@ export function CreatePatientDialog({
           </>
         ) : null}
 
-        {open && step === "create" ? (
+        {open && canCreatePatient() && organizationId && step === "create" ? (
           <div className="min-h-0 flex-1 overflow-y-auto bg-white px-6 py-5">
             <Button
               type="button"
@@ -300,7 +310,7 @@ export function CreatePatientDialog({
             </Button>
             <PatientForm
               onSubmit={handleSubmit}
-              isLoading={createPatient.isPending}
+              isLoading={createPatient.isPending || isStartingConsultation}
               submitLabel="Create Patient"
               onCancel={handleClose}
               actionsVariant="dialog"

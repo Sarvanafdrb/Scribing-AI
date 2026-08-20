@@ -30,11 +30,13 @@ import { cn } from "@/lib/utils";
 interface PatientActionsProps {
   patient: Patient;
   onStatusChange?: () => void;
+  variant?: "admin" | "doctor";
 }
 
 export function PatientActions({
   patient,
   onStatusChange,
+  variant = "admin",
 }: PatientActionsProps) {
   const router = useRouter();
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
@@ -45,6 +47,14 @@ export function PatientActions({
   const isActive = patient.isActive !== false;
   const canEdit = canEditPatient();
   const canToggleStatus = canManagePatientStatus();
+  const viewHref =
+    variant === "doctor"
+      ? `/doctor/patients/${patientId}`
+      : `/patients/${patientId}`;
+  const editHref =
+    variant === "doctor"
+      ? `/doctor/patients/${patientId}`
+      : `/patients/edit/${patientId}`;
 
   if (!canEdit && !canToggleStatus) {
     return null;
@@ -79,7 +89,7 @@ export function PatientActions({
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem asChild>
-            <Link href={`/patients/${patientId}`}>
+            <Link href={viewHref}>
               <Eye className="mr-2 h-4 w-4" />
               View
             </Link>
@@ -88,7 +98,7 @@ export function PatientActions({
             <DropdownMenuItem
               disabled={!isActive}
               onClick={() => {
-                if (isActive) router.push(`/patients/edit/${patientId}`);
+                if (isActive) router.push(editHref);
               }}
             >
               <Edit className="mr-2 h-4 w-4" />

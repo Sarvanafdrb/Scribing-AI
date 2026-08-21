@@ -20,8 +20,9 @@ import {
   getHomeMedications,
 } from "@/utils/patient.utils";
 import { getDoctorWorkspaceHref } from "@/lib/doctor-consultation-navigation";
+import { SessionVitalsSection } from "@/components/doctor/SessionVitalsSection";
 import type { Patient } from "@/types/patient.types";
-import type { PreviousHistoryItem, Session } from "@/types/session.types";
+import type { PreviousHistoryItem } from "@/types/session.types";
 
 interface ConsultationPreVisitViewProps {
   sessionId?: string;
@@ -131,7 +132,6 @@ export function ConsultationPreVisitView({
   const whatChanged = buildWhatChanged(history, patient);
   const suggestedAgenda = buildSuggestedAgenda(history);
   const activeProblems = buildActiveProblems(history);
-  const vitals = session?.vitals;
 
   const metaParts = [
     age !== null ? `${age} y` : null,
@@ -386,78 +386,13 @@ export function ConsultationPreVisitView({
             )}
           </section>
 
-          <section className="glass rounded-3xl p-5">
-            <h3 className="mb-3 text-sm font-semibold text-foreground">
-              Recent vitals
-            </h3>
-            <VitalsGrid vitals={vitals} session={session} />
-          </section>
+          <SessionVitalsSection
+            vitals={session?.vitals}
+            title="Recent vitals"
+          />
         </div>
       </div>
     </div>
-  );
-}
-
-function VitalsGrid({
-  vitals,
-  session,
-}: {
-  vitals?: Session["vitals"];
-  session?: Session | null;
-}) {
-  const rows = [
-    {
-      label: "Blood pressure",
-      value:
-        vitals?.bloodPressure?.systolic && vitals?.bloodPressure?.diastolic
-          ? `${vitals.bloodPressure.systolic}/${vitals.bloodPressure.diastolic} mmHg`
-          : null,
-      tone: "neutral" as const,
-    },
-    {
-      label: "Heart rate",
-      value: vitals?.heartRate ? `${vitals.heartRate} bpm` : null,
-      tone: "neutral" as const,
-    },
-    {
-      label: "Temperature",
-      value: vitals?.temperature ? `${vitals.temperature} °F` : null,
-      tone: "neutral" as const,
-    },
-    {
-      label: "SpO₂",
-      value: vitals?.spo2 ? `${vitals.spo2}%` : null,
-      tone: "neutral" as const,
-    },
-    {
-      label: "Weight",
-      value: vitals?.weight ? `${vitals.weight} kg` : null,
-      tone: "neutral" as const,
-    },
-  ].filter((row) => row.value);
-
-  if (!rows.length) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {session
-          ? "No vitals captured for this consultation yet."
-          : "No recent vitals available."}
-      </p>
-    );
-  }
-
-  return (
-    <ul className="space-y-2 text-sm">
-      {rows.map((row) => (
-        <li
-          key={row.label}
-          className="flex items-center justify-between gap-3 rounded-xl border border-border/60 px-3 py-2"
-        >
-          <span className="text-muted-foreground">{row.label}</span>
-          <span className="font-medium text-foreground">{row.value}</span>
-        </li>
-      ))}
-    </ul>
   );
 }
 

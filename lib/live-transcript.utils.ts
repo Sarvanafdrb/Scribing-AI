@@ -16,9 +16,33 @@ export const LIVE_SPEECH_LANGUAGES = [
 
 export type LiveSpeechLanguage = (typeof LIVE_SPEECH_LANGUAGES)[number];
 
+export const DEFAULT_LIVE_SPEECH_LANGUAGE: LiveSpeechLanguage = "ta-IN";
+
 /** Devanagari, Tamil, Kannada, Malayalam, Telugu, Bengali, Gurmukhi, Gujarati, Oriya */
 export const INDIC_SCRIPT_REGEX =
   /[\u0900-\u097F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F]/;
+
+export const detectSpeechLanguageFromText = (
+  text: string,
+): LiveSpeechLanguage => {
+  const trimmed = text.trim();
+  if (/[\u0B80-\u0BFF]/.test(trimmed)) return "ta-IN";
+  if (/[\u0D00-\u0D7F]/.test(trimmed)) return "ml-IN";
+  if (/[\u0C80-\u0CFF]/.test(trimmed)) return "kn-IN";
+  if (/[\u0900-\u097F]/.test(trimmed)) return "hi-IN";
+  if (/[\u0C00-\u0C7F]/.test(trimmed)) return "te-IN";
+  if (/[\u0980-\u09FF]/.test(trimmed)) return "bn-IN";
+  if (/[\u0A80-\u0AFF]/.test(trimmed)) return "gu-IN";
+  if (/[\u0A00-\u0A7F]/.test(trimmed)) return "pa-IN";
+  return "en-IN";
+};
+
+export const needsEnglishTranslation = (text: string) => {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  if (INDIC_SCRIPT_REGEX.test(trimmed)) return true;
+  return !/^[a-zA-Z0-9\s'.,!?-]+$/.test(trimmed);
+};
 
 const PATIENT_CUE_PATTERNS: RegExp[] = [
   /good\s*morning\s*doctor/i,
@@ -92,30 +116,6 @@ export const inferLiveSpeaker = (
 
   // Consultations usually open with the patient.
   return segmentIndex === 0 ? "patient" : "doctor";
-};
-
-export const splitLiveTranscriptText = (text: string) => {
-  const trimmed = text.trim();
-  if (!trimmed) {
-    return { primary: "", translation: undefined as string | undefined };
-  }
-
-  const hasIndic = INDIC_SCRIPT_REGEX.test(trimmed);
-  const latinParts =
-    trimmed.match(/[a-zA-Z][a-zA-Z0-9\s'.,!?-]*/g)?.join(" ").trim() || "";
-
-  if (hasIndic && latinParts.length > 2) {
-    return {
-      primary: trimmed,
-      translation: latinParts,
-    };
-  }
-
-  if (hasIndic) {
-    return { primary: trimmed, translation: undefined };
-  }
-
-  return { primary: trimmed, translation: undefined };
 };
 
 export const flipLiveSpeaker = (

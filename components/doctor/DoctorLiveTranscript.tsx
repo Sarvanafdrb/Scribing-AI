@@ -1,17 +1,19 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeftRight, Loader2 } from "lucide-react";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
-import { useLiveTranscriptStore } from "@/store/live-transcript.store";
+import { useLiveTranscriptStore, type LiveTranscriptSegment } from "@/store/live-transcript.store";
 import { TranscriptSegment } from "@/types/transcript.types";
 import { cn } from "@/lib/utils";
 
 interface DoctorLiveTranscriptProps {
   sessionId: string;
 }
+
+const EMPTY_LIVE_SEGMENTS: LiveTranscriptSegment[] = [];
 
 const getSpeakerLabel = (speaker?: string, doctorName = "Doctor") => {
   if (speaker === "doctor") return doctorName;
@@ -42,7 +44,7 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
       state.isLocallyRecording && state.sessionId === sessionId,
   );
   const liveSegments = useLiveTranscriptStore((state) =>
-    state.sessionId === sessionId ? state.segments : [],
+    state.sessionId === sessionId ? state.segments : EMPTY_LIVE_SEGMENTS,
   );
   const flipLiveSpeakers = useLiveTranscriptStore(
     (state) => state.flipAllSpeakers,

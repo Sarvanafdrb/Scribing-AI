@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { transcriptService } from "@/services/transcript.service";
 import {
+  DEFAULT_LIVE_SPEECH_LANGUAGE,
+  detectSpeechLanguageFromText,
   inferLiveSpeaker,
-  LIVE_SPEECH_LANGUAGES,
-  splitLiveTranscriptText,
+  needsEnglishTranslation,
+  type LiveSpeechLanguage,
 } from "@/lib/live-transcript.utils";
-import {
-  useLiveTranscriptStore,
-} from "@/store/live-transcript.store";
+import { useLiveTranscriptStore } from "@/store/live-transcript.store";
 import type { TranscriptSpeaker } from "@/types/transcript.types";
 
 type SpeechRecognitionCtor = new () => SpeechRecognition;
-
-const LANGUAGE_ROTATE_MS = 3000;
 
 const getSpeechRecognition = (): SpeechRecognitionCtor | null => {
   if (typeof window === "undefined") return null;
@@ -41,10 +40,12 @@ export const useLiveSpeechTranscript = (
   const enabledRef = useRef(enabled);
   const sessionIdRef = useRef(sessionId);
   const interimIdRef = useRef<string | null>(null);
-  const langIndexRef = useRef(0);
-  const rotateTimerRef = useRef<number | null>(null);
+  const activeLangRef = useRef<LiveSpeechLanguage>(
+    DEFAULT_LIVE_SPEECH_LANGUAGE,
+  );
   const previousSpeakerRef = useRef<TranscriptSpeaker | null>(null);
   const segmentCountRef = useRef(0);
+  const pendingLanguageSwitchRef = useRef<LiveSpeechLanguage | null>(null);
 
   elapsedRef.current = elapsedSeconds;
   enabledRef.current = enabled;
@@ -54,7 +55,8 @@ export const useLiveSpeechTranscript = (
     setSession(sessionId);
     previousSpeakerRef.current = null;
     segmentCountRef.current = 0;
-    langIndexRef.current = 0;
+    activeLangRef.current = DEFAULT_LIVE_SPEECH_LANGUAGE;
+    pendingLanguageSwitchRef.current = null;
   }, [sessionId, setSession]);
 
   useEffect(() => {
@@ -63,10 +65,6 @@ export const useLiveSpeechTranscript = (
       recognitionRef.current?.stop();
       recognitionRef.current = null;
       interimIdRef.current = null;
-      if (rotateTimerRef.current) {
-        window.clearInterval(rotateTimerRef.current);
-        rotateTimerRef.current = null;
-      }
       return;
     }
 
@@ -80,9 +78,36 @@ export const useLiveSpeechTranscript = (
       return speaker;
     };
 
+    const requestEnglishTranslation = (segmentId: string, text: string) => {
+      if (!needsEnglishTranslation(text)) {
+        return;
+      }
+
+      void transcriptService
+        .translateLiveLine(sessionIdRef.current, text)
+        .then(({ translation }) => {
+          if (!translation.trim()) return;
+          updateLastSegment(segmentId, { translation: translation.trim() });
+        })
+        .catch(() => {
+          // Live translation is best-effort during recording.
+        });
+    };
+
+    const maybeSwitchLanguage = (rawText: string) => {
+      const detected = detectSpeechLanguageFromText(rawText);
+      if (detected === activeLangRef.current) return;
+      pendingLanguageSwitchRef.current = detected;
+      try {
+        recognitionRef.current?.stop();
+      } catch {
+        // onend will restart with the detected language
+      }
+    };
+
     const upsertInterim = (rawText: string) => {
-      const { primary, translation } = splitLiveTranscriptText(rawText);
-      const displayText = primary || rawText;
+      const displayText = rawText.trim();
+      if (!displayText) return;
 
       if (!interimIdRef.current) {
         const id = `live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -91,47 +116,45 @@ export const useLiveSpeechTranscript = (
           id,
           start: elapsedRef.current,
           text: displayText,
-          translation,
           speaker: assignSpeaker(displayText),
           isLive: true,
         });
         return;
       }
 
-      updateLastSegment(interimIdRef.current, {
-        text: displayText,
-        translation,
-      });
+      updateLastSegment(interimIdRef.current, { text: displayText });
     };
 
     const finalizeSegment = (rawText: string) => {
-      const { primary, translation } = splitLiveTranscriptText(rawText);
-      const displayText = primary || rawText;
+      const displayText = rawText.trim();
+      if (!displayText) return;
+
+      let segmentId: string;
 
       if (interimIdRef.current) {
-        updateLastSegment(interimIdRef.current, {
-          text: displayText,
-          translation,
-        });
+        segmentId = interimIdRef.current;
+        updateLastSegment(segmentId, { text: displayText });
         interimIdRef.current = null;
       } else {
+        segmentId = `live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         appendSegment({
-          id: `live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: segmentId,
           start: elapsedRef.current,
           text: displayText,
-          translation,
           speaker: assignSpeaker(displayText),
           isLive: true,
         });
       }
 
       segmentCountRef.current += 1;
+      requestEnglishTranslation(segmentId, displayText);
+      maybeSwitchLanguage(displayText);
     };
 
     const recognition = new SpeechRecognitionClass();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = LIVE_SPEECH_LANGUAGES[langIndexRef.current];
+    recognition.lang = activeLangRef.current;
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -167,7 +190,13 @@ export const useLiveSpeechTranscript = (
 
     const startRecognition = () => {
       if (!enabledRef.current || sessionIdRef.current !== sessionId) return;
-      recognition.lang = LIVE_SPEECH_LANGUAGES[langIndexRef.current];
+
+      if (pendingLanguageSwitchRef.current) {
+        activeLangRef.current = pendingLanguageSwitchRef.current;
+        pendingLanguageSwitchRef.current = null;
+      }
+
+      recognition.lang = activeLangRef.current;
       try {
         recognition.start();
       } catch {
@@ -179,35 +208,17 @@ export const useLiveSpeechTranscript = (
       startRecognition();
     };
 
-    const rotateLanguage = () => {
-      langIndexRef.current =
-        (langIndexRef.current + 1) % LIVE_SPEECH_LANGUAGES.length;
-      recognition.lang = LIVE_SPEECH_LANGUAGES[langIndexRef.current];
-      try {
-        recognition.stop();
-      } catch {
-        // onend will restart with the new language
-      }
-    };
-
     startRecognition();
     recognitionRef.current = recognition;
-    rotateTimerRef.current = window.setInterval(
-      rotateLanguage,
-      LANGUAGE_ROTATE_MS,
-    );
 
     return () => {
-      if (rotateTimerRef.current) {
-        window.clearInterval(rotateTimerRef.current);
-        rotateTimerRef.current = null;
-      }
       recognition.onresult = null;
       recognition.onerror = null;
       recognition.onend = null;
       recognition.stop();
       recognitionRef.current = null;
       interimIdRef.current = null;
+      pendingLanguageSwitchRef.current = null;
     };
   }, [appendSegment, enabled, sessionId, updateLastSegment]);
 

@@ -46,6 +46,17 @@ export const transcriptService = {
     return response.data.data;
   },
 
+  translateLiveLine: async (
+    sessionId: string,
+    text: string,
+  ): Promise<{ translation: string }> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/transcript/translate-live`,
+      { text },
+    );
+    return response.data.data;
+  },
+
   search: async (
     sessionId: string,
     query: string,

@@ -1,17 +1,19 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useSession } from "@/hooks/sessions/useSession";
 import { DoctorSidebar } from "@/components/doctor/DoctorSidebar";
 import { DoctorHeader } from "@/components/doctor/DoctorHeader";
-import { DoctorPatientPanel } from "@/components/doctor/DoctorPatientPanel";
 import { DoctorRecordingPanel } from "@/components/doctor/DoctorRecordingPanel";
 import { DoctorLiveTranscript } from "@/components/doctor/DoctorLiveTranscript";
+import { ConsultationRecordingSidebar } from "@/components/doctor/ConsultationRecordingSidebar";
 import { DoctorAiNotesPanel } from "@/components/doctor/DoctorAiNotesPanel";
 import { DispositionPanel } from "@/components/doctor/DispositionPanel";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
+import { useActiveRecordingStore } from "@/store/active-recording.store";
 import { setLastDoctorWorkspaceSessionId } from "@/utils/doctorWorkspaceNavigation";
+import { isTranscriptAvailable } from "@/utils/session-status.utils";
 
 interface DoctorWorkspaceProps {
   sessionId: string;
@@ -20,17 +22,19 @@ interface DoctorWorkspaceProps {
 export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
   const { data: session, isLoading } = useSession(sessionId);
   const resetEncounterUi = useEncounterUiStore((s) => s.reset);
+  const isLocallyRecording = useActiveRecordingStore(
+    (state) =>
+      state.isLocallyRecording && state.sessionId === sessionId,
+  );
   const [recordingState, setRecordingState] = useState({
     isRecording: false,
     elapsedSeconds: 0,
   });
 
-  // Never leak the previous consultation's timer / modal overlays.
   useEffect(() => {
     setLastDoctorWorkspaceSessionId(sessionId);
     setRecordingState({ isRecording: false, elapsedSeconds: 0 });
     resetEncounterUi();
-    // Clear any leftover dialog scroll/pointer locks from a stuck overlay.
     document.body.style.removeProperty("pointer-events");
     document.body.style.removeProperty("overflow");
   }, [sessionId, resetEncounterUi]);
@@ -58,6 +62,11 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
     );
   }
 
+  const showRecordingLayout =
+    isLocallyRecording ||
+    recordingState.isRecording ||
+    !isTranscriptAvailable(session.status);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-transparent">
       <div className="flex min-h-0 flex-1">
@@ -70,33 +79,37 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
             isRecording={recordingState.isRecording}
           />
 
-          <main className="min-h-0 flex-1 overflow-hidden p-4">
-            <div className="grid h-full grid-cols-1 gap-4 xl:grid-cols-[280px_1fr_340px]">
-              <div className="max-h-[min(42vh,440px)] overflow-y-auto xl:max-h-none">
-                <DoctorPatientPanel sessionId={sessionId} />
-              </div>
+          <main className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="mx-auto flex h-full max-w-6xl flex-col gap-4">
+              <DoctorRecordingPanel
+                key={sessionId}
+                sessionId={sessionId}
+                onRecordingStateChange={handleRecordingStateChange}
+              />
 
-              <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
-                <DoctorRecordingPanel
-                  key={sessionId}
-                  sessionId={sessionId}
-                  onRecordingStateChange={handleRecordingStateChange}
-                />
-                <DoctorLiveTranscript key={`transcript-${sessionId}`} sessionId={sessionId} />
-              </div>
-
-              <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
-                <div className="min-h-0 flex-1 overflow-hidden">
+              {showRecordingLayout ? (
+                <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+                  <DoctorLiveTranscript
+                    key={`transcript-${sessionId}`}
+                    sessionId={sessionId}
+                  />
+                  <ConsultationRecordingSidebar sessionId={sessionId} />
+                </div>
+              ) : (
+                <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
+                  <DoctorLiveTranscript
+                    key={`transcript-${sessionId}`}
+                    sessionId={sessionId}
+                  />
                   <DoctorAiNotesPanel
                     key={`notes-${sessionId}`}
                     sessionId={sessionId}
                   />
                 </div>
-              </div>
+              )}
             </div>
           </main>
 
-          {/* Admit modal host — disposition is chosen after Save Consultation */}
           <DispositionPanel sessionId={sessionId} />
         </div>
       </div>

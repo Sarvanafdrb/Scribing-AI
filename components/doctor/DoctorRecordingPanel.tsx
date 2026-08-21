@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,6 +34,11 @@ import {
   shouldClearRecoveryForStatus,
 } from "@/utils/session-status.utils";
 import { cn } from "@/lib/utils";
+import {
+  getPatientAge,
+  getPatientFullName,
+} from "@/utils/patient.utils";
+import type { Patient } from "@/types/patient.types";
 import {
   clearConsultationRecovery,
   getConsultationRecovery,
@@ -79,7 +84,7 @@ export function DoctorRecordingPanel({
   const recordingStartedAtRef = useRef<number | null>(null);
   const previousDurationRef = useRef(0);
   const recoveryCheckedRef = useRef(false);
-  /** Set when doctor intentionally clicks Stop — blocks pagehide from creating recovery. */
+  /** Set when doctor intentionally clicks Stop â€” blocks pagehide from creating recovery. */
   const intentionalStopRef = useRef(false);
 
   const handleDataChunk = useCallback((chunk: Blob, meta: { mimeType: string }) => {
@@ -152,7 +157,7 @@ export function DoctorRecordingPanel({
           recorderState,
           elapsedSeconds,
           workflow,
-          note: "Unmount will trigger useMediaRecorder cleanup → stopStream()",
+          note: "Unmount will trigger useMediaRecorder cleanup â†’ stopStream()",
         },
         { trace: true },
       );
@@ -238,7 +243,7 @@ export function DoctorRecordingPanel({
     }
   }, [recorderState]);
 
-  // Detect unexpected interruption ONLY — never during normal Stop → upload → processing.
+  // Detect unexpected interruption ONLY â€” never during normal Stop â†’ upload â†’ processing.
   useEffect(() => {
     if (!session || recoveryCheckedRef.current) return;
     if (workflow === "recording" || isUploading) return;
@@ -302,7 +307,7 @@ export function DoctorRecordingPanel({
         return;
       }
 
-      // Active "recording" with draft autosave only — continue normally, no popup.
+      // Active "recording" with draft autosave only â€” continue normally, no popup.
       setPreviousDurationSeconds(0);
       if (local && (endedNormally || local.needsResume !== true)) {
         // Keep draft chunks if still recording on backend, but never show resume UI.
@@ -389,7 +394,7 @@ export function DoctorRecordingPanel({
           audioChunkUploadStatus: pendingBlob ? "pending" : "idle",
           segmentCount,
           pendingMimeType: pendingMimeRef.current,
-          // Metadata only during autosave — storing 30–60min blobs in IndexedDB
+          // Metadata only during autosave â€” storing 30â€“60min blobs in IndexedDB
           // freezes Stop / UI. Blobs are persisted only on real pagehide interrupt.
           pendingAudioBlob: null,
           pendingChunkBlobs: [],
@@ -431,7 +436,7 @@ export function DoctorRecordingPanel({
     persistRecovery,
   ]);
 
-  // pagehide → unexpected interrupt recovery ONLY (not after intentional Stop).
+  // pagehide â†’ unexpected interrupt recovery ONLY (not after intentional Stop).
   useEffect(() => {
     const onPageHide = () => {
       if (intentionalStopRef.current) return;
@@ -452,7 +457,7 @@ export function DoctorRecordingPanel({
         pendingChunkBlobs: [...pendingChunksRef.current],
         unfinished: true,
         recordingEndedNormally: false,
-        // Real browser/tab close or refresh — ONLY place that arms Resume popup.
+        // Real browser/tab close or refresh â€” ONLY place that arms Resume popup.
         needsResume: true,
         audioChunkUploadStatus: pendingBlob ? "pending" : "idle",
       });
@@ -516,7 +521,7 @@ export function DoctorRecordingPanel({
     !isUploading;
   const showPipeline = inPostStopFlow && !showPlayback;
   // Backend says live recording but this tab has no active mic (refresh / mic
-  // permission fail after start API). Must still show Start/Resume — otherwise
+  // permission fail after start API). Must still show Start/Resume â€” otherwise
   // the panel is a dead 00:00 "READY" screen with no controls.
   const orphanedServerLiveStatus =
     recorderState === "idle" &&
@@ -599,7 +604,7 @@ export function DoctorRecordingPanel({
     ) => {
       const finalize = options?.finalize !== false;
       if (finalize) {
-        // Intentional Stop — never keep recovery / never show Resume popup.
+        // Intentional Stop â€” never keep recovery / never show Resume popup.
         intentionalStopRef.current = true;
         setWorkflow("postStop");
         setShowRecoveryDialog(false);
@@ -698,7 +703,7 @@ export function DoctorRecordingPanel({
   const handleStop = useCallback(async () => {
     if (isStopping || isUploading) return;
 
-    // Immediate UI feedback — don't wait on IndexedDB before stopping the mic.
+    // Immediate UI feedback â€” don't wait on IndexedDB before stopping the mic.
     setIsStopping(true);
     intentionalStopRef.current = true;
     setShowRecoveryDialog(false);
@@ -748,7 +753,7 @@ export function DoctorRecordingPanel({
         return;
       }
 
-      toast.message("Stopping recording…");
+      toast.message("Stopping recordingâ€¦");
       const result = await stopRecorder();
       const segmentDuration = result.duration;
       await uploadBlob(
@@ -822,7 +827,7 @@ export function DoctorRecordingPanel({
     }
 
     try {
-      // New consultation start — never inherit prior duration/recovery.
+      // New consultation start â€” never inherit prior duration/recovery.
       await resetForFreshStart();
       await recordingService.start(sessionId);
       await beginMic();
@@ -1167,7 +1172,7 @@ export function DoctorRecordingPanel({
                 ) : (
                   <Square className="h-4 w-4" />
                 )}
-                {isStopping ? "Stopping…" : "Stop"}
+                {isStopping ? "Stoppingâ€¦" : "Stop"}
               </button>
             </div>
           </div>
@@ -1180,7 +1185,7 @@ export function DoctorRecordingPanel({
             <div className="flex flex-col items-center gap-2">
               <span className="font-mono text-xl text-gray-600">
                 {formatTime(
-                  // Only show session duration after pipeline / playback — never for a fresh start.
+                  // Only show session duration after pipeline / playback â€” never for a fresh start.
                   shouldClearRecoveryForStatus(session.status) ||
                     isTranscriptAvailable(session.status)
                     ? session.totalDuration || session.duration || 0
@@ -1222,7 +1227,7 @@ export function DoctorRecordingPanel({
           />
           {(session.recordingSegments?.length || 0) > 1 && (
             <p className="mt-2 text-center text-xs text-gray-500">
-              {session.recordingSegments!.length} audio segments · total{" "}
+              {session.recordingSegments!.length} audio segments Â· total{" "}
               {formatConsultationDuration(
                 session.totalDuration || session.duration || 0,
               )}

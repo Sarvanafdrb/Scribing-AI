@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Mic, Pause, Play, Square } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useMediaRecorder } from "@/hooks/recording/useMediaRecorder";
 import { mrDiag } from "@/hooks/recording/mediaRecorderDiagnostics";
 import {
@@ -1057,8 +1057,27 @@ export function DoctorRecordingPanel({
 
   if (!session) return null;
 
+  const patient =
+    typeof session.patientId === "object"
+      ? (session.patientId as Patient)
+      : null;
+  const patientAge = getPatientAge(patient);
+  const patientName = getPatientFullName(patient) || "Patient";
+  const initials = `${patient?.firstName?.charAt(0) || ""}${patient?.lastName?.charAt(0) || ""}`.toUpperCase() || "?";
+  const reason =
+    session.description?.trim() ||
+    session.title?.trim() ||
+    "Consultation";
+  const patientMeta = [
+    patientAge !== null ? `${patientAge} y` : null,
+    session.vitals?.weight ? `${session.vitals.weight} kg` : null,
+    reason,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <section className="glass rounded-3xl p-5">
+    <>
       <UnfinishedConsultationDialog
         open={showRecoveryDialog}
         previousDurationSeconds={previousDurationSeconds}
@@ -1069,144 +1088,122 @@ export function DoctorRecordingPanel({
 
       <ConsultationRecoveryBanner variant={banner} className="mb-4" />
 
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-            Recording
-          </h3>
-          <p className="truncate text-sm font-medium text-gray-800">
-            {session.roundLabel ||
-              (session.visitType === "inpatient" ||
-              session.encounter?.encounterType === "IP"
-                ? "Doctor Round"
-                : "Consultation Recording")}
-          </p>
-        </div>
-        <span
-          className={cn(
-            "rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide",
-            isMicActive ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500",
-          )}
-        >
-          {statusLabel()}
-        </span>
-      </div>
-
-      <div className="flex flex-col items-center py-4">
-        {(showStart || showContinue) && !controlsLocked && (
-          <button
-            type="button"
-            onClick={showContinue ? handleResumeConsultation : handleStart}
-            disabled={isUploading || recoveryBusy}
-            className="group flex flex-col items-center gap-3"
-          >
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/25 transition-transform group-hover:scale-105 group-active:scale-95">
-              <Mic className="h-8 w-8 text-white" />
+      <section className="overflow-hidden rounded-3xl bg-primary text-primary-foreground shadow-lg">
+        <div className="px-6 pb-6 pt-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 text-sm font-semibold">
+              {initials}
             </div>
-            <span className="text-sm font-medium text-gray-700">
-              {showContinue ? "Resume Recording" : "Start Recording"}
-            </span>
-          </button>
-        )}
-
-        {isMicActive && !controlsLocked && (
-          <div className="flex flex-col items-center gap-4">
-            <div
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{patientName}</p>
+              <p className="truncate text-sm text-primary-foreground/75">
+                {patientMeta}
+              </p>
+            </div>
+            <span
               className={cn(
-                "flex h-20 w-20 items-center justify-center rounded-full",
-                recorderState === "recording"
-                  ? "bg-red-600 shadow-lg shadow-red-200"
-                  : "bg-amber-500",
+                "ml-auto rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide",
+                isMicActive
+                  ? "bg-destructive/20 text-red-100"
+                  : "bg-primary-foreground/10 text-primary-foreground/70",
               )}
             >
-              <Mic className="h-8 w-8 text-white" />
-            </div>
-            <div className="text-center">
-              <span className="font-mono text-2xl font-bold text-gray-800">
-                {formatTime(totalElapsedSeconds)}
-              </span>
-              {previousDurationSeconds > 0 && (
-                <div className="mt-2 space-y-0.5 text-xs text-gray-500">
-                  <p>
-                    Previous recording{" "}
-                    {formatConsultationDuration(previousDurationSeconds)}
-                  </p>
-                  <p>
-                    New recording {formatConsultationDuration(elapsedSeconds)}
-                  </p>
-                  <p className="font-medium text-gray-700">
-                    Total consultation duration{" "}
-                    {formatConsultationDuration(totalElapsedSeconds)}
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {recorderState === "recording" ? (
-                <button
-                  type="button"
-                  onClick={handlePauseClick}
-                  className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm hover:bg-gray-50"
-                >
-                  <Pause className="h-4 w-4" />
-                  Pause
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleResumeMicClick}
-                  className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90"
-                >
-                  <Play className="h-4 w-4" />
-                  Resume
-                </button>
-              )}
+              {statusLabel()}
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center py-2">
+            {(showStart || showContinue) && !controlsLocked && (
               <button
                 type="button"
-                onClick={handleStopClick}
-                disabled={isUploading || isStopping}
-                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-60"
+                onClick={showContinue ? handleResumeConsultation : handleStart}
+                disabled={isUploading || recoveryBusy}
+                className="group flex flex-col items-center gap-3"
               >
-                {isStopping ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Square className="h-4 w-4" />
-                )}
-                {isStopping ? "Stoppingâ€¦" : "Stop"}
+                <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-destructive shadow-lg shadow-black/20 transition-transform group-hover:scale-105 group-active:scale-95">
+                  <span className="h-4 w-4 rounded-full bg-white" />
+                </div>
+                <span className="font-mono text-3xl font-semibold tracking-tight">
+                  {formatTime(totalElapsedSeconds)}
+                </span>
+                <RecordingWaveform active={false} />
+                <p className="max-w-md text-center text-sm text-primary-foreground/75">
+                  One tap to start. Nothing is saved until you approve it.
+                </p>
               </button>
-            </div>
+            )}
+
+            {isMicActive && !controlsLocked && (
+              <div className="flex w-full flex-col items-center gap-3">
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-destructive shadow-lg shadow-black/20">
+                  <span className="h-3.5 w-3.5 rounded-full bg-white" />
+                  {recorderState === "recording" ? (
+                    <span className="absolute inset-0 animate-ping rounded-full bg-destructive/30" />
+                  ) : null}
+                </div>
+                <span className="font-mono text-4xl font-semibold tracking-tight">
+                  {formatTime(totalElapsedSeconds)}
+                </span>
+                <RecordingWaveform active={recorderState === "recording"} />
+                <p className="max-w-md text-center text-sm text-primary-foreground/75">
+                  Listening in Tamil and English. Say &quot;Scribe, …&quot; to
+                  give an instruction — it is captured as an order, not as
+                  speech.
+                </p>
+                <div className="mt-1 flex gap-2">
+                  {recorderState === "recording" ? (
+                    <button
+                      type="button"
+                      onClick={handlePauseClick}
+                      className="rounded-full border border-primary-foreground/20 px-4 py-1.5 text-xs text-primary-foreground/85 hover:bg-primary-foreground/10"
+                    >
+                      Pause
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResumeMicClick}
+                      className="rounded-full border border-primary-foreground/20 px-4 py-1.5 text-xs text-primary-foreground/85 hover:bg-primary-foreground/10"
+                    >
+                      Resume mic
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!showStart &&
+              !showContinue &&
+              !isMicActive &&
+              recorderState === "idle" &&
+              !showPipeline &&
+              !showPlayback && (
+                <div className="flex flex-col items-center gap-3">
+                  <span className="font-mono text-3xl font-semibold tracking-tight">
+                    {formatTime(
+                      shouldClearRecoveryForStatus(session.status) ||
+                        isTranscriptAvailable(session.status)
+                        ? session.totalDuration || session.duration || 0
+                        : previousDurationSeconds,
+                    )}
+                  </span>
+                  <RecordingWaveform
+                    active={isUploading || session.status === "processing"}
+                  />
+                </div>
+              )}
+
+            {recorderError && (
+              <p className="mt-2 text-center text-sm text-red-200">
+                {recorderError}
+              </p>
+            )}
           </div>
-        )}
-
-        {!showStart &&
-          !showContinue &&
-          !isMicActive &&
-          recorderState === "idle" && (
-            <div className="flex flex-col items-center gap-2">
-              <span className="font-mono text-xl text-gray-600">
-                {formatTime(
-                  // Only show session duration after pipeline / playback â€” never for a fresh start.
-                  shouldClearRecoveryForStatus(session.status) ||
-                    isTranscriptAvailable(session.status)
-                    ? session.totalDuration || session.duration || 0
-                    : previousDurationSeconds,
-                )}
-              </span>
-              <WaveformPlaceholder
-                active={isUploading || session.status === "processing"}
-              />
-            </div>
-          )}
-
-        {recorderError && (
-          <p className="mt-2 text-center text-sm text-red-600">
-            {recorderError}
-          </p>
-        )}
-      </div>
+        </div>
+      </section>
 
       {showPipeline && session && (
-        <div className="mt-4">
+        <div className="mt-4 rounded-3xl border border-border/60 bg-card p-4">
           <RecordingPipelineProgress
             session={session}
             transcript={transcript}
@@ -1218,7 +1215,7 @@ export function DoctorRecordingPanel({
       )}
 
       {showPlayback && session?.audioUrl && (
-        <div className="mt-4">
+        <div className="mt-4 rounded-3xl border border-border/60 bg-card p-4">
           <DoctorAudioPlayer
             sessionId={sessionId}
             audioUrl={session.audioUrl}
@@ -1226,8 +1223,8 @@ export function DoctorRecordingPanel({
             knownDuration={session.totalDuration || session.duration}
           />
           {(session.recordingSegments?.length || 0) > 1 && (
-            <p className="mt-2 text-center text-xs text-gray-500">
-              {session.recordingSegments!.length} audio segments Â· total{" "}
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              {session.recordingSegments!.length} audio segments · total{" "}
               {formatConsultationDuration(
                 session.totalDuration || session.duration || 0,
               )}
@@ -1235,27 +1232,23 @@ export function DoctorRecordingPanel({
           )}
         </div>
       )}
-    </section>
+    </>
   );
 }
 
-function WaveformPlaceholder({
-  active = false,
-  className,
-}: {
-  active?: boolean;
-  className?: string;
-}) {
-  const bars = [3, 5, 8, 12, 6, 10, 4, 7, 9, 5, 11, 6, 8, 4, 7];
+function RecordingWaveform({ active = false }: { active?: boolean }) {
+  const bars = [4, 7, 5, 9, 6, 11, 8, 5, 10, 6, 8, 4, 7, 5, 9];
 
   return (
-    <div className={cn("flex h-8 items-end justify-center gap-0.5", className)}>
-      {bars.map((height, i) => (
+    <div className="flex h-8 items-end justify-center gap-1">
+      {bars.map((height, index) => (
         <div
-          key={i}
+          key={index}
           className={cn(
-            "w-1 rounded-full bg-gray-200",
-            active && "animate-pulse bg-primary/40",
+            "w-1 rounded-full",
+            active
+              ? "animate-pulse bg-destructive/80"
+              : "bg-primary-foreground/25",
           )}
           style={{ height: `${height * 2}px` }}
         />

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { transcriptService } from "@/services/transcript.service";
 import { transcriptKeys } from "@/services/transcript.queries";
 import { useSession } from "@/hooks/sessions/useSession";
+import { useActiveRecordingStore } from "@/store/active-recording.store";
 
 export const useTranscript = (sessionId: string) => {
   const sessionQuery = useSession(sessionId);
@@ -13,6 +14,10 @@ export const useTranscript = (sessionId: string) => {
     refetchInterval: (query) => {
       const status = query.state.data?.metadata.status;
       const sessionStatus = sessionQuery.data?.status;
+      const recordingActive = useActiveRecordingStore.getState().isLocallyRecording;
+      if (recordingActive) {
+        return 2000;
+      }
       if (
         status === "processing" ||
         sessionStatus === "processing" ||

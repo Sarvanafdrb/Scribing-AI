@@ -12,8 +12,11 @@ import { DoctorAiNotesPanel } from "@/components/doctor/DoctorAiNotesPanel";
 import { DispositionPanel } from "@/components/doctor/DispositionPanel";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
+import { useLiveSpeechTranscript } from "@/hooks/recording/useLiveSpeechTranscript";
 import { setLastDoctorWorkspaceSessionId } from "@/utils/doctorWorkspaceNavigation";
-import { isTranscriptAvailable } from "@/utils/session-status.utils";
+import {
+  isConsultationCompleted,
+} from "@/utils/session-status.utils";
 
 interface DoctorWorkspaceProps {
   sessionId: string;
@@ -46,6 +49,12 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
     [],
   );
 
+  useLiveSpeechTranscript(
+    sessionId,
+    isLocallyRecording && recordingState.isRecording,
+    recordingState.elapsedSeconds,
+  );
+
   if (isLoading && !session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -62,10 +71,7 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
     );
   }
 
-  const showRecordingLayout =
-    isLocallyRecording ||
-    recordingState.isRecording ||
-    !isTranscriptAvailable(session.status);
+  const showRecordingLayout = !isConsultationCompleted(session.status);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-transparent">

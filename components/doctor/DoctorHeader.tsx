@@ -96,6 +96,7 @@ export function DoctorHeader({
   const setRoundsOpen = useEncounterUiStore((s) => s.setRoundsDrawerOpen);
   const saveDialogOpen = useEncounterUiStore((s) => s.saveDialogOpen);
   const setSaveDialogOpen = useEncounterUiStore((s) => s.setSaveDialogOpen);
+  const notesPreviewNonce = useEncounterUiStore((s) => s.notesPreviewNonce);
   const [incompletePrescriptionOpen, setIncompletePrescriptionOpen] =
     useState(false);
   const [prescriptionCompletionIssues, setPrescriptionCompletionIssues] =
@@ -129,15 +130,26 @@ export function DoctorHeader({
       isReviewReady(session?.status) ||
       transcriptReady ||
       (isResumableRecording(session?.status) && hasRecording));
-  const exportContent =
-    session && canOpenNotes
-      ? buildAiNotesExportContent(
-          canExport && aiNotes
-            ? aiNotes
-            : { ...EMPTY_AI_NOTES, ...aiNotes, status: "completed" },
-          session,
-        )
-      : null;
+  const exportContent = session
+    ? buildAiNotesExportContent(
+        canExport && aiNotes
+          ? aiNotes
+          : { ...EMPTY_AI_NOTES, ...aiNotes, status: "completed" },
+        session,
+      )
+    : null;
+
+  useEffect(() => {
+    if (!notesPreviewNonce || !session) return;
+    setPreviewAutoAction(undefined);
+    setPreviewAutoVoiceEdit(false);
+    setPreviewAutoManualEdit(true);
+    setIsPreviewOpen(true);
+    if (!canOpenNotes) {
+      toast.message("Start drafting notes and prescription manually.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notesPreviewNonce]);
 
   useEffect(() => {
     if (isRecording) {

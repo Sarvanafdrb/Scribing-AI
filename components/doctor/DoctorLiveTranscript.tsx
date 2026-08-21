@@ -1,10 +1,11 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeftRight, Loader2 } from "lucide-react";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
+import { useLiveTranscriptStore } from "@/store/live-transcript.store";
 import { TranscriptSegment } from "@/types/transcript.types";
 import { cn } from "@/lib/utils";
 
@@ -35,9 +36,16 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
     useTranscriptMutations(sessionId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
   const isLocallyRecording = useActiveRecordingStore(
     (state) =>
       state.isLocallyRecording && state.sessionId === sessionId,
+  );
+  const liveSegments = useLiveTranscriptStore((state) =>
+    state.sessionId === sessionId ? state.segments : [],
+  );
+  const flipLiveSpeakers = useLiveTranscriptStore(
+    (state) => state.flipAllSpeakers,
   );
 
   const doctor =
@@ -46,9 +54,39 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
     ? `Dr. ${doctor.lastName || doctor.firstName || "Doctor"}`
     : "Doctor";
 
-  const segments = transcript?.segments || [];
+  const serverSegments = transcript?.segments || [];
+
+  useEffect(() => {
+    if (serverSegments.length > 0) {
+      useLiveTranscriptStore.getState().clear();
+    }
+  }, [serverSegments.length]);
+
+  const segments = useMemo(() => {
+    if (serverSegments.length > 0) {
+      return serverSegments;
+    }
+    return liveSegments.map(
+      (segment): TranscriptSegment => ({
+        id: segment.id,
+        start: segment.start,
+        end: segment.start,
+        text: segment.text,
+        translation: segment.translation,
+        speaker: segment.speaker,
+        language: segment.translation ? "mixed" : "ta",
+        confidence: 0.5,
+      }),
+    );
+  }, [liveSegments, serverSegments]);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [segments.length, isLocallyRecording]);
 
   const handleEditStart = (segment: TranscriptSegment) => {
+    if (segment.id.startsWith("live-")) return;
     setEditingId(segment.id);
     setEditValue(segment.text);
   };
@@ -71,17 +109,19 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
 
   if (isLoading) {
     return (
-      <section className="flex min-h-[360px] flex-1 items-center justify-center glass rounded-3xl p-5">
+      <section className="flex min-h-[420px] flex-1 items-center justify-center rounded-3xl border border-border/60 bg-card">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </section>
     );
   }
 
   return (
-    <section className="flex min-h-[360px] flex-1 flex-col glass rounded-3xl">
+    <section className="flex min-h-[420px] flex-1 flex-col rounded-3xl border border-border/60 bg-card shadow-sm">
       <div className="flex items-center justify-between gap-2 border-b border-border/50 px-5 py-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-foreground">Live transcript</h3>
+          <h3 className="font-serif text-base font-semibold text-foreground">
+            Live transcript
+          </h3>
           {isLocallyRecording ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
@@ -90,10 +130,16 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
           ) : null}
         </div>
         <div className="flex items-center gap-2">
-          {segments.length > 0 && (
+          {(serverSegments.length > 0 || liveSegments.length > 0) && (
             <button
               type="button"
-              onClick={() => reassignSpeakers.mutate("flip")}
+              onClick={() => {
+                if (serverSegments.length > 0) {
+                  reassignSpeakers.mutate("flip");
+                  return;
+                }
+                flipLiveSpeakers();
+              }}
               disabled={reassignSpeakers.isPending}
               className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
               title="Swap Doctor and Patient labels"
@@ -112,18 +158,18 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto p-5">
+      <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto p-5">
         {isProcessing && segments.length === 0 && (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            Generating transcriptâ€¦
+            Generating transcript…
           </div>
         )}
 
         {!isProcessing && segments.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {isLocallyRecording
-              ? "Listeningâ€¦ transcript will appear after processing."
+              ? "Listening… speech will appear here as you talk."
               : "Nothing yet. Tap record to begin."}
           </p>
         )}
@@ -131,15 +177,18 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
         {segments.map((segment) => {
           const isDoctor = segment.speaker === "doctor";
           const isEditing = editingId === segment.id;
+          const isLive = segment.id.startsWith("live-");
 
           return (
             <div key={segment.id} className="space-y-1">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{formatSegmentTime(segment.start)}</span>
+                <span className="font-mono tabular-nums">
+                  {formatSegmentTime(segment.start)}
+                </span>
                 <span
                   className={cn(
                     "font-semibold",
-                    isDoctor ? "text-blue-700 dark:text-blue-300" : "text-emerald-700 dark:text-emerald-300",
+                    isDoctor ? "text-primary" : "text-emerald-700",
                   )}
                 >
                   {getSpeakerLabel(segment.speaker, doctorLabel)}
@@ -176,18 +225,30 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => handleEditStart(segment)}
-                  className="block w-full rounded-xl border border-transparent px-1 py-1 text-left text-sm leading-relaxed text-foreground hover:border-border/60 hover:bg-muted/30"
+                <div
+                  role={!isLive ? "button" : undefined}
+                  tabIndex={!isLive ? 0 : undefined}
+                  onClick={() => {
+                    if (!isLive) handleEditStart(segment);
+                  }}
+                  onKeyDown={(event) => {
+                    if (isLive) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleEditStart(segment);
+                    }
+                  }}
+                  className="px-0 py-0.5 text-left"
                 >
-                  {segment.text}
+                  <span className="block text-sm leading-relaxed text-foreground">
+                    {segment.text}
+                  </span>
                   {segment.translation ? (
-                    <span className="mt-1 block text-xs text-muted-foreground italic">
+                    <span className="mt-1 block text-sm leading-relaxed text-muted-foreground italic">
                       {segment.translation}
                     </span>
                   ) : null}
-                </button>
+                </div>
               )}
             </div>
           );

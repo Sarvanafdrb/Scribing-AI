@@ -5,6 +5,7 @@ import { transcriptService } from "@/services/transcript.service";
 import {
   DEFAULT_LIVE_SPEECH_LANGUAGE,
   detectSpeechLanguageFromText,
+  detectSpeakerSeed,
   inferLiveSpeaker,
   needsEnglishTranslation,
   type LiveSpeechLanguage,
@@ -33,6 +34,9 @@ export const useLiveSpeechTranscript = (
   const updateLastSegment = useLiveTranscriptStore(
     (state) => state.updateLastSegment,
   );
+  const reassignSpeakers = useLiveTranscriptStore(
+    (state) => state.reassignSpeakers,
+  );
   const clear = useLiveTranscriptStore((state) => state.clear);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -44,6 +48,7 @@ export const useLiveSpeechTranscript = (
     DEFAULT_LIVE_SPEECH_LANGUAGE,
   );
   const previousSpeakerRef = useRef<TranscriptSpeaker | null>(null);
+  const sessionSeedRef = useRef<TranscriptSpeaker | null>(null);
   const segmentCountRef = useRef(0);
   const pendingLanguageSwitchRef = useRef<LiveSpeechLanguage | null>(null);
 
@@ -54,6 +59,7 @@ export const useLiveSpeechTranscript = (
   useEffect(() => {
     setSession(sessionId);
     previousSpeakerRef.current = null;
+    sessionSeedRef.current = null;
     segmentCountRef.current = 0;
     activeLangRef.current = DEFAULT_LIVE_SPEECH_LANGUAGE;
     pendingLanguageSwitchRef.current = null;
@@ -68,12 +74,19 @@ export const useLiveSpeechTranscript = (
       return;
     }
 
-    const assignSpeaker = (rawText: string) => {
+    const resolveSpeaker = (rawText: string) => {
       const speaker = inferLiveSpeaker(
         rawText,
         previousSpeakerRef.current,
         segmentCountRef.current,
+        sessionSeedRef.current,
       );
+      if (!sessionSeedRef.current) {
+        const seed = detectSpeakerSeed(rawText);
+        if (seed) {
+          sessionSeedRef.current = seed;
+        }
+      }
       previousSpeakerRef.current = speaker;
       return speaker;
     };
@@ -116,7 +129,7 @@ export const useLiveSpeechTranscript = (
           id,
           start: elapsedRef.current,
           text: displayText,
-          speaker: assignSpeaker(displayText),
+          speaker: previousSpeakerRef.current ?? "doctor",
           isLive: true,
         });
         return;
@@ -129,11 +142,12 @@ export const useLiveSpeechTranscript = (
       const displayText = rawText.trim();
       if (!displayText) return;
 
+      const speaker = resolveSpeaker(displayText);
       let segmentId: string;
 
       if (interimIdRef.current) {
         segmentId = interimIdRef.current;
-        updateLastSegment(segmentId, { text: displayText });
+        updateLastSegment(segmentId, { text: displayText, speaker });
         interimIdRef.current = null;
       } else {
         segmentId = `live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -141,12 +155,18 @@ export const useLiveSpeechTranscript = (
           id: segmentId,
           start: elapsedRef.current,
           text: displayText,
-          speaker: assignSpeaker(displayText),
+          speaker,
           isLive: true,
         });
       }
 
       segmentCountRef.current += 1;
+      reassignSpeakers();
+      const lastSegment =
+        useLiveTranscriptStore.getState().segments.at(-1) ?? null;
+      if (lastSegment) {
+        previousSpeakerRef.current = lastSegment.speaker;
+      }
       requestEnglishTranslation(segmentId, displayText);
       maybeSwitchLanguage(displayText);
     };
@@ -220,7 +240,7 @@ export const useLiveSpeechTranscript = (
       interimIdRef.current = null;
       pendingLanguageSwitchRef.current = null;
     };
-  }, [appendSegment, enabled, sessionId, updateLastSegment]);
+  }, [appendSegment, enabled, reassignSpeakers, sessionId, updateLastSegment]);
 
   useEffect(() => {
     if (!enabled) {

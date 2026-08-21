@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import type { TranscriptSpeaker } from "@/types/transcript.types";
-import { flipLiveSpeaker } from "@/lib/live-transcript.utils";
+import { assignLiveSpeakersHeuristic, flipLiveSpeaker } from "@/lib/live-transcript.utils";
 
 export interface LiveTranscriptSegment {
   id: string;
@@ -22,6 +22,7 @@ interface LiveTranscriptState {
     id: string,
     patch: Partial<Pick<LiveTranscriptSegment, "text" | "translation" | "speaker">>,
   ) => void;
+  reassignSpeakers: () => void;
   flipAllSpeakers: () => void;
   clear: () => void;
 }
@@ -48,6 +49,12 @@ export const useLiveTranscriptStore = create<LiveTranscriptState>((set, get) => 
       segments: state.segments.map((segment) =>
         segment.id === id ? { ...segment, ...patch } : segment,
       ),
+    }));
+  },
+
+  reassignSpeakers: () => {
+    set((state) => ({
+      segments: assignLiveSpeakersHeuristic(state.segments),
     }));
   },
 

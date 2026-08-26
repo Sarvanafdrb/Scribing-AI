@@ -76,8 +76,8 @@ export function ConsultationRecordingSidebar({
   const stopAndComplete = useActiveRecordingStore(
     (state) => state.stopAndComplete,
   );
-  const requestNotesPreview = useEncounterUiStore(
-    (state) => state.requestNotesPreview,
+  const requestClinicalNoteReview = useEncounterUiStore(
+    (state) => state.requestClinicalNoteReview,
   );
   const [isStopping, setIsStopping] = useState(false);
   const [editingField, setEditingField] = useState<VitalFieldKey | null>(null);
@@ -328,7 +328,7 @@ export function ConsultationRecordingSidebar({
       ) : (
         <button
           type="button"
-          onClick={() => requestNotesPreview()}
+          onClick={() => requestClinicalNoteReview()}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
         >
           <Plus className="h-4 w-4" />

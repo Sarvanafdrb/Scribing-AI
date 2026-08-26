@@ -7,10 +7,7 @@ import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { useSession } from "@/hooks/sessions/useSession";
-import {
-  getQueueItemKey,
-  useDoctorQueue,
-} from "@/hooks/doctor/useDoctorQueue";
+import { getQueueItemKey, useDoctorQueue } from "@/hooks/doctor/useDoctorQueue";
 import { useAppointments } from "@/hooks/appointments/useAppointments";
 import { useAppointmentMutations } from "@/hooks/appointments/useAppointmentMutations";
 import { useConsultationNavigationGuard } from "@/hooks/doctor/useConsultationNavigationGuard";
@@ -26,7 +23,7 @@ import type { Appointment } from "@/types/appointment.types";
 import { getAppointmentId } from "@/types/appointment.types";
 import { cn } from "@/lib/utils";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
-import { QUEUE_STATUS_STYLES } from "@/utils/doctor-queue.utils";
+import { QUEUE_STATUS_STYLES, getQueueStatusLabel } from "@/utils/doctor-queue.utils";
 
 const AVATAR_COLORS = [
   "bg-primary/20 text-primary",
@@ -58,7 +55,10 @@ const formatQueueDuration = (
     liveElapsedBySessionId.sessionId === sessionId;
 
   if (isLiveLocal) {
-    const seconds = Math.max(0, Math.floor(liveElapsedBySessionId.elapsedSeconds));
+    const seconds = Math.max(
+      0,
+      Math.floor(liveElapsedBySessionId.elapsedSeconds),
+    );
     const mins = Math.floor(seconds / 60)
       .toString()
       .padStart(2, "0");
@@ -69,7 +69,7 @@ const formatQueueDuration = (
   if (
     session.status === "created" ||
     (!session.audioUrl &&
-      !(session.recordingSegments?.length) &&
+      !session.recordingSegments?.length &&
       session.status !== "recording" &&
       session.status !== "paused" &&
       session.status !== "interrupted" &&
@@ -125,7 +125,9 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
     const patientId = String(patient?._id || patient?.id || "");
     if (!patientId) return true;
     return !items.some((item) => {
-      const queuePatientId = String(item.patient?._id || item.patient?.id || "");
+      const queuePatientId = String(
+        item.patient?._id || item.patient?.id || "",
+      );
       return queuePatientId === patientId;
     });
   });
@@ -162,7 +164,10 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
       { queryKey: sessionKeys.lists() },
       (current: unknown) => {
         if (!current || typeof current !== "object") return current;
-        const data = current as { sessions?: Session[]; items?: DoctorQueueItem[] };
+        const data = current as {
+          sessions?: Session[];
+          items?: DoctorQueueItem[];
+        };
         if (Array.isArray(data.items)) {
           let changed = false;
           const nextItems = data.items.map((item) => {
@@ -243,10 +248,7 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
   };
 
   const getAppointmentPatient = (appointment: Appointment) => {
-    if (
-      appointment.patientId &&
-      typeof appointment.patientId === "object"
-    ) {
+    if (appointment.patientId && typeof appointment.patientId === "object") {
       return appointment.patientId;
     }
     return null;
@@ -295,9 +297,9 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
 
   return (
     <>
-      <aside className="glass flex h-full w-[260px] shrink-0 flex-col border-r border-border/50">
-        <div className="border-b border-border/50 px-5 py-5">
-          <div className="flex items-center gap-3">
+      <aside className="glass flex h-full min-h-0 w-[320px] shrink-0 flex-col self-stretch overflow-hidden border-r border-border/50">
+        <div className="shrink-0 border-b border-border/50 px-4 py-4">
+          <div className="flex min-w-0 items-center gap-3">
             {organizationLogo ? (
               <img
                 src={organizationLogo}
@@ -305,20 +307,25 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                 className="h-9 w-9 shrink-0 rounded-xl object-contain"
               />
             ) : null}
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold text-primary">
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-base font-bold text-primary">
                 {organizationName}
               </h1>
-              <p className="text-xs text-muted-foreground">AI Medical Scribe</p>
+              <p className="truncate text-xs text-muted-foreground">
+                Doctor workspace
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <p className="mb-3 px-2 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Today&apos;s Consultations — {items.length} patient
-            {items.length !== 1 ? "s" : ""}
-          </p>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
+            <p className="mb-3 px-1 text-[10px] leading-relaxed font-semibold tracking-wider text-muted-foreground uppercase">
+              Today&apos;s consultations
+              <span className="ml-1 normal-case tracking-normal text-muted-foreground/80">
+                · {items.length} patient{items.length !== 1 ? "s" : ""}
+              </span>
+            </p>
 
           <nav className="space-y-1">
             {items.map((item, index) => {
@@ -327,8 +334,9 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
               const sessionId = item.sessionId || "";
               const isActive =
                 Boolean(sessionId) && sessionId === activeSessionId;
-              const sessionStatus = (item.session?.status ||
-                item.status) as SessionStatus | undefined;
+              const sessionStatus = (item.session?.status || item.status) as
+                | SessionStatus
+                | undefined;
               const statusStyle = sessionStatus
                 ? QUEUE_STATUS_STYLES[sessionStatus]
                 : undefined;
@@ -344,12 +352,12 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   onClick={() => openQueueItem(item)}
                   disabled={isOpening}
                   className={cn(
-                    "glass-row flex w-full items-center gap-3 px-3 py-2.5 text-left",
+                    "glass-row flex w-full items-start gap-3 px-3 py-2.5 text-left",
                     isActive && "shadow-glow",
                   )}
                   data-active={isActive ? "true" : undefined}
                 >
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <div
                       className={cn(
                         "flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold",
@@ -364,10 +372,10 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex min-w-0 items-center gap-1.5">
                       <p
                         className={cn(
-                          "truncate text-sm font-medium",
+                          "min-w-0 flex-1 truncate text-sm font-medium",
                           isActive ? "text-primary" : "text-foreground",
                         )}
                       >
@@ -390,39 +398,43 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
                         </>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {item.encounterType === "IP" ? (
-                        <span className="text-primary/80">
-                          Day {item.admissionDay || 1}
-                          {item.ward ? ` · ${item.ward}` : ""}
-                          {item.nextRoundLabel
-                            ? ` · ${item.nextRoundLabel}`
-                            : ""}
-                        </span>
+
+                    <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
+                      <p className="min-w-0 truncate text-xs text-muted-foreground">
+                        {item.encounterType === "IP" ? (
+                          <span className="text-primary/80">
+                            Day {item.admissionDay || 1}
+                            {item.ward ? ` · ${item.ward}` : ""}
+                            {item.nextRoundLabel
+                              ? ` · ${item.nextRoundLabel}`
+                              : ""}
+                          </span>
+                        ) : (
+                          formatQueueDuration(
+                            item.session as Session | null,
+                            liveRecording,
+                          )
+                        )}
+                      </p>
+
+                      {isOpening ? (
+                        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
                       ) : (
-                        formatQueueDuration(
-                          item.session as Session | null,
-                          liveRecording,
+                        showStatusBadge &&
+                        statusStyle && (
+                          <span
+                            className={cn(
+                              "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap",
+                              statusStyle.className,
+                            )}
+                            title={getQueueStatusLabel(sessionStatus, false)}
+                          >
+                            {getQueueStatusLabel(sessionStatus, true)}
+                          </span>
                         )
                       )}
-                    </p>
+                    </div>
                   </div>
-
-                  {isOpening ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                  ) : (
-                    showStatusBadge &&
-                    statusStyle && (
-                      <span
-                        className={cn(
-                          "rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
-                          statusStyle.className,
-                        )}
-                      >
-                        {statusStyle.label}
-                      </span>
-                    )
-                  )}
                 </button>
               );
             })}
@@ -535,43 +547,46 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
               </nav>
             </div>
           ) : null}
-        </div>
+          </div>
 
-        <div className="border-t border-border/50 px-3 py-4">
-          {canCreatePatient() ? (
+          <div className="shrink-0 border-t border-border/50 px-3 py-4">
+            {canCreatePatient() ? (
+              <button
+                type="button"
+                onClick={() => setIsCreatePatientOpen(true)}
+                className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-glow hover:opacity-90"
+              >
+                <Plus className="h-4 w-4 shrink-0" />
+                Add Patient
+              </button>
+            ) : null}
+
             <button
               type="button"
-              onClick={() => setIsCreatePatientOpen(true)}
-              className="mb-2 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground shadow-glow hover:opacity-90"
+              onClick={() => requestNavigateToHref("/doctor")}
+              className="mb-2 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
             >
-              <Plus className="h-4 w-4" />
-              Add Patient
+              <Home className="h-4 w-4 shrink-0" />
+              Doctor Home
             </button>
-          ) : null}
 
-          <button
-            type="button"
-            onClick={() => requestNavigateToHref("/doctor")}
-            className="mb-2 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
-          >
-            <Home className="h-4 w-4" />
-            Doctor Home
-          </button>
+            <button
+              type="button"
+              onClick={() => requestNavigateToHref("/sessions")}
+              className="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            >
+              <History className="h-4 w-4 shrink-0" />
+              Consultation History
+            </button>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            onClick={() => requestNavigateToHref("/sessions")}
-            className="mb-3 flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground"
-          >
-            <History className="h-4 w-4" />
-            Consultation History
-          </button>
-
-          <div className="glass-tint flex items-center gap-3 rounded-2xl px-3 py-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary">
+        <div className="mt-auto shrink-0 border-t border-border/50 px-3 py-3">
+          <div className="glass-tint flex min-w-0 items-center gap-3 rounded-2xl px-3 py-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary">
               <UserRound className="h-4 w-4" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-foreground">
                 {doctorName}
               </p>

@@ -1,7 +1,7 @@
 import type { AiNotesMedication } from "@/types/ai-notes.types";
 import type { MedicineSearchResult } from "@/types/medicine.types";
 
-const normalizeCatalogToken = (value: string) =>
+export const normalizeCatalogToken = (value: string) =>
   value.trim().toLowerCase().replace(/\s+/g, " ");
 
 export type CatalogMedicationIdentity = {

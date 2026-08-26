@@ -247,7 +247,12 @@ export const exportContentToAiNotesUpdate = (
     medications: content.medications
       .filter((medication) => medication.medicine.trim())
       .map((medication) => {
-        const { catalogCostPreview: _preview, ...withoutPreview } = medication;
+        const {
+          catalogCostPreview: _preview,
+          brandNameSnapshot: _brand,
+          formSnapshot: _form,
+          ...withoutPreview
+        } = medication;
         if (!withoutPreview.medicineId) {
           return withoutPreview;
         }

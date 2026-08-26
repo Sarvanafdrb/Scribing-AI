@@ -73,4 +73,13 @@ export const aiNotesService = {
     );
     return response.data.data;
   },
+
+  generateTamilPatientAdvice: async (
+    sessionId: string,
+  ): Promise<{ advice: string }> => {
+    const response = await api.post(
+      `/sessions/${sessionId}/ai-notes/tamil-patient-advice`,
+    );
+    return response.data.data;
+  },
 };

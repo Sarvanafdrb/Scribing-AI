@@ -4,7 +4,15 @@ export type TranscriptProcessingStatus =
   | "pending"
   | "processing"
   | "completed"
-  | "failed";
+  | "failed"
+  | "ai_unavailable";
+
+export interface AiErrorInfo {
+  code: string;
+  provider: string;
+  retryable: boolean;
+  message: string;
+}
 
 export interface TranscriptSegment {
   id: string;
@@ -27,6 +35,7 @@ export interface TranscriptMetadata {
   translationLanguage?: string;
   status: TranscriptProcessingStatus;
   error?: string;
+  aiError?: AiErrorInfo;
 }
 
 export interface TranscriptData {

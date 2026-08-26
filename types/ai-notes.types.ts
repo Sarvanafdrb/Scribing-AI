@@ -5,6 +5,9 @@ export interface AiNotesMedication {
   medicineId?: string;
   medicineNameSnapshot?: string;
   strengthSnapshot?: string;
+  /** Frontend-only display helpers from formulary catalog. */
+  brandNameSnapshot?: string;
+  formSnapshot?: string;
   /** Frontend-only preview of current catalog cost before save. Never persisted. */
   catalogCostPreview?: number;
   priceAtPrescription?: number;
@@ -26,6 +29,12 @@ export interface AiNotes {
   generatedAt?: string;
   status?: AiNotesStatus;
   error?: string;
+  aiError?: {
+    code: string;
+    provider: string;
+    retryable: boolean;
+    message: string;
+  };
 }
 
 export interface UpdateAiNotesData {
@@ -39,8 +48,7 @@ export interface UpdateAiNotesData {
 }
 
 export interface GenerateAiNotesResponse {
-  aiNotes: AiNotes;
-  session: import("@/types/session.types").Session;
+  job: import("@/types/ai-job.types").AiJob;
 }
 
 export interface VoiceEditSectionChange {

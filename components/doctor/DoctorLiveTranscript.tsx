@@ -1,19 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeftRight, Loader2 } from "lucide-react";
+import { ArrowLeftRight, Languages, Loader2 } from "lucide-react";
 import { useTranscript } from "@/hooks/transcript/useTranscript";
 import { useTranscriptMutations } from "@/hooks/transcript/useTranscriptMutations";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
-import { useLiveTranscriptStore, type LiveTranscriptSegment } from "@/store/live-transcript.store";
 import { TranscriptSegment } from "@/types/transcript.types";
 import { cn } from "@/lib/utils";
 
 interface DoctorLiveTranscriptProps {
   sessionId: string;
 }
-
-const EMPTY_LIVE_SEGMENTS: LiveTranscriptSegment[] = [];
 
 const getSpeakerLabel = (speaker?: string, doctorName = "Doctor") => {
   if (speaker === "doctor") return doctorName;
@@ -34,7 +31,7 @@ const formatSegmentTime = (startTime?: number) => {
 export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
   const { session, transcript, isLoading, isProcessing } =
     useTranscript(sessionId);
-  const { updateTranscript, reassignSpeakers } =
+  const { updateTranscript, reassignSpeakers, translateTranscript } =
     useTranscriptMutations(sessionId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -43,12 +40,6 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
     (state) =>
       state.isLocallyRecording && state.sessionId === sessionId,
   );
-  const liveSegments = useLiveTranscriptStore((state) =>
-    state.sessionId === sessionId ? state.segments : EMPTY_LIVE_SEGMENTS,
-  );
-  const flipLiveSpeakers = useLiveTranscriptStore(
-    (state) => state.flipAllSpeakers,
-  );
 
   const doctor =
     session && typeof session.userId === "object" ? session.userId : null;
@@ -56,39 +47,22 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
     ? `Dr. ${doctor.lastName || doctor.firstName || "Doctor"}`
     : "Doctor";
 
-  const serverSegments = transcript?.segments || [];
+  const segments = useMemo(
+    () => transcript?.segments || [],
+    [transcript?.segments],
+  );
 
-  useEffect(() => {
-    if (serverSegments.length > 0) {
-      useLiveTranscriptStore.getState().clear();
-    }
-  }, [serverSegments.length]);
-
-  const segments = useMemo(() => {
-    if (serverSegments.length > 0) {
-      return serverSegments;
-    }
-    return liveSegments.map(
-      (segment): TranscriptSegment => ({
-        id: segment.id,
-        start: segment.start,
-        end: segment.start,
-        text: segment.text,
-        translation: segment.translation,
-        speaker: segment.speaker,
-        language: segment.translation ? "mixed" : "ta",
-        confidence: 0.5,
-      }),
-    );
-  }, [liveSegments, serverSegments]);
+  const canTranslateTranscript =
+    segments.length > 0 &&
+    !isLocallyRecording &&
+    transcript?.metadata.status === "completed";
 
   useEffect(() => {
     if (!scrollRef.current) return;
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [segments.length, isLocallyRecording]);
+  }, [segments.length, isProcessing]);
 
   const handleEditStart = (segment: TranscriptSegment) => {
-    if (segment.id.startsWith("live-")) return;
     setEditingId(segment.id);
     setEditValue(segment.text);
   };
@@ -109,6 +83,11 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
     setEditValue("");
   };
 
+  const processingMessage =
+    session?.status === "uploading"
+      ? "Uploading recording…"
+      : "Transcribing audio with AI…";
+
   if (isLoading) {
     return (
       <section className="flex min-h-[420px] flex-1 items-center justify-center rounded-3xl border border-border/60 bg-card">
@@ -122,26 +101,41 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
       <div className="flex items-center justify-between gap-2 border-b border-border/50 px-5 py-3">
         <div className="flex items-center gap-2">
           <h3 className="font-serif text-base font-semibold text-foreground">
-            Live transcript
+            Transcript
           </h3>
           {isLocallyRecording ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive" />
               Recording
             </span>
+          ) : isProcessing ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Processing
+            </span>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
-          {(serverSegments.length > 0 || liveSegments.length > 0) && (
+          {canTranslateTranscript ? (
             <button
               type="button"
-              onClick={() => {
-                if (serverSegments.length > 0) {
-                  reassignSpeakers.mutate("flip");
-                  return;
-                }
-                flipLiveSpeakers();
-              }}
+              onClick={() => translateTranscript.mutate("en")}
+              disabled={translateTranscript.isPending}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
+              title="Translate full transcript to English (one AI request)"
+            >
+              {translateTranscript.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Languages className="h-3 w-3" />
+              )}
+              Translate
+            </button>
+          ) : null}
+          {segments.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => reassignSpeakers.mutate("flip")}
               disabled={reassignSpeakers.isPending}
               className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
               title="Swap Doctor and Patient labels"
@@ -153,7 +147,7 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
               )}
               Swap
             </button>
-          )}
+          ) : null}
           <span className="text-xs text-muted-foreground">
             {segments.length} line{segments.length === 1 ? "" : "s"}
           </span>
@@ -162,16 +156,16 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
 
       <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto p-5">
         {isProcessing && segments.length === 0 && (
-          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            Generating transcript…
+            {processingMessage}
           </div>
         )}
 
         {!isProcessing && segments.length === 0 && (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {isLocallyRecording
-              ? "Listening… speech will appear here as you talk."
+              ? "Recording in progress. Transcript will appear here when you stop."
               : "Nothing yet. Tap record to begin."}
           </p>
         )}
@@ -179,7 +173,6 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
         {segments.map((segment) => {
           const isDoctor = segment.speaker === "doctor";
           const isEditing = editingId === segment.id;
-          const isLive = segment.id.startsWith("live-");
 
           return (
             <div key={segment.id} className="space-y-1">
@@ -228,13 +221,10 @@ export function DoctorLiveTranscript({ sessionId }: DoctorLiveTranscriptProps) {
                 </div>
               ) : (
                 <div
-                  role={!isLive ? "button" : undefined}
-                  tabIndex={!isLive ? 0 : undefined}
-                  onClick={() => {
-                    if (!isLive) handleEditStart(segment);
-                  }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleEditStart(segment)}
                   onKeyDown={(event) => {
-                    if (isLive) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       handleEditStart(segment);

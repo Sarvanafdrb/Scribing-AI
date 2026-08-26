@@ -13,6 +13,9 @@ export interface LiveTranscriptSegment {
   isLive: true;
 }
 
+/** Stable empty array for Zustand selectors — never inline `[]` in getSnapshot. */
+export const EMPTY_LIVE_SEGMENTS: LiveTranscriptSegment[] = [];
+
 interface LiveTranscriptState {
   sessionId: string | null;
   segments: LiveTranscriptSegment[];
@@ -29,12 +32,12 @@ interface LiveTranscriptState {
 
 export const useLiveTranscriptStore = create<LiveTranscriptState>((set, get) => ({
   sessionId: null,
-  segments: [],
+  segments: EMPTY_LIVE_SEGMENTS,
 
   setSession: (sessionId) => {
     const current = get();
     if (current.sessionId !== sessionId) {
-      set({ sessionId, segments: [] });
+      set({ sessionId, segments: EMPTY_LIVE_SEGMENTS });
     }
   },
 
@@ -67,5 +70,5 @@ export const useLiveTranscriptStore = create<LiveTranscriptState>((set, get) => 
     }));
   },
 
-  clear: () => set({ sessionId: null, segments: [] }),
+  clear: () => set({ sessionId: null, segments: EMPTY_LIVE_SEGMENTS }),
 }));

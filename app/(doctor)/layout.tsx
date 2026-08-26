@@ -299,5 +299,5 @@ export default function DoctorLayout({
     return null;
   }
 
-  return <div className="min-h-screen bg-background">{children}</div>;
+  return <div className="min-h-screen overflow-x-hidden bg-background">{children}</div>;
 }

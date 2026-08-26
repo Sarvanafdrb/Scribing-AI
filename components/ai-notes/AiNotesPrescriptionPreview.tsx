@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { VoiceEditDialog } from "@/components/ai-notes/VoiceEditDialog";
 import { VoiceEditReview } from "@/components/ai-notes/VoiceEditReview";
 import { MedicationConditionSearch } from "@/components/ai-notes/MedicationConditionSearch";
+import { MedicineSuggestionPanel } from "@/components/ai-notes/MedicineSuggestionPanel";
 import type {
   AiNotes,
   AiNotesMedication,
@@ -70,6 +71,7 @@ interface AiNotesPrescriptionPreviewProps {
   autoAction?: "print" | "pdf";
   autoVoiceEdit?: boolean;
   autoManualEdit?: boolean;
+  autoSuggestCondition?: string;
   /** Parent Preview modal must stay open while Voice Edit / Review is active. */
   onVoiceFlowActiveChange?: (active: boolean) => void;
   /** Reports in-progress manual edit content for consultation completion sync. */
@@ -91,6 +93,7 @@ export function AiNotesPrescriptionPreview({
   autoAction,
   autoVoiceEdit = false,
   autoManualEdit = false,
+  autoSuggestCondition,
   onVoiceFlowActiveChange,
   onEditingContentChange,
 }: AiNotesPrescriptionPreviewProps) {
@@ -689,6 +692,15 @@ export function AiNotesPrescriptionPreview({
             />
           ) : null}
         </div>
+
+        {canEditPrescription && autoSuggestCondition ? (
+          <MedicineSuggestionPanel
+            conditionQuery={autoSuggestCondition}
+            organizationId={organizationId}
+            excludedMedicineIds={excludedMedicineIds}
+            onAdd={addMedicineFromCatalog}
+          />
+        ) : null}
 
         {content.medications.length === 0 ? (
           <div className="rounded-xl border border-dashed border-teal-200 bg-teal-50/40 px-4 py-6 text-center">

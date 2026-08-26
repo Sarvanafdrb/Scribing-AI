@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { transcriptService } from "@/services/transcript.service";
 import {
   DEFAULT_LIVE_SPEECH_LANGUAGE,
   detectSpeechLanguageFromText,
   detectSpeakerSeed,
   inferLiveSpeaker,
-  needsEnglishTranslation,
   type LiveSpeechLanguage,
 } from "@/lib/live-transcript.utils";
 import { useLiveTranscriptStore } from "@/store/live-transcript.store";
@@ -91,22 +89,6 @@ export const useLiveSpeechTranscript = (
       return speaker;
     };
 
-    const requestEnglishTranslation = (segmentId: string, text: string) => {
-      if (!needsEnglishTranslation(text)) {
-        return;
-      }
-
-      void transcriptService
-        .translateLiveLine(sessionIdRef.current, text)
-        .then(({ translation }) => {
-          if (!translation.trim()) return;
-          updateLastSegment(segmentId, { translation: translation.trim() });
-        })
-        .catch(() => {
-          // Live translation is best-effort during recording.
-        });
-    };
-
     const maybeSwitchLanguage = (rawText: string) => {
       const detected = detectSpeechLanguageFromText(rawText);
       if (detected === activeLangRef.current) return;
@@ -167,7 +149,6 @@ export const useLiveSpeechTranscript = (
       if (lastSegment) {
         previousSpeakerRef.current = lastSegment.speaker;
       }
-      requestEnglishTranslation(segmentId, displayText);
       maybeSwitchLanguage(displayText);
     };
 

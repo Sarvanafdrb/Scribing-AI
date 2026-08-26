@@ -25,6 +25,7 @@ import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
 import { transcriptKeys } from "@/services/transcript.queries";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
+import { useLiveTranscriptStore } from "@/store/live-transcript.store";
 import { useAuthStore } from "@/store/auth.store";
 import {
   canStartRecording,
@@ -579,6 +580,7 @@ export function DoctorRecordingPanel({
   const beginMic = useCallback(async () => {
     intentionalStopRef.current = false;
     pendingChunksRef.current = [];
+    useLiveTranscriptStore.getState().clear();
     await startRecorder();
     setWorkflow("recording");
   }, [startRecorder]);
@@ -1128,15 +1130,20 @@ export function DoctorRecordingPanel({
                 </span>
                 <RecordingWaveform active={false} />
                 <p className="max-w-md text-center text-sm text-primary-foreground/75">
-                  One tap to start. Nothing is saved until you approve it.
+                  Tap to start recording. Tap again to stop.
                 </p>
               </button>
             )}
 
             {isMicActive && !controlsLocked && (
-              <div className="flex w-full flex-col items-center gap-3">
-                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-destructive shadow-lg shadow-black/20">
-                  <span className="h-3.5 w-3.5 rounded-full bg-white" />
+              <button
+                type="button"
+                onClick={() => void handleStopClick()}
+                disabled={isStopping || isUploading}
+                className="group flex w-full flex-col items-center gap-3 disabled:opacity-60"
+              >
+                <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-destructive shadow-lg shadow-black/20 transition-transform group-hover:scale-105 group-active:scale-95">
+                  <span className="h-5 w-5 rounded-sm bg-white" />
                   {recorderState === "recording" ? (
                     <span className="absolute inset-0 animate-ping rounded-full bg-destructive/30" />
                   ) : null}
@@ -1146,30 +1153,11 @@ export function DoctorRecordingPanel({
                 </span>
                 <RecordingWaveform active={recorderState === "recording"} />
                 <p className="max-w-md text-center text-sm text-primary-foreground/75">
-                  Listening in Tamil and English. Say &quot;Scribe, …&quot; to
-                  give an instruction — it is captured as an order, not as
-                  speech.
+                  {isStopping || isUploading
+                    ? "Saving recording…"
+                    : "Tap again to stop. Transcript will appear below when processing finishes."}
                 </p>
-                <div className="mt-1 flex gap-2">
-                  {recorderState === "recording" ? (
-                    <button
-                      type="button"
-                      onClick={handlePauseClick}
-                      className="rounded-full border border-primary-foreground/20 px-4 py-1.5 text-xs text-primary-foreground/85 hover:bg-primary-foreground/10"
-                    >
-                      Pause
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleResumeMicClick}
-                      className="rounded-full border border-primary-foreground/20 px-4 py-1.5 text-xs text-primary-foreground/85 hover:bg-primary-foreground/10"
-                    >
-                      Resume mic
-                    </button>
-                  )}
-                </div>
-              </div>
+              </button>
             )}
 
             {!showStart &&

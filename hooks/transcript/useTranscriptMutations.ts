@@ -17,6 +17,7 @@ export const useTranscriptMutations = (sessionId: string) => {
 
   const generateTranscript = useMutation({
     mutationFn: () => transcriptService.generate(sessionId),
+    retry: false,
     onSuccess: () => {
       invalidate();
       toast.success("Transcript generation started");
@@ -45,6 +46,7 @@ export const useTranscriptMutations = (sessionId: string) => {
   const translateTranscript = useMutation({
     mutationFn: (targetLanguage: string) =>
       transcriptService.translate(sessionId, targetLanguage),
+    retry: false,
     onSuccess: () => {
       invalidate();
       toast.success("Transcript translated");

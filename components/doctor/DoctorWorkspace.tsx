@@ -1,22 +1,21 @@
-﻿"use client";
+"use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useSession } from "@/hooks/sessions/useSession";
+import { DoctorTopBar } from "@/components/doctor/DoctorTopBar";
 import { DoctorSidebar } from "@/components/doctor/DoctorSidebar";
-import { DoctorHeader } from "@/components/doctor/DoctorHeader";
 import { DoctorRecordingPanel } from "@/components/doctor/DoctorRecordingPanel";
 import { DoctorLiveTranscript } from "@/components/doctor/DoctorLiveTranscript";
 import { ConsultationRecordingSidebar } from "@/components/doctor/ConsultationRecordingSidebar";
-import { DoctorAiNotesPanel } from "@/components/doctor/DoctorAiNotesPanel";
+import { ClinicalNoteReviewView } from "@/components/doctor/ClinicalNoteReviewView";
+import { PrescriptionReviewView } from "@/components/doctor/PrescriptionReviewView";
+import { PrescriptionPreviewView } from "@/components/doctor/PrescriptionPreviewView";
+import { DoctorWorkspaceModals } from "@/components/doctor/DoctorWorkspaceModals";
 import { DispositionPanel } from "@/components/doctor/DispositionPanel";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
-import { useLiveSpeechTranscript } from "@/hooks/recording/useLiveSpeechTranscript";
 import { setLastDoctorWorkspaceSessionId } from "@/utils/doctorWorkspaceNavigation";
-import {
-  isConsultationCompleted,
-} from "@/utils/session-status.utils";
 
 interface DoctorWorkspaceProps {
   sessionId: string;
@@ -25,35 +24,33 @@ interface DoctorWorkspaceProps {
 export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
   const { data: session, isLoading } = useSession(sessionId);
   const resetEncounterUi = useEncounterUiStore((s) => s.reset);
+  const clinicalReviewRequested = useEncounterUiStore(
+    (s) => s.clinicalReviewRequested,
+  );
+  const prescriptionReviewRequested = useEncounterUiStore(
+    (s) => s.prescriptionReviewRequested,
+  );
+  const prescriptionPreviewPayload = useEncounterUiStore(
+    (s) => s.prescriptionPreviewPayload,
+  );
   const isLocallyRecording = useActiveRecordingStore(
     (state) =>
       state.isLocallyRecording && state.sessionId === sessionId,
   );
-  const [recordingState, setRecordingState] = useState({
-    isRecording: false,
-    elapsedSeconds: 0,
-  });
+  const handleRecordingStateChange = useCallback(() => {}, []);
 
   useEffect(() => {
     setLastDoctorWorkspaceSessionId(sessionId);
-    setRecordingState({ isRecording: false, elapsedSeconds: 0 });
     resetEncounterUi();
     document.body.style.removeProperty("pointer-events");
     document.body.style.removeProperty("overflow");
   }, [sessionId, resetEncounterUi]);
 
-  const handleRecordingStateChange = useCallback(
-    (state: { isRecording: boolean; elapsedSeconds: number }) => {
-      setRecordingState(state);
-    },
-    [],
-  );
-
-  useLiveSpeechTranscript(
-    sessionId,
-    isLocallyRecording && recordingState.isRecording,
-    recordingState.elapsedSeconds,
-  );
+  const showPrescriptionPreview = Boolean(prescriptionPreviewPayload);
+  const showPrescriptionReview =
+    prescriptionReviewRequested && !showPrescriptionPreview;
+  const showClinicalNote =
+    clinicalReviewRequested && !showPrescriptionReview && !showPrescriptionPreview;
 
   if (isLoading && !session) {
     return (
@@ -71,47 +68,40 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
     );
   }
 
-  const showRecordingLayout = !isConsultationCompleted(session.status);
-
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-transparent">
-      <div className="flex min-h-0 flex-1">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <DoctorTopBar />
+
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <DoctorSidebar activeSessionId={sessionId} />
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <DoctorHeader
-            sessionId={sessionId}
-            elapsedSeconds={recordingState.elapsedSeconds}
-            isRecording={recordingState.isRecording}
-          />
-
-          <main className="min-h-0 flex-1 overflow-y-auto p-4">
-            <div className="mx-auto flex h-full max-w-6xl flex-col gap-4">
-              <DoctorRecordingPanel
-                key={sessionId}
-                sessionId={sessionId}
-                onRecordingStateChange={handleRecordingStateChange}
-              />
-
-              {showRecordingLayout ? (
-                <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-                  <DoctorLiveTranscript
-                    key={`transcript-${sessionId}`}
-                    sessionId={sessionId}
-                  />
-                  <ConsultationRecordingSidebar sessionId={sessionId} />
-                </div>
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4">
+            <div className="mx-auto flex h-full w-full min-w-0 max-w-6xl flex-col gap-4">
+              {showPrescriptionPreview && prescriptionPreviewPayload ? (
+                <PrescriptionPreviewView
+                  sessionId={sessionId}
+                  payload={prescriptionPreviewPayload}
+                />
+              ) : showPrescriptionReview ? (
+                <PrescriptionReviewView sessionId={sessionId} />
+              ) : showClinicalNote ? (
+                <ClinicalNoteReviewView sessionId={sessionId} />
               ) : (
-                <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[1fr_340px]">
-                  <DoctorLiveTranscript
-                    key={`transcript-${sessionId}`}
+                <>
+                  <DoctorRecordingPanel
+                    key={sessionId}
                     sessionId={sessionId}
+                    onRecordingStateChange={handleRecordingStateChange}
                   />
-                  <DoctorAiNotesPanel
-                    key={`notes-${sessionId}`}
-                    sessionId={sessionId}
-                  />
-                </div>
+                  <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+                    <DoctorLiveTranscript
+                      key={`transcript-${sessionId}`}
+                      sessionId={sessionId}
+                    />
+                    <ConsultationRecordingSidebar sessionId={sessionId} />
+                  </div>
+                </>
               )}
             </div>
           </main>
@@ -119,6 +109,8 @@ export function DoctorWorkspace({ sessionId }: DoctorWorkspaceProps) {
           <DispositionPanel sessionId={sessionId} />
         </div>
       </div>
+
+      <DoctorWorkspaceModals sessionId={sessionId} />
     </div>
   );
 }

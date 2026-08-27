@@ -89,6 +89,13 @@ const formatQueueDuration = (
   return `${mins}:${secs}`;
 };
 
+const getAppointmentPatient = (appointment: Appointment) => {
+  if (appointment.patientId && typeof appointment.patientId === "object") {
+    return appointment.patientId;
+  }
+  return null;
+};
+
 interface DoctorSidebarProps {
   activeSessionId: string;
 }
@@ -245,13 +252,6 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
-
-  const getAppointmentPatient = (appointment: Appointment) => {
-    if (appointment.patientId && typeof appointment.patientId === "object") {
-      return appointment.patientId;
-    }
-    return null;
   };
 
   const handleCheckIn = async (appointment: Appointment) => {

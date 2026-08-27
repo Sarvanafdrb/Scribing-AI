@@ -24,7 +24,7 @@ export default function InviteUserPage() {
 
   if (!canCreateUser()) {
     return (
-      <div className="rounded-lg border bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto max-w-2xl rounded-lg border bg-white p-8 text-center shadow-sm">
         <h1 className="text-xl font-semibold text-slate-900">Access Denied</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           You do not have permission to invite users.
@@ -45,41 +45,43 @@ export default function InviteUserPage() {
     <div className="space-y-6">
       <UsersSubNav active="invitations" />
 
-      <div>
-        <Link href="/users/invitations">
-          <Button variant="ghost" size="sm" className="mb-4 pl-0">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Invitations
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold">Invite User</h1>
-        <p className="text-muted-foreground">
-          Send an invitation email to onboard a new user.
-        </p>
-      </div>
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div>
+          <Link href="/users/invitations">
+            <Button variant="ghost" size="sm" className="mb-4 pl-0">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Invitations
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">Invite User</h1>
+          <p className="text-muted-foreground">
+            Send an invitation email to onboard a new user.
+          </p>
+        </div>
 
-      <Card className="max-w-2xl border-blue-100">
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <MailPlus className="h-6 w-6 text-primary" />
+        <Card className="border-blue-100">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="rounded-lg bg-primary/10 p-2">
+                <MailPlus className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Invite User</CardTitle>
+                <CardDescription>
+                  Create a pending invitation and send the onboarding email
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle>Invite User</CardTitle>
-              <CardDescription>
-                Create a pending invitation and send the onboarding email
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <InviteUserForm
-            onSubmit={handleSubmit}
-            isLoading={createInvitation.isPending}
-            onCancel={() => router.push("/users/invitations")}
-          />
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <InviteUserForm
+              onSubmit={handleSubmit}
+              isLoading={createInvitation.isPending}
+              onCancel={() => router.push("/users/invitations")}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

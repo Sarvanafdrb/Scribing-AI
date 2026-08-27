@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Check,
@@ -11,9 +12,13 @@ import {
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
 import { SaveConsultationDialog } from "@/components/doctor/SaveConsultationDialog";
+import { sessionService } from "@/services/session.service";
+import { sessionKeys } from "@/services/session.queries";
+import { aiNotesKeys } from "@/services/ai-notes.queries";
 import type { PrescriptionPreviewPayload } from "@/types/prescription-preview.types";
 import type { AiNotesMedication } from "@/types/ai-notes.types";
 import type { Patient } from "@/types/patient.types";
@@ -24,6 +29,7 @@ import {
   getMedicationDoseLabel,
 } from "@/utils/prescriptionPrice.utils";
 import { getNormalizedAllergies, getPatientAge } from "@/utils/patient.utils";
+import { isConsultationCompleted } from "@/utils/session-status.utils";
 import { cn } from "@/lib/utils";
 
 interface PrescriptionPreviewViewProps {
@@ -89,13 +95,16 @@ export function PrescriptionPreviewView({
   sessionId,
   payload,
 }: PrescriptionPreviewViewProps) {
-  const { data: session } = useSession(sessionId);
+  const queryClient = useQueryClient();
+  const { data: session, refetch } = useSession(sessionId);
+  const { saveExportContent } = useAiNotes(sessionId);
   const clearPrescriptionPreview = useEncounterUiStore(
     (state) => state.clearPrescriptionPreview,
   );
   const setSaveDialogOpen = useEncounterUiStore((s) => s.setSaveDialogOpen);
   const saveDialogOpen = useEncounterUiStore((s) => s.saveDialogOpen);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const { content, investigations, nextReview, recordingSeconds } = payload;
   const { metadata, medications, remarks } = content;
@@ -175,6 +184,48 @@ export function PrescriptionPreviewView({
 
   const handleAbha = () => {
     toast.message("ABHA push will be available in a future update.");
+  };
+
+  const handleFinishVisit = async () => {
+    if (!session) return;
+
+    if (isConsultationCompleted(session.status)) {
+      setSaveDialogOpen(true);
+      return;
+    }
+
+    setIsFinishing(true);
+    try {
+      await saveExportContent(content);
+      await sessionService.updateStatus(sessionId, "completed");
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: sessionKeys.detail(sessionId),
+        }),
+        queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: sessionKeys.stats() }),
+        queryClient.invalidateQueries({
+          queryKey: aiNotesKeys.detail(sessionId),
+        }),
+      ]);
+      await refetch();
+
+      toast.success("Consultation saved and marked as completed.");
+      setSaveDialogOpen(true);
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to save consultation",
+      );
+    } finally {
+      setIsFinishing(false);
+    }
   };
 
   return (
@@ -489,10 +540,15 @@ export function PrescriptionPreviewView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSaveDialogOpen(true)}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted/50"
+                  onClick={() => void handleFinishVisit()}
+                  disabled={isFinishing}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-60"
                 >
-                  <Check className="h-4 w-4 text-muted-foreground" />
+                  {isFinishing ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Check className="h-4 w-4 text-muted-foreground" />
+                  )}
                   Finish visit and save
                 </button>
               </div>

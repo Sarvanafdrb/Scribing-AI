@@ -217,6 +217,16 @@ export default function AdminLayout({
   }
 
   const routeAccess = resolveRouteAccess(pathname, user, token);
+  const filteredMenuItems = menuItems.filter((item) =>
+    hasPermission(user, item.permission, token),
+  );
+  const activeMenuPath = filteredMenuItems
+    .filter(
+      (item) =>
+        pathname === item.path || pathname.startsWith(`${item.path}/`),
+    )
+    .sort((a, b) => b.path.length - a.path.length)[0]?.path;
+
   return (
     <div className="min-h-screen bg-transparent">
       {/* Mobile Menu Button */}
@@ -264,13 +274,9 @@ export default function AdminLayout({
 
           {/* Navigation */}
           <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
-            {menuItems
-              .filter((item) => hasPermission(user, item.permission, token))
-              .map((item) => {
+            {filteredMenuItems.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  pathname === item.path ||
-                  pathname.startsWith(`${item.path}/`);
+                const isActive = item.path === activeMenuPath;
                 return (
                   <Link
                     key={item.path}

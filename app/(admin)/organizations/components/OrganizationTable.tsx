@@ -58,6 +58,17 @@ export function OrganizationTable({
     return `${org.name}-${org.email}`;
   };
 
+  const getPlanBadgeClass = (plan?: string | null): string => {
+    switch (plan) {
+      case "premium":
+        return "bg-primary text-primary-foreground hover:bg-primary/90";
+      case "basic":
+        return "border border-primary/40 bg-primary/25 text-primary hover:bg-primary/35";
+      default:
+        return "border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20";
+    }
+  };
+
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
 
@@ -152,18 +163,8 @@ export function OrganizationTable({
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          org.subscriptionPlan === "premium"
-                            ? "default"
-                            : "secondary"
-                        }
-                        className={
-                          org.subscriptionPlan === "premium"
-                            ? "bg-blue-700 hover:bg-blue-800"
-                            : org.subscriptionPlan === "basic"
-                              ? "bg-blue-500 hover:bg-blue-600"
-                              : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                        }
+                        variant="outline"
+                        className={getPlanBadgeClass(org.subscriptionPlan)}
                       >
                         {org.subscriptionPlan || "free"}
                       </Badge>

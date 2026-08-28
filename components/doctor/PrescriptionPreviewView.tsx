@@ -14,8 +14,10 @@ import {
 import { toast } from "sonner";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
+import { useSessionSms } from "@/hooks/sms/useSessionSms";
 import { useEncounterUiStore } from "@/store/encounter-ui.store";
 import { SaveConsultationDialog } from "@/components/doctor/SaveConsultationDialog";
+import { SendPrescriptionSmsDialog } from "@/components/doctor/SendPrescriptionSmsDialog";
 import { sessionService } from "@/services/session.service";
 import { sessionKeys } from "@/services/session.queries";
 import { aiNotesKeys } from "@/services/ai-notes.queries";
@@ -30,6 +32,8 @@ import {
 } from "@/utils/prescriptionPrice.utils";
 import { getNormalizedAllergies, getPatientAge } from "@/utils/patient.utils";
 import { isConsultationCompleted } from "@/utils/session-status.utils";
+import { getSmsStatusLabel } from "@/utils/sms.utils";
+import { isValidIndianPhoneNumber, normalizeIndianPhoneNumber } from "@/utils/patient.utils";
 import { cn } from "@/lib/utils";
 
 interface PrescriptionPreviewViewProps {
@@ -105,6 +109,11 @@ export function PrescriptionPreviewView({
   const saveDialogOpen = useEncounterUiStore((s) => s.saveDialogOpen);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
+  const { latestSms, sendSms, isSending } = useSessionSms(
+    sessionId,
+    Boolean(session),
+  );
 
   const { content, investigations, nextReview, recordingSeconds } = payload;
   const { metadata, medications, remarks } = content;
@@ -173,13 +182,40 @@ export function PrescriptionPreviewView({
     }
   };
 
-  const handleSms = () => {
-    const phone = patient?.phoneNumber || metadata.patientPhone;
-    if (!phone || phone === "—") {
+  const patientPhone =
+    patient?.phoneNumber && patient.phoneNumber !== "—"
+      ? patient.phoneNumber
+      : metadata.patientPhone !== "—"
+        ? metadata.patientPhone
+        : "";
+
+  const handleSmsClick = () => {
+    if (!isConsultationCompleted(session?.status)) {
+      toast.message("Complete the consultation before sending SMS.");
+      return;
+    }
+
+    if (!patientPhone) {
       toast.message("No patient phone number on file.");
       return;
     }
-    toast.success(`Prescription ready to send to ${phone}.`);
+
+    const normalized = normalizeIndianPhoneNumber(patientPhone);
+    if (!isValidIndianPhoneNumber(normalized)) {
+      toast.error("Patient phone number is invalid.");
+      return;
+    }
+
+    setSmsDialogOpen(true);
+  };
+
+  const handleConfirmSms = async () => {
+    try {
+      await sendSms();
+      setSmsDialogOpen(false);
+    } catch {
+      // Error toast handled in mutation
+    }
   };
 
   const handleAbha = () => {
@@ -524,12 +560,22 @@ export function PrescriptionPreviewView({
               <div className="mt-3 space-y-1">
                 <button
                   type="button"
-                  onClick={handleSms}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted/50"
+                  onClick={handleSmsClick}
+                  disabled={isSending || !isConsultationCompleted(session?.status)}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-60"
                 >
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  SMS to {metadata.patientPhone || "patient"}
+                  {isSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  SMS to {patientPhone || metadata.patientPhone || "patient"}
                 </button>
+                {latestSms ? (
+                  <p className="px-3 text-xs text-muted-foreground">
+                    SMS status: {getSmsStatusLabel(latestSms.status)}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   onClick={handleAbha}
@@ -586,6 +632,14 @@ export function PrescriptionPreviewView({
           sessionId={sessionId}
         />
       ) : null}
+
+      <SendPrescriptionSmsDialog
+        open={smsDialogOpen}
+        onOpenChange={setSmsDialogOpen}
+        phoneNumber={patientPhone || metadata.patientPhone || "patient"}
+        isSending={isSending}
+        onConfirm={() => void handleConfirmSms()}
+      />
     </>
   );
 }

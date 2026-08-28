@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:utils": "npx tsx --test utils/prescriptionMedication.utils.test.ts utils/prescriptionPrice.utils.test.ts utils/prescription-sign.utils.test.ts utils/prescription-catalog.utils.test.ts utils/ai-notes-export.utils.test.ts"
+    "test:utils": "npx tsx --test utils/prescriptionMedication.utils.test.ts utils/prescriptionPrice.utils.test.ts utils/prescription-sign.utils.test.ts utils/prescription-catalog.utils.test.ts utils/ai-notes-export.utils.test.ts utils/sms.utils.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

@@ -445,10 +445,33 @@
   }
 
   /* Opaque menus — glass overlay was letting form fields bleed through */
+  /* Opaque menus — glass overlay was letting form fields bleed through */
   [data-slot="select-content"],
-  [data-slot="dropdown-menu-content"],
-  [data-slot="dropdown-menu-sub-content"],
   [data-slot="popover-content"] {
+    background-color: var(--glass-menu-bg) !important;
+    background-image: none !important;
+    border: 1px solid var(--glass-menu-border) !important;
+    box-shadow: var(--glass-menu-shadow) !important;
+    color: var(--popover-foreground) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    z-index: 9999;
+  }
+
+  [data-slot="dropdown-menu-content"] {
+    background-color: var(--glass-menu-bg) !important;
+    background-image: none !important;
+    border: 1px solid var(--glass-menu-border) !important;
+    box-shadow: var(--glass-menu-shadow) !important;
+    color: var(--popover-foreground) !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    z-index: 9999;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  [data-slot="dropdown-menu-sub-content"] {
     background-color: var(--glass-menu-bg) !important;
     background-image: none !important;
     border: 1px solid var(--glass-menu-border) !important;

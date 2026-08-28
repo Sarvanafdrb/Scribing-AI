@@ -7,9 +7,16 @@ import { cn } from "@/lib/utils"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
 
 function DropdownMenu({
+  modal = false,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+  return (
+    <DropdownMenuPrimitive.Root
+      data-slot="dropdown-menu"
+      modal={modal}
+      {...props}
+    />
+  )
 }
 
 function DropdownMenuPortal({
@@ -35,6 +42,7 @@ function DropdownMenuContent({
   className,
   align = "start",
   sideOffset = 4,
+  collisionPadding = 8,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
   return (
@@ -43,8 +51,9 @@ function DropdownMenuContent({
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         align={align}
+        collisionPadding={collisionPadding}
         className={cn(
-          "z-[9999] max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-dropdown-menu-trigger-width) min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-3xl border border-white/20 bg-white/60 p-1.5 text-popover-foreground shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-3xl backdrop-saturate-200 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:border-white/20 dark:bg-[rgba(22,24,34,0.72)]",
+          "z-[9999] min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-visible rounded-3xl border border-white/20 bg-white/60 p-1.5 text-popover-foreground shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-3xl backdrop-saturate-200 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:border-white/20 dark:bg-[rgba(22,24,34,0.72)]",
           className,
         )}
         {...props}
@@ -242,13 +251,15 @@ function DropdownMenuSubTrigger({
 
 function DropdownMenuSubContent({
   className,
+  collisionPadding = 8,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
   return (
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
+      collisionPadding={collisionPadding}
       className={cn(
-        "z-[9999] min-w-[96px] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-3xl border border-white/20 bg-white/60 p-1.5 text-popover-foreground shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-3xl backdrop-saturate-200 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:border-white/20 dark:bg-[rgba(22,24,34,0.72)]",
+        "z-[9999] max-h-96 min-w-[9rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-3xl border border-white/20 bg-white/60 p-1.5 text-popover-foreground shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-3xl backdrop-saturate-200 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:border-white/20 dark:bg-[rgba(22,24,34,0.72)]",
         className,
       )}
       {...props}

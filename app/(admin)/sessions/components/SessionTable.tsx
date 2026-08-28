@@ -91,7 +91,7 @@ export function SessionTable({
 
   return (
     <div className="space-y-4">
-      <div className={cn("overflow-hidden", healthcareSolid.card)}>
+      <div className={cn("overflow-x-auto", healthcareSolid.card)}>
         <Table>
           <TableHeader>
             <TableRow>

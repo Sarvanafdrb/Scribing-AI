@@ -49,7 +49,8 @@ const registerSchema = z
       .string()
       .optional()
       .refine(
-        (value) => !value || value.trim() === "" || phoneRegex.test(value.trim()),
+        (value) =>
+          !value || value.trim() === "" || phoneRegex.test(value.trim()),
         "Phone must be 10 to 15 digits",
       ),
   })
@@ -119,7 +120,7 @@ export default function RegisterPage() {
 
       toast.success("Account created successfully!", {
         description: `Welcome ${user.firstName}! Your organization "${user.organizationName}" has been created.`,
-        duration: 4000,
+        duration: 2000,
       });
 
       const { redirectTo, workspace } = await resolvePostLoginWorkspace();
@@ -146,7 +147,9 @@ export default function RegisterPage() {
   return (
     <Card className="shadow-xl border-blue-100">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold text-blue-900">Create Account</CardTitle>
+        <CardTitle className="text-2xl font-bold text-blue-900">
+          Create Account
+        </CardTitle>
         <CardDescription>
           Register your organization and admin account
         </CardDescription>
@@ -161,7 +164,10 @@ export default function RegisterPage() {
                 placeholder="John"
                 {...register("firstName", {
                   onChange: (e) => {
-                    e.target.value = e.target.value.replace(/[^a-zA-Z\s'-]/g, "");
+                    e.target.value = e.target.value.replace(
+                      /[^a-zA-Z\s'-]/g,
+                      "",
+                    );
                   },
                 })}
                 disabled={isLoading}
@@ -180,7 +186,10 @@ export default function RegisterPage() {
                 placeholder="Doe"
                 {...register("lastName", {
                   onChange: (e) => {
-                    e.target.value = e.target.value.replace(/[^a-zA-Z\s'-]/g, "");
+                    e.target.value = e.target.value.replace(
+                      /[^a-zA-Z\s'-]/g,
+                      "",
+                    );
                   },
                 })}
                 disabled={isLoading}

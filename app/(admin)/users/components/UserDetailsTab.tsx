@@ -10,6 +10,7 @@ import { roleService } from "@/services/role.service";
 import { roleKeys } from "@/services/role.queries";
 import type { UpdateUserData, User } from "@/types/user.types";
 import { getUserDepartmentName, isDoctorRoleName } from "@/types/user.types";
+import { AuditInformation } from "@/components/shared/AuditInformation";
 
 const formatDateTime = (value?: string | Date | null) => {
   if (!value) return "—";
@@ -447,45 +448,12 @@ export function UserDetailsTab({
         </div>
       </Section>
 
-      <Section title="Audit Information">
-        <div className="grid grid-cols-1 gap-x-10 lg:grid-cols-2">
-          <div className="space-y-0">
-            <OrganizationInlineField
-              label="Created By"
-              value={(user as any).createdBy || ""}
-              editable={true}
-              isSaving={savingField === "createdBy"}
-              onSave={(value) => onSaveNoopWithToast("Created By", value)}
-            />
-            <OrganizationInlineField
-              label="Created At"
-              value={formatDateTime(user.createdAt)}
-              editable={true}
-              isSaving={savingField === "createdAt"}
-              onSave={(value) => onSaveNoopWithToast("Created At", value)}
-              displayValue={user.createdAt ? formatDateTime(user.createdAt) : undefined}
-            />
-          </div>
-
-          <div className="space-y-0">
-            <OrganizationInlineField
-              label="Updated By"
-              value={(user as any).updatedBy || ""}
-              editable={true}
-              isSaving={savingField === "updatedBy"}
-              onSave={(value) => onSaveNoopWithToast("Updated By", value)}
-            />
-            <OrganizationInlineField
-              label="Updated At"
-              value={formatDateTime(user.updatedAt)}
-              editable={true}
-              isSaving={savingField === "updatedAt"}
-              onSave={(value) => onSaveNoopWithToast("Updated At", value)}
-              displayValue={user.updatedAt ? formatDateTime(user.updatedAt) : undefined}
-            />
-          </div>
-        </div>
-      </Section>
+      <AuditInformation
+        createdBy={user.createdBy}
+        createdAt={user.createdAt}
+        updatedBy={user.updatedBy}
+        updatedAt={user.updatedAt}
+      />
     </div>
   );
 }

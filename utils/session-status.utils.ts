@@ -71,6 +71,11 @@ export const isConsultationCompleted = (
   status?: SessionStatus | string | null,
 ) => status === "completed";
 
+/** Manual status edits (admin UI / PATCH) are blocked once completed. */
+export const canManuallyUpdateSessionStatus = (
+  status?: SessionStatus | string | null,
+) => !isConsultationCompleted(status);
+
 export const isPipelineActive = (status?: SessionStatus | string | null) =>
   Boolean(
     status && PIPELINE_ACTIVE_STATUSES.includes(status as SessionStatus),

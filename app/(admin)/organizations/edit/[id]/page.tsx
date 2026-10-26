@@ -85,7 +85,7 @@ export default function EditOrganizationPage() {
         <Link href={`/organizations/${id}`}>
           <Button variant="ghost" className="pl-0">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Organization
+            Back to Organization Details
           </Button>
         </Link>
       </div>

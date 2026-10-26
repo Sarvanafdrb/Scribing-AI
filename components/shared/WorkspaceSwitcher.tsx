@@ -104,7 +104,7 @@ export function WorkspaceSwitcher({
           className,
         )}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20">
           <Building2 className="h-4 w-4" />
         </div>
         <div className="min-w-0">
@@ -133,7 +133,7 @@ export function WorkspaceSwitcher({
           )}
         >
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20">
               {isAllSelected ? (
                 <Globe2 className="h-4 w-4" />
               ) : (
@@ -179,7 +179,7 @@ export function WorkspaceSwitcher({
                   isAllSelected && "bg-accent",
                 )}
               >
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary dark:bg-primary/20">
                   <Globe2 className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">

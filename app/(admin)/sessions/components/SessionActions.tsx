@@ -35,6 +35,7 @@ import {
   Activity,
 } from "lucide-react";
 import { SESSION_STATUS_OPTIONS } from "./SessionStatusBadge";
+import { canManuallyUpdateSessionStatus } from "@/utils/session-status.utils";
 
 interface SessionActionsProps {
   session: Session;
@@ -58,6 +59,7 @@ export function SessionActions({
   } = useAccessControl();
 
   const sessionId = session.id || session._id || "";
+  const canChangeStatus = canManuallyUpdateSessionStatus(session.status);
   const hasAnyAction =
     canViewRecording() ||
     canViewTranscript() ||
@@ -81,6 +83,9 @@ export function SessionActions({
   };
 
   const handleStatusUpdate = async (status: SessionStatus) => {
+    if (!canChangeStatus) {
+      return;
+    }
     try {
       await updateSessionStatus.mutateAsync({ id: sessionId, status });
       onStatusChange?.();
@@ -131,7 +136,7 @@ export function SessionActions({
               Edit
             </DropdownMenuItem>
           ) : null}
-          {canManageSessionStatus() ? (
+          {canManageSessionStatus() && canChangeStatus ? (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Activity className="mr-2 h-4 w-4" />

@@ -199,86 +199,86 @@ export default function OrganizationSettingsPage() {
 
       {/* Status Management */}
       {canEdit && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Power className="h-5 w-5" />
-            Status Management
-          </CardTitle>
-          <CardDescription>
-            Activate or deactivate this organization
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Current Status</p>
-              <p className="text-sm text-muted-foreground">
-                Organization is currently{" "}
-                <span
-                  className={
-                    isActive
-                      ? "text-green-600 font-medium"
-                      : "text-gray-500 font-medium"
-                  }
-                >
-                  {isActive ? "active" : "inactive"}
-                </span>
-              </p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Power className="h-5 w-5" />
+              Status Management
+            </CardTitle>
+            <CardDescription>
+              Activate or deactivate this organization
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Current Status</p>
+                <p className="text-sm text-muted-foreground">
+                  Organization is currently{" "}
+                  <span
+                    className={
+                      isActive
+                        ? "text-green-600 font-medium"
+                        : "text-gray-500 font-medium"
+                    }
+                  >
+                    {isActive ? "active" : "inactive"}
+                  </span>
+                </p>
+              </div>
+              <Button
+                variant={isActive ? "destructive" : "default"}
+                onClick={handleStatusToggle}
+                disabled={
+                  activateOrganization.isPending ||
+                  deactivateOrganization.isPending
+                }
+              >
+                {(activateOrganization.isPending ||
+                  deactivateOrganization.isPending) && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isActive ? "Deactivate" : "Activate"}
+              </Button>
             </div>
-            <Button
-              variant={isActive ? "destructive" : "default"}
-              onClick={handleStatusToggle}
-              disabled={
-                activateOrganization.isPending ||
-                deactivateOrganization.isPending
-              }
-            >
-              {(activateOrganization.isPending ||
-                deactivateOrganization.isPending) && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              {isActive ? "Deactivate" : "Activate"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
 
       {canDelete && (
-      <Card className="border-destructive/20">
-        <CardHeader className="bg-destructive/5">
-          <CardTitle className="text-destructive flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription className="text-destructive/70">
-            These actions are irreversible. Please proceed with caution.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Delete Organization</p>
-              <p className="text-sm text-muted-foreground">
-                Permanently delete <strong>{organization.name}</strong> and all
-                its data
-              </p>
+        <Card className="border-destructive/20">
+          <CardHeader className="bg-destructive/5">
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription className="text-destructive/70">
+              These actions are irreversible. Please proceed with caution.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Delete Organization</p>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete <strong>{organization.name}</strong> and
+                  all its data
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={deleteOrganization.isPending}
+              >
+                {deleteOrganization.isPending && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Organization
+              </Button>
             </div>
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={deleteOrganization.isPending}
-            >
-              {deleteOrganization.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Organization
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
 
       {/* Delete Confirmation Dialog */}

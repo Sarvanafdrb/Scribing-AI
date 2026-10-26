@@ -47,6 +47,7 @@ import {
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { healthcarePrimaryButton } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
+import { canManuallyUpdateSessionStatus } from "@/utils/session-status.utils";
 
 const emptyToUndefined = (value: unknown) => {
   if (value === "" || value === null || value === undefined) return undefined;
@@ -233,6 +234,7 @@ export function SessionForm({
   cancelLabel = "Cancel",
 }: SessionFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?._id);
+  const isStatusLocked = !canManuallyUpdateSessionStatus(initialData?.status);
   const hasFixedActions = Boolean(onCancel);
   const { organizationId: scopedOrgId, canManageAllOrganizations } =
     useTenantScope();
@@ -769,7 +771,11 @@ export function SessionForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                disabled={isStatusLocked}
+              >
                 <FormControl>
                   <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder="Select status" />
@@ -783,6 +789,11 @@ export function SessionForm({
                   ))}
                 </SelectContent>
               </Select>
+              {isStatusLocked ? (
+                <p className="text-xs text-muted-foreground">
+                  Completed sessions cannot be changed to another status.
+                </p>
+              ) : null}
               <FormMessage />
             </FormItem>
           )}

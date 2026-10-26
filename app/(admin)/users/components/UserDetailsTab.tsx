@@ -241,32 +241,6 @@ export function UserDetailsTab({
               displayValue={username || undefined}
             />
             <OrganizationInlineField
-              label="Status"
-              value={statusValue}
-              editable={true}
-              type="select"
-              options={[
-                { value: "active", label: "Active" },
-                { value: "inactive", label: "Inactive" },
-              ]}
-              isSaving={savingField === "status"}
-              onSave={async (value) => {
-                if (!canEdit) {
-                  toast.info("You don't have permission to edit this user.");
-                  return;
-                }
-                await saveField("status", { isActive: value === "active" });
-              }}
-              displayValue={
-                <Badge
-                  variant={isActive ? "default" : "secondary"}
-                  className={isActive ? "bg-primary" : undefined}
-                >
-                  {isActive ? "Active" : "Inactive"}
-                </Badge>
-              }
-            />
-            <OrganizationInlineField
               label="Email Verified"
               value={user.isEmailVerified ? "yes" : "no"}
               editable={false}

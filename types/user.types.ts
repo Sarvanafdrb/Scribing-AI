@@ -35,6 +35,7 @@ export interface User {
   departmentId?: UserDepartment | string | null;
   qualifications?: string[];
   specialization?: string;
+  designation?: string;
   isActive?: boolean;
   isEmailVerified?: boolean;
   lastLogin?: string | Date;
@@ -67,6 +68,7 @@ export interface UpdateUserData {
   departmentId?: string | null;
   qualifications?: string[];
   specialization?: string;
+  designation?: string;
   isActive?: boolean;
   isEmailVerified?: boolean;
 }

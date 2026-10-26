@@ -76,8 +76,6 @@ export function UserDetailsTab({
   const username =
     typeof anyUser.username === "string" ? anyUser.username : user.email;
 
-  const designation =
-    typeof anyUser.designation === "string" ? anyUser.designation : "";
   const employeeId =
     typeof anyUser.employeeId === "string"
       ? anyUser.employeeId
@@ -90,8 +88,12 @@ export function UserDetailsTab({
     : [];
 
   const inferredDepartment = getUserDepartmentName(user) || "—";
-  const inferredDesignation =
-    designation || qualifications[1] || qualifications.join(", ") || "—";
+  const designation =
+    typeof user.designation === "string" && user.designation.trim()
+      ? user.designation.trim()
+      : typeof anyUser.designation === "string" && anyUser.designation.trim()
+        ? anyUser.designation.trim()
+        : "";
   const isDoctor = isDoctorRoleName(role?.name);
   const specialization =
     typeof anyUser.specialization === "string" ? anyUser.specialization : "";
@@ -364,13 +366,19 @@ export function UserDetailsTab({
           <div className="space-y-0">
             <OrganizationInlineField
               label="Designation"
-              value={inferredDesignation === "—" ? "" : inferredDesignation}
-              editable={true}
+              value={designation}
+              editable={canEdit}
               isSaving={savingField === "designation"}
-              onSave={(value) => onSaveNoopWithToast("Designation", value)}
-              displayValue={
-                inferredDesignation !== "—" ? inferredDesignation : undefined
-              }
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                await saveField("designation", {
+                  designation: value.trim() || undefined,
+                });
+              }}
+              displayValue={designation || undefined}
             />
             <OrganizationInlineField
               label="Employee ID"

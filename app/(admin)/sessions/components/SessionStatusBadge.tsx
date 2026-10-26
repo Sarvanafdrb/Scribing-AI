@@ -29,7 +29,7 @@ const statusConfig: Record<
   },
   uploading: {
     label: "Uploading",
-    className: "bg-blue-100 text-blue-700 hover:bg-blue-200",
+    className: "bg-blue-100 text-blue-800 hover:bg-blue-200",
   },
   processing: {
     label: "Processing Transcript",

@@ -65,6 +65,7 @@ type AuthUserInput = {
   profilePicture?: string;
   signature?: string;
   qualification?: string;
+  qualifications?: string[];
   specialization?: string;
   isSuperAdmin?: boolean;
   organizationId?: string;
@@ -116,8 +117,11 @@ export const normalizeAuthUser = (user: AuthUserInput): AuthUser => {
     phone: user.phone || "",
     profilePicture: sanitizeMediaUrl(user.profilePicture),
     signature: sanitizeMediaUrl(user.signature),
-    qualification: user.qualification || "",
-    specialization: user.specialization || "",
+    qualification:
+      user.qualification?.trim() ||
+      user.qualifications?.[0]?.trim() ||
+      "",
+    specialization: user.specialization?.trim() || "",
     isSuperAdmin: Boolean(user.isSuperAdmin),
     permissions: Array.isArray(user.permissions) ? user.permissions : [],
     organizationId: organizationId || undefined,
@@ -187,6 +191,9 @@ export const toPersistedAuthUser = (user: AuthUser | null): AuthUser | null => {
     permissions: normalized.permissions || [],
     profilePicture: sanitizeMediaUrl(normalized.profilePicture),
     signature: sanitizeMediaUrl(normalized.signature),
+    phone: normalized.phone,
+    qualification: normalized.qualification,
+    specialization: normalized.specialization,
   };
 };
 

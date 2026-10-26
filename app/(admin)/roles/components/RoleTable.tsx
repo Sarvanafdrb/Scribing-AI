@@ -85,7 +85,7 @@ export function RoleTable({
                         className={
                           isActive
                             ? "bg-blue-600 hover:bg-blue-700"
-                            : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                            : "bg-blue-100 text-blue-800 hover:bg-blue-200"
                         }
                       >
                         {isActive ? "active" : "inactive"}

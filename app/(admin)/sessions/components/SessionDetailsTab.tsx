@@ -20,6 +20,7 @@ import {
   getPatientAge,
   getPatientFullName,
 } from "@/utils/patient.utils";
+import { canManuallyUpdateSessionStatus } from "@/utils/session-status.utils";
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return "—";
@@ -126,6 +127,7 @@ export function SessionDetailsTab({
 
   const patientAge = getPatientAge(patient);
   const isActive = session.isActive !== false;
+  const canEditStatus = canManuallyUpdateSessionStatus(session.status);
 
   const saveField = async (fieldKey: string, payload: UpdateSessionData) => {
     if (!canEdit) {
@@ -206,11 +208,17 @@ export function SessionDetailsTab({
             <OrganizationInlineField
               label="Status"
               value={session.status}
-              editable={canEdit}
+              editable={canEdit && canEditStatus}
               type="select"
               options={SESSION_STATUS_OPTIONS}
               isSaving={savingField === "status"}
               onSave={async (value) => {
+                if (!canEditStatus) {
+                  toast.error(
+                    "Completed sessions cannot be changed to another status.",
+                  );
+                  return;
+                }
                 await saveField("status", {
                   status: value as SessionStatus,
                 });

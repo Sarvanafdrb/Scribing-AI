@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
+import { sessionKeys } from "@/services/session.queries";
 import { useAuthStore } from "@/store/auth.store";
 import { normalizeAuthUser } from "@/types/auth.types";
 import { toast } from "sonner";
@@ -17,10 +18,16 @@ export const useProfileMutations = () => {
       specialization?: string;
     }) => authService.updateProfile(data),
     onSuccess: (response: any) => {
-      const userData = response?.data?.user || response?.data || response?.user || response;
+      const userData =
+        response?.data?.user ||
+        response?.data ||
+        response?.user ||
+        response;
       const user = normalizeAuthUser(userData);
       setUser(user);
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      queryClient.invalidateQueries({ queryKey: sessionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: sessionKeys.details() });
       toast.success("Profile updated successfully");
     },
     onError: (error: any) => {

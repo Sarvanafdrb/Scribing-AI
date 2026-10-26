@@ -227,7 +227,9 @@ export default function RolesPage() {
             <CardTitle className="text-sm font-medium">Inactive</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-500">{inactiveCount}</div>
+            <div className="text-2xl font-bold text-muted-foreground">
+              {inactiveCount}
+            </div>
           </CardContent>
         </Card>
       </div>

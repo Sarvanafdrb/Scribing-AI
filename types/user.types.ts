@@ -1,3 +1,5 @@
+import type { AuditActor } from "./audit.types";
+
 export interface UserOrganization {
   _id: string;
   id?: string;
@@ -35,7 +37,9 @@ export interface User {
   isActive?: boolean;
   isEmailVerified?: boolean;
   lastLogin?: string | Date;
+  createdBy?: AuditActor;
   createdAt?: string | Date;
+  updatedBy?: AuditActor;
   updatedAt?: string | Date;
 }
 

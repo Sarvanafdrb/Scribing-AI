@@ -1,10 +1,12 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { useSession } from "@/hooks/sessions/useSession";
 import { useSessionMutations } from "@/hooks/sessions/useSessionMutations";
 import { SessionDetailsTab } from "../components/SessionDetailsTab";
 import type { UpdateSessionData } from "@/types/session.types";
+import { canManuallyUpdateSessionStatus } from "@/utils/session-status.utils";
 
 export default function SessionDetailsPage() {
   const { id } = useParams();
@@ -20,6 +22,14 @@ export default function SessionDetailsPage() {
   const canEdit = session.isActive !== false;
 
   const handleInlineUpdate = async (data: UpdateSessionData) => {
+    if (
+      data.status &&
+      !canManuallyUpdateSessionStatus(session.status) &&
+      data.status !== session.status
+    ) {
+      toast.error("Completed sessions cannot be changed to another status.");
+      return;
+    }
     if (data.status && Object.keys(data).length === 1) {
       await updateSessionStatus.mutateAsync({
         id: recordId,

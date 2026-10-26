@@ -11,6 +11,13 @@ import { roleKeys } from "@/services/role.queries";
 import type { UpdateUserData, User } from "@/types/user.types";
 import { getUserDepartmentName, isDoctorRoleName } from "@/types/user.types";
 import { AuditInformation } from "@/components/shared/AuditInformation";
+import {
+  INDIAN_MOBILE_LENGTH,
+  INDIAN_PHONE_ERROR,
+  isValidIndianPhoneNumber,
+  normalizeIndianPhoneNumber,
+  sanitizeIndianPhoneInput,
+} from "@/utils/patient.utils";
 
 const formatDateTime = (value?: string | Date | null) => {
   if (!value) return "—";
@@ -53,19 +60,18 @@ export function UserDetailsTab({
     typeof user.organizationId === "object" ? user.organizationId : null;
   const orgId = org?.id || org?._id || "";
 
-  const role =
-    typeof user.roleId === "object" ? (user.roleId as any) : null;
+  const role = typeof user.roleId === "object" ? (user.roleId as any) : null;
   const roleId = (role?._id || role?.id || user.roleId || "") as string;
 
   const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
   const isActive = user.isActive !== false;
 
   const phoneNumber =
-    typeof anyUser.phoneNumber === "string"
-      ? anyUser.phoneNumber
-      : typeof anyUser.phone === "string"
-        ? anyUser.phone
-        : "—";
+    typeof user.phone === "string" && user.phone.trim()
+      ? user.phone
+      : typeof anyUser.phoneNumber === "string" && anyUser.phoneNumber.trim()
+        ? anyUser.phoneNumber
+        : "";
 
   const username =
     typeof anyUser.username === "string" ? anyUser.username : user.email;
@@ -136,7 +142,10 @@ export function UserDetailsTab({
       toast.error("Please enter both first name and last name.");
       return;
     }
-    await saveField("fullName", { firstName: next.firstName, lastName: next.lastName });
+    await saveField("fullName", {
+      firstName: next.firstName,
+      lastName: next.lastName,
+    });
   };
 
   const statusValue = isActive ? "active" : "inactive";
@@ -149,14 +158,14 @@ export function UserDetailsTab({
             <OrganizationInlineField
               label="User ID"
               value={user.userCode || userId}
-              editable={true}
+              editable={false}
               type="text"
               isSaving={savingField === "userCode"}
-              onSave={(value) =>
-                onSaveNoopWithToast("User ID", value)
-              }
+              onSave={(value) => onSaveNoopWithToast("User ID", value)}
               displayValue={
-                <span className="font-mono text-xs">{user.userCode || userId}</span>
+                <span className="font-mono text-xs">
+                  {user.userCode || userId}
+                </span>
               }
             />
             <OrganizationInlineField
@@ -166,17 +175,6 @@ export function UserDetailsTab({
               type="text"
               isSaving={savingField === "fullName"}
               onSave={onSaveFullName}
-            />
-            <OrganizationInlineField
-              label="Display Name"
-              value={fullName}
-              editable={true}
-              type="text"
-              isSaving={savingField === "displayName"}
-              onSave={async (value) => {
-                // Display name is derived from first/last in our model.
-                await onSaveFullName(value);
-              }}
             />
             <OrganizationInlineField
               label="Email"
@@ -207,16 +205,35 @@ export function UserDetailsTab({
           <div className="space-y-0">
             <OrganizationInlineField
               label="Phone Number"
-              value={phoneNumber === "—" ? "" : phoneNumber}
-              editable={true}
+              value={phoneNumber}
+              editable={canEdit}
               isSaving={savingField === "phone"}
-              onSave={(value) => onSaveNoopWithToast("Phone Number", value)}
-              displayValue={phoneNumber !== "—" ? phoneNumber : undefined}
+              maxLength={INDIAN_MOBILE_LENGTH}
+              inputMode="numeric"
+              sanitizeDraft={sanitizeIndianPhoneInput}
+              onSave={async (value) => {
+                if (!canEdit) {
+                  toast.info("You don't have permission to edit this user.");
+                  return;
+                }
+                const trimmed = value.trim();
+                if (!trimmed) {
+                  await saveField("phone", { phone: "" });
+                  return;
+                }
+                const phone = normalizeIndianPhoneNumber(trimmed);
+                if (!isValidIndianPhoneNumber(phone)) {
+                  toast.error(INDIAN_PHONE_ERROR);
+                  return;
+                }
+                await saveField("phone", { phone });
+              }}
+              displayValue={phoneNumber || undefined}
             />
             <OrganizationInlineField
               label="Username"
               value={username || ""}
-              editable={true}
+              editable={false}
               isSaving={savingField === "username"}
               onSave={(value) => onSaveNoopWithToast("Username", value)}
               displayValue={username || undefined}
@@ -250,7 +267,7 @@ export function UserDetailsTab({
             <OrganizationInlineField
               label="Email Verified"
               value={user.isEmailVerified ? "yes" : "no"}
-              editable={true}
+              editable={false}
               type="select"
               options={[
                 { value: "yes", label: "Yes" },
@@ -266,9 +283,7 @@ export function UserDetailsTab({
                   isEmailVerified: parseBoolYesNo(value),
                 });
               }}
-              displayValue={
-                <span>{user.isEmailVerified ? "Yes" : "No"}</span>
-              }
+              displayValue={<span>{user.isEmailVerified ? "Yes" : "No"}</span>}
             />
           </div>
         </div>
@@ -280,7 +295,7 @@ export function UserDetailsTab({
             <OrganizationInlineField
               label="Organization"
               value={org?.name || (user as any).organizationName || ""}
-              editable={true}
+              editable={false}
               isSaving={savingField === "organization"}
               onSave={(value) => onSaveNoopWithToast("Organization", value)}
               displayValue={
@@ -297,7 +312,9 @@ export function UserDetailsTab({
               editable={false}
               isSaving={savingField === "department"}
               onSave={(value) => onSaveNoopWithToast("Department", value)}
-              displayValue={inferredDepartment !== "—" ? inferredDepartment : undefined}
+              displayValue={
+                inferredDepartment !== "—" ? inferredDepartment : undefined
+              }
             />
             {isDoctor ? (
               <OrganizationInlineField
@@ -336,7 +353,9 @@ export function UserDetailsTab({
                   });
                 }}
                 displayValue={
-                  qualifications.length > 0 ? qualifications.join(", ") : undefined
+                  qualifications.length > 0
+                    ? qualifications.join(", ")
+                    : undefined
                 }
               />
             ) : null}
@@ -356,7 +375,7 @@ export function UserDetailsTab({
             <OrganizationInlineField
               label="Employee ID"
               value={employeeId === "—" ? "" : employeeId}
-              editable={true}
+              editable={false}
               isSaving={savingField === "employeeId"}
               onSave={(value) => onSaveNoopWithToast("Employee ID", value)}
               displayValue={employeeId !== "—" ? employeeId : undefined}
@@ -403,7 +422,9 @@ export function UserDetailsTab({
                   toast.info("You don't have permission to edit this user.");
                   return;
                 }
-                await saveField("accountStatus", { isActive: value === "active" });
+                await saveField("accountStatus", {
+                  isActive: value === "active",
+                });
               }}
               displayValue={
                 <Badge
@@ -429,7 +450,9 @@ export function UserDetailsTab({
                   toast.info("You don't have permission to edit this user.");
                   return;
                 }
-                await saveField("loginEnabled", { isActive: parseBoolYesNo(value) });
+                await saveField("loginEnabled", {
+                  isActive: parseBoolYesNo(value),
+                });
               }}
               displayValue={<span>{isActive ? "Yes" : "No"}</span>}
             />
@@ -439,10 +462,12 @@ export function UserDetailsTab({
             <OrganizationInlineField
               label="Last Login"
               value={user.lastLogin ? formatDateTime(user.lastLogin) : "—"}
-              editable={true}
+              editable={false}
               isSaving={savingField === "lastLogin"}
               onSave={(value) => onSaveNoopWithToast("Last Login", value)}
-              displayValue={user.lastLogin ? formatDateTime(user.lastLogin) : undefined}
+              displayValue={
+                user.lastLogin ? formatDateTime(user.lastLogin) : undefined
+              }
             />
           </div>
         </div>
@@ -472,4 +497,3 @@ function Section({
     </section>
   );
 }
-

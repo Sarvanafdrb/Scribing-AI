@@ -31,6 +31,9 @@ interface OrganizationInlineFieldProps {
   isSaving?: boolean;
   onSave?: (value: string) => Promise<void> | void;
   className?: string;
+  maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  sanitizeDraft?: (value: string) => string;
 }
 
 export function OrganizationInlineField({
@@ -43,6 +46,9 @@ export function OrganizationInlineField({
   isSaving = false,
   onSave,
   className,
+  maxLength,
+  inputMode,
+  sanitizeDraft,
 }: OrganizationInlineFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -109,7 +115,14 @@ export function OrganizationInlineField({
                 <Input
                   type={type === "email" ? "email" : type === "url" ? "url" : "text"}
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  onChange={(e) => {
+                    const next = sanitizeDraft
+                      ? sanitizeDraft(e.target.value)
+                      : e.target.value;
+                    setDraft(next);
+                  }}
+                  maxLength={maxLength}
+                  inputMode={inputMode}
                   className="rounded-xl"
                   autoFocus
                   onKeyDown={(e) => {

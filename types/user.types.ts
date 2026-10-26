@@ -28,6 +28,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   organizationId?: UserOrganization | string;
   organizationName?: string;
   roleId?: UserRole | string;
@@ -61,6 +62,7 @@ export interface UpdateUserData {
   lastName?: string;
   email?: string;
   password?: string;
+  phone?: string;
   roleId?: string;
   departmentId?: string | null;
   qualifications?: string[];

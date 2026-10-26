@@ -420,7 +420,7 @@ export function UserDetailsTab({
             <OrganizationInlineField
               label="Login Enabled"
               value={isActive ? "yes" : "no"}
-              editable={true}
+              editable={false}
               type="select"
               options={[
                 { value: "yes", label: "Yes" },

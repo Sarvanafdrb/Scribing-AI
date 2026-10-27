@@ -38,6 +38,11 @@ import {
   calculateAgeFromDateOfBirth,
   INDIAN_MOBILE_LENGTH,
   INDIAN_PHONE_ERROR,
+  PATIENT_DOB_INPUT_PLACEHOLDER,
+  PATIENT_DOB_INVALID_MESSAGE,
+  parsePatientDateOfBirthInput,
+  patientDateOfBirthToInputValue,
+  patientDateOfBirthToIso,
   sanitizeAgeInput,
   sanitizeIndianPhoneInput,
 } from "@/utils/patient.utils";
@@ -109,6 +114,14 @@ const patientSchema = z
     const hasDob = Boolean(data.dateOfBirth?.trim());
     const hasAge = data.age !== undefined;
 
+    if (hasDob && !parsePatientDateOfBirthInput(data.dateOfBirth!)) {
+      ctx.addIssue({
+        code: "custom",
+        message: PATIENT_DOB_INVALID_MESSAGE,
+        path: ["dateOfBirth"],
+      });
+    }
+
     if (!hasDob && !hasAge) {
       ctx.addIssue({
         code: "custom",
@@ -167,9 +180,7 @@ export function PatientForm({
       firstName: initialData?.firstName || "",
       lastName: initialData?.lastName || "",
       gender: initialData?.gender || "unknown",
-      dateOfBirth: initialData?.dateOfBirth
-        ? new Date(initialData.dateOfBirth).toISOString().slice(0, 10)
-        : "",
+      dateOfBirth: patientDateOfBirthToInputValue(initialData?.dateOfBirth),
       age: getInitialAge(initialData),
       phoneNumber: sanitizeIndianPhoneInput(initialData?.phoneNumber || ""),
       email: initialData?.email || "",
@@ -210,9 +221,11 @@ export function PatientForm({
     const hasDob = Boolean(data.dateOfBirth?.trim());
 
     if (hasDob) {
-      const calculatedAge = calculateAgeFromDateOfBirth(data.dateOfBirth);
+      const parsed = parsePatientDateOfBirthInput(data.dateOfBirth!);
+      const iso = parsed ? patientDateOfBirthToIso(parsed) : undefined;
+      const calculatedAge = iso ? calculateAgeFromDateOfBirth(iso) : null;
       return {
-        dateOfBirth: data.dateOfBirth,
+        dateOfBirth: iso,
         age: calculatedAge ?? data.age,
       };
     }
@@ -323,7 +336,12 @@ export function PatientForm({
               <FormItem>
                 <FormLabel>Date of Birth</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={PATIENT_DOB_INPUT_PLACEHOLDER}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

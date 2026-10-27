@@ -11,11 +11,16 @@ import {
   type UpdatePatientData,
 } from "@/types/patient.types";
 import {
+  formatPatientDateOfBirth,
   getPatientAge,
   getPatientFullName,
   isValidIndianPhoneNumber,
   normalizeIndianPhoneNumber,
   INDIAN_PHONE_ERROR,
+  PATIENT_DOB_INVALID_MESSAGE,
+  parsePatientDateOfBirthInput,
+  patientDateOfBirthToInputValue,
+  patientDateOfBirthToIso,
 } from "@/utils/patient.utils";
 
 const formatDate = (value?: string) => {
@@ -34,13 +39,6 @@ const formatDateTime = (value?: string) => {
   } catch {
     return "—";
   }
-};
-
-const toDateInputValue = (value?: string) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
 };
 
 const splitFullName = (fullName: string) => {
@@ -199,7 +197,7 @@ export function PatientDetailsTab({
           <div className="space-y-0">
             <OrganizationInlineField
               label="Date of Birth"
-              value={toDateInputValue(patient.dateOfBirth)}
+              value={patientDateOfBirthToInputValue(patient.dateOfBirth)}
               editable={canEdit}
               type="text"
               isSaving={savingField === "dateOfBirth"}
@@ -208,16 +206,16 @@ export function PatientDetailsTab({
                   await saveField("dateOfBirth", { dateOfBirth: undefined });
                   return;
                 }
-                const parsed = new Date(value);
-                if (Number.isNaN(parsed.getTime())) {
-                  toast.error("Enter date as YYYY-MM-DD.");
+                const parsed = parsePatientDateOfBirthInput(value);
+                if (!parsed) {
+                  toast.error(PATIENT_DOB_INVALID_MESSAGE);
                   return;
                 }
                 await saveField("dateOfBirth", {
-                  dateOfBirth: parsed.toISOString(),
+                  dateOfBirth: patientDateOfBirthToIso(parsed),
                 });
               }}
-              displayValue={formatDate(patient.dateOfBirth)}
+              displayValue={formatPatientDateOfBirth(patient.dateOfBirth)}
             />
             <OrganizationInlineField
               label="Age"

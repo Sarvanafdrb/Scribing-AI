@@ -47,13 +47,82 @@ export const normalizePhoneNumber = normalizeIndianPhoneNumber;
 /** @deprecated Use INDIAN_PHONE_ERROR */
 export const PHONE_NUMBER_ERROR = INDIAN_PHONE_ERROR;
 
+/** Display + inline-edit format for patient DOB (e.g. 4/12/1998). */
+export const PATIENT_DOB_LOCALE = "en-IN";
+export const PATIENT_DOB_INPUT_PLACEHOLDER = "DD/MM/YYYY";
+
+const patientDobFormatOptions: Intl.DateTimeFormatOptions = {
+  day: "numeric",
+  month: "numeric",
+  year: "numeric",
+};
+
+export const parsePatientDateOfBirthInput = (input: string): Date | null => {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(trimmed);
+  if (iso) {
+    const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const dmy = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(trimmed);
+  if (dmy) {
+    const date = new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+/** Parse API ISO strings or user-entered DOB text as a local calendar date. */
+export const parsePatientDateOfBirth = (
+  value?: string | null,
+): Date | null => {
+  if (!value?.trim()) return null;
+  const trimmed = value.trim();
+  const isoPrefix = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (isoPrefix) {
+    const date = new Date(
+      Number(isoPrefix[1]),
+      Number(isoPrefix[2]) - 1,
+      Number(isoPrefix[3]),
+    );
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  return parsePatientDateOfBirthInput(trimmed);
+};
+
+export const formatPatientDateOfBirthValue = (date: Date): string =>
+  date.toLocaleDateString(PATIENT_DOB_LOCALE, patientDobFormatOptions);
+
+export const patientDateOfBirthToInputValue = (
+  dateOfBirth?: string | null,
+): string => {
+  const date = parsePatientDateOfBirth(dateOfBirth);
+  if (!date) return "";
+  return formatPatientDateOfBirthValue(date);
+};
+
+/** Stable ISO for API storage without timezone day-shift. */
+export const patientDateOfBirthToIso = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}T12:00:00.000Z`;
+};
+
+export const PATIENT_DOB_INVALID_MESSAGE = `Enter date as ${PATIENT_DOB_INPUT_PLACEHOLDER}.`;
+
 export const calculateAgeFromDateOfBirth = (
   dateOfBirth?: string | null,
 ): number | null => {
   if (!dateOfBirth) return null;
 
-  const birthDate = new Date(dateOfBirth);
-  if (Number.isNaN(birthDate.getTime())) return null;
+  const birthDate = parsePatientDateOfBirth(dateOfBirth);
+  if (!birthDate) return null;
 
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -98,16 +167,9 @@ export const formatPatientOptionLabel = (patient: Patient) => {
 };
 
 export const formatPatientDateOfBirth = (dateOfBirth?: string | null) => {
-  if (!dateOfBirth) return "—";
-  try {
-    return new Date(dateOfBirth).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return "—";
-  }
+  const date = parsePatientDateOfBirth(dateOfBirth);
+  if (!date) return "—";
+  return formatPatientDateOfBirthValue(date);
 };
 
 export const getNormalizedAllergies = (

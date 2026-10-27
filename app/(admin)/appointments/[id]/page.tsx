@@ -36,11 +36,8 @@ export default function AppointmentDetailPage() {
   const rawId = params?.id;
   const appointmentId = Array.isArray(rawId) ? rawId[0] : rawId || "";
   const { data: appointment, isLoading, error } = useAppointment(appointmentId);
-  const {
-    canViewAppointments,
-    canEditAppointment,
-    canCheckInAppointment,
-  } = useAccessControl();
+  const { canViewAppointments, canEditAppointment, canCheckInAppointment } =
+    useAccessControl();
   const { cancelAppointment, rescheduleAppointment, checkInAppointment } =
     useAppointmentMutations();
 
@@ -150,7 +147,7 @@ export default function AppointmentDetailPage() {
         </Button>
       </Link>
 
-      <Card className="glass rounded-3xl">
+      <Card className="glass mt-6 rounded-3xl">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -256,7 +253,9 @@ export default function AppointmentDetailPage() {
                   min={5}
                   max={480}
                   value={rescheduleDuration}
-                  onChange={(e) => setRescheduleDuration(Number(e.target.value))}
+                  onChange={(e) =>
+                    setRescheduleDuration(Number(e.target.value))
+                  }
                   placeholder="Duration (min)"
                 />
               </div>
@@ -274,7 +273,7 @@ export default function AppointmentDetailPage() {
           {canModify ? (
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">
-                Cancellation reason (optional)
+                Cancellation reason
               </label>
               <Textarea
                 value={cancelReason}

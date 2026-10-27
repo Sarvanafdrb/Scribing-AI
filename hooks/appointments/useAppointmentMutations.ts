@@ -84,13 +84,69 @@ export const useAppointmentMutations = () => {
       id: string;
       data: RescheduleAppointmentData;
     }) => appointmentService.reschedule(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       invalidateAll();
+      queryClient.invalidateQueries({
+        queryKey: appointmentKeys.detail(variables.id),
+      });
       toast.success("Appointment rescheduled successfully");
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       toast.error(
         error?.response?.data?.message || "Failed to reschedule appointment",
+      );
+    },
+  });
+
+  const requestRescheduleApproval = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: RescheduleAppointmentData;
+    }) => appointmentService.requestRescheduleApproval(id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["appointment-audit", variables.id],
+      });
+      toast.success("Reschedule approval request submitted");
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to submit reschedule approval request",
+      );
+    },
+  });
+
+  const reviewRescheduleApproval = useMutation({
+    mutationFn: ({
+      requestId,
+      decision,
+      reviewNote,
+    }: {
+      requestId: string;
+      decision: "approved" | "rejected";
+      reviewNote?: string;
+    }) =>
+      appointmentService.reviewRescheduleApproval(
+        requestId,
+        decision,
+        reviewNote,
+      ),
+    onSuccess: (_data, variables) => {
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ["reschedule-approvals"] });
+      if (variables.decision === "approved") {
+        toast.success("Reschedule approved and completed");
+      } else {
+        toast.success("Reschedule request rejected");
+      }
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to review reschedule request",
       );
     },
   });
@@ -113,6 +169,8 @@ export const useAppointmentMutations = () => {
     updateAppointment,
     cancelAppointment,
     rescheduleAppointment,
+    requestRescheduleApproval,
+    reviewRescheduleApproval,
     checkInAppointment,
   };
 };

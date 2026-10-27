@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +37,11 @@ import { useTenantScope } from "@/hooks/useTenantScope";
 import { healthcarePrimaryButton } from "@/lib/healthcare-ui";
 import { cn } from "@/lib/utils";
 import type { CreateAppointmentData } from "@/types/appointment.types";
+import { appointmentService } from "@/services/appointment.service";
+import {
+  AppointmentSlotPicker,
+  type SelectedSlot,
+} from "./AppointmentSlotPicker";
 
 const tomorrowDateKey = () => {
   const d = new Date();
@@ -139,7 +145,39 @@ export function AppointmentForm({
     },
   });
 
-  const selectedOrgId = form.watch("organizationId");
+  const selectedOrgId = useWatch({
+    control: form.control,
+    name: "organizationId",
+  });
+  const appointmentDate = useWatch({
+    control: form.control,
+    name: "appointmentDate",
+  });
+  const selectedDoctorId = useWatch({
+    control: form.control,
+    name: "doctorId",
+  });
+  const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
+
+  const { data: availableDoctorsData, isLoading: loadingDoctors } = useQuery({
+    queryKey: [
+      "appointment-available-doctors",
+      selectedOrgId,
+      appointmentDate,
+    ],
+    queryFn: () =>
+      appointmentService.getAvailableDoctors(
+        selectedOrgId,
+        appointmentDate,
+      ),
+    enabled: Boolean(selectedOrgId && appointmentDate),
+  });
+
+  const clearSlotSelection = () => {
+    setSelectedSlot(null);
+    form.setValue("startTime", "");
+    form.setValue("endTime", "");
+  };
 
   const { data: organizationsData } = useQuery({
     queryKey: ["organizations", "appointment-form"],
@@ -191,24 +229,35 @@ export function AppointmentForm({
   }, [organizationsData]);
 
   const doctors = doctorsData?.users || [];
+  const availableDoctorIds = new Set(
+    (availableDoctorsData?.doctors || []).map((d) => d.id),
+  );
+  const doctorsForPicker =
+    availableDoctorsData?.configured && appointmentDate
+      ? doctors.filter((doc) =>
+          availableDoctorIds.has(String(doc.id || doc._id)),
+        )
+      : doctors;
 
   const handleSubmit = async (data: FormData) => {
+    if (!selectedSlot) {
+      form.setError("startTime", {
+        message: "Select an available time slot.",
+      });
+      return;
+    }
+
     const payload: CreateAppointmentData = {
       organizationId: data.organizationId,
       patientId: data.patientId,
       doctorId: data.doctorId,
       appointmentDate: data.appointmentDate,
-      startTime: data.startTime,
+      startTime: selectedSlot.startTime,
+      endTime: selectedSlot.endTime,
       appointmentType: data.appointmentType,
       reason: data.reason?.trim() || undefined,
       notes: data.notes?.trim() || undefined,
     };
-
-    if (data.endTime?.trim()) {
-      payload.endTime = data.endTime.trim();
-    } else if (data.durationMinutes !== undefined) {
-      payload.durationMinutes = data.durationMinutes;
-    }
 
     await onSubmit(payload);
   };
@@ -265,15 +314,20 @@ export function AppointmentForm({
               <FormLabel>Doctor</FormLabel>
               <FormControl>
                 <DoctorCombobox
-                  doctors={doctors}
+                  doctors={doctorsForPicker}
                   value={field.value}
-                  onChange={field.onChange}
-                  disabled={!selectedOrgId}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    clearSlotSelection();
+                  }}
+                  disabled={!selectedOrgId || loadingDoctors}
                   emptyHint={
                     <p className="text-xs text-muted-foreground">
-                      {doctorRoleId
-                        ? "No active doctors in this organization."
-                        : "Doctor role not configured."}
+                      {loadingDoctors
+                        ? "Loading available doctors…"
+                        : doctorRoleId
+                          ? "No doctors available on this date."
+                          : "Doctor role not configured."}
                     </p>
                   }
                 />
@@ -294,7 +348,14 @@ export function AppointmentForm({
                   <Input
                     type="date"
                     min={tomorrowDateKey()}
-                    {...field}
+                    name={field.name}
+                    value={field.value}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    onChange={(event) => {
+                      field.onChange(event);
+                      clearSlotSelection();
+                    }}
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
@@ -305,62 +366,35 @@ export function AppointmentForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="startTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start time</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="durationMinutes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duration (minutes)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={5}
-                    max={480}
-                    {...field}
-                    value={field.value ?? ""}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === ""
-                          ? undefined
-                          : Number(e.target.value),
-                      )
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+        <div className="space-y-2">
+          <FormLabel>Available time slot</FormLabel>
+          <AppointmentSlotPicker
+            organizationId={selectedOrgId}
+            doctorId={selectedDoctorId}
+            appointmentDate={appointmentDate}
+            value={selectedSlot}
+            onChange={(slot) => {
+              setSelectedSlot(slot);
+              if (slot) {
+                form.setValue("startTime", slot.startTime);
+                form.setValue("endTime", slot.endTime);
+                form.clearErrors("startTime");
+              }
+            }}
           />
-
-          <FormField
-            control={form.control}
-            name="endTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End time (optional)</FormLabel>
-                <FormControl>
-                  <Input type="time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <Link
+            href="/appointments/settings/availability"
+            className="text-xs text-primary underline"
+          >
+            Configure doctor working hours
+          </Link>
+          {form.formState.errors.startTime ? (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.startTime.message}
+            </p>
+          ) : null}
         </div>
 
         <FormField

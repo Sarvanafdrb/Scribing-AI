@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { CalendarDays, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export default function AppointmentsPage() {
     canViewAppointments,
     canCreateAppointment,
     canEditAppointment,
+    canReviewRescheduleApprovals,
   } = useAccessControl();
   const [view, setView] = useState<ScheduleView>("upcoming");
   const [page, setPage] = useState(1);
@@ -45,10 +46,6 @@ export default function AppointmentsPage() {
       dateTo: view === "range" ? dateTo || undefined : undefined,
       enabled: canViewAppointments(),
     });
-
-  useEffect(() => {
-    setPage(1);
-  }, [view, dateFrom, dateTo]);
 
   const handleCancelClick = (appointment: Appointment) => {
     setCancelTarget(appointment);
@@ -114,14 +111,23 @@ export default function AppointmentsPage() {
             — those patients appear directly in the Doctor Workspace.
           </p>
         </div>
-        {canCreateAppointment() ? (
-          <Link href="/appointments/create">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Book Appointment
-            </Button>
-          </Link>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {canReviewRescheduleApprovals() ? (
+            <Link href="/appointments/reschedule-approvals">
+              <Button variant="outline" className="rounded-full">
+                Reschedule approvals
+              </Button>
+            </Link>
+          ) : null}
+          {canCreateAppointment() ? (
+            <Link href="/appointments/create">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Book Appointment
+              </Button>
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {organizationName ? (
@@ -144,7 +150,10 @@ export default function AppointmentsPage() {
             variant={view === key ? "default" : "outline"}
             size="sm"
             className="rounded-full"
-            onClick={() => setView(key)}
+            onClick={() => {
+              setView(key);
+              setPage(1);
+            }}
           >
             {label}
           </Button>
@@ -160,7 +169,10 @@ export default function AppointmentsPage() {
             <Input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(1);
+              }}
               className="w-auto"
             />
           </div>
@@ -171,7 +183,10 @@ export default function AppointmentsPage() {
             <Input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(1);
+              }}
               className="w-auto"
             />
           </div>

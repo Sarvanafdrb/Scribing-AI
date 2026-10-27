@@ -4,6 +4,7 @@ import type { User } from "@/types/user.types";
 
 export const APPOINTMENT_STATUSES = [
   "scheduled",
+  "confirmed",
   "checked_in",
   "in_progress",
   "completed",
@@ -40,7 +41,10 @@ export interface Appointment {
   rescheduledFromId?: string | null;
   rescheduledToId?: string | null;
   cancelledAt?: string | null;
+  cancelledBy?: string | { firstName?: string; lastName?: string; email?: string };
+  cancelledByName?: string;
   cancellationReason?: string;
+  rootAppointmentId?: string | null;
   checkedInAt?: string | null;
   completedAt?: string | null;
   createdAt?: string;

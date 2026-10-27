@@ -230,5 +230,21 @@ export const useAccessControl = () => {
         hasPermission(user, "appointment:update", token)) &&
       (hasPermission(user, "SESSION_CREATE", token) ||
         hasPermission(user, "session:create", token)),
+    canReviewRescheduleApprovals: () => {
+      const canEdit =
+        hasPermission(user, APPOINTMENT_EDIT, token) ||
+        hasPermission(user, "appointment:update", token);
+      if (!canEdit) return false;
+      if (isSuperAdmin || canManageAllUsers) return true;
+      const role = (
+        user?.roleName ||
+        (typeof user?.role === "object" && user?.role?.name
+          ? user.role.name
+          : "")
+      )
+        .trim()
+        .toLowerCase();
+      return role !== "doctor";
+    },
   };
 };

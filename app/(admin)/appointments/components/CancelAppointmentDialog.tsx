@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
   AlertDialog,
@@ -33,12 +33,15 @@ export function CancelAppointmentDialog({
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (!open) {
-      setReason("");
-      setError("");
+  const handleOpenChange = (next: boolean) => {
+    if (!pending) {
+      if (!next) {
+        setReason("");
+        setError("");
+      }
+      onOpenChange(next);
     }
-  }, [open]);
+  };
 
   const handleConfirm = async () => {
     const trimmed = reason.trim();
@@ -51,12 +54,7 @@ export function CancelAppointmentDialog({
   };
 
   return (
-    <AlertDialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!pending) onOpenChange(next);
-      }}
-    >
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent className="max-w-md sm:max-w-lg">
         <AlertDialogHeader className="text-left">
           <AlertDialogTitle>Cancel appointment?</AlertDialogTitle>

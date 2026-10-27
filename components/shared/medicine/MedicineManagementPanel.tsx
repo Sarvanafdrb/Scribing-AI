@@ -26,22 +26,24 @@ export function MedicineManagementPanel({
   variant = "admin",
   title = "Medicine Formulary",
   description = "Organization medicines and condition mappings used in prescription search.",
-  pageSize = 100,
+  pageSize = 10,
 }: MedicineManagementPanelProps) {
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const { canCreateMedicine } = useAccessControl();
   const form = useMedicineForm(organizationId);
 
   const medicinesQuery = useMedicines({
     organizationId: organizationId || undefined,
     search,
-    page: 1,
+    page,
     limit: pageSize,
     enabled: Boolean(organizationId),
   });
 
   const medicines = medicinesQuery.data?.medicines || [];
   const total = medicinesQuery.data?.total || 0;
+  const totalPages = medicinesQuery.data?.totalPages || 1;
   const activeCount = medicinesQuery.data?.activeCount || 0;
   const inactiveCount = medicinesQuery.data?.inactiveCount || 0;
   const isDoctor = variant === "doctor";
@@ -124,7 +126,10 @@ export function MedicineManagementPanel({
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
           placeholder="Search medicines or conditions..."
           className="rounded-xl pl-9"
         />
@@ -154,6 +159,40 @@ export function MedicineManagementPanel({
         onEdit={form.startEdit}
         onToggleStatus={form.toggleStatus}
       />
+
+      {totalPages > 1 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Showing {(page - 1) * pageSize + 1}–
+            {Math.min(page * pageSize, total)} of {total}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={page <= 1 || medicinesQuery.isFetching}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={page >= totalPages || medicinesQuery.isFetching}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {form.isStatusPending ? (
         <div className="sr-only" aria-live="polite">

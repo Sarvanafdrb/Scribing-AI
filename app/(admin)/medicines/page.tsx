@@ -5,7 +5,7 @@ import { MedicineManagementPanel } from "@/components/shared/medicine/MedicineMa
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { useTenantScope } from "@/hooks/useTenantScope";
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 10;
 
 export default function MedicinesPage() {
   const { canViewMedicines } = useAccessControl();

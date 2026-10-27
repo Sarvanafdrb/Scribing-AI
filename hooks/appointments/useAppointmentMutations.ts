@@ -60,7 +60,7 @@ export const useAppointmentMutations = () => {
       data,
     }: {
       id: string;
-      data?: CancelAppointmentData;
+      data: CancelAppointmentData;
     }) => appointmentService.cancel(id, data),
     onSuccess: (_data, variables) => {
       invalidateAll();

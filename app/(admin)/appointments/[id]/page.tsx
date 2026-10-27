@@ -7,7 +7,6 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -28,6 +27,7 @@ import {
   getDoctorName,
   getPatient,
 } from "../components/AppointmentTable";
+import { CancelAppointmentDialog } from "../components/CancelAppointmentDialog";
 import { getPatientFullName } from "@/utils/patient.utils";
 
 export default function AppointmentDetailPage() {
@@ -45,7 +45,7 @@ export default function AppointmentDetailPage() {
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleStart, setRescheduleStart] = useState("09:00");
   const [rescheduleDuration, setRescheduleDuration] = useState(30);
-  const [cancelReason, setCancelReason] = useState("");
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [pending, setPending] = useState(false);
 
   if (!canViewAppointments()) {
@@ -78,6 +78,7 @@ export default function AppointmentDetailPage() {
 
   const id = getAppointmentId(appointment);
   const patient = getPatient(appointment);
+  const patientName = patient ? getPatientFullName(patient) : undefined;
   const canModify =
     canEditAppointment() &&
     !["cancelled", "completed", "rescheduled", "in_progress"].includes(
@@ -99,15 +100,14 @@ export default function AppointmentDetailPage() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!window.confirm("Cancel this appointment?")) return;
+  const handleConfirmCancel = async (cancellationReason: string) => {
     setPending(true);
     try {
       await cancelAppointment.mutateAsync({
         id,
-        data: { cancellationReason: cancelReason.trim() || undefined },
+        data: { cancellationReason },
       });
-      router.push("/appointments");
+      setCancelDialogOpen(false);
     } finally {
       setPending(false);
     }
@@ -191,6 +191,21 @@ export default function AppointmentDetailPage() {
                 <p className="font-medium">{appointment.notes}</p>
               </div>
             ) : null}
+            {appointment.status === "cancelled" &&
+            appointment.cancellationReason ? (
+              <div className="sm:col-span-2 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+                <p className="text-muted-foreground">Cancellation reason</p>
+                <p className="mt-1 font-medium text-foreground">
+                  {appointment.cancellationReason}
+                </p>
+                {appointment.cancelledAt ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Cancelled{" "}
+                    {new Date(appointment.cancelledAt).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           {sessionId ? (
@@ -226,7 +241,7 @@ export default function AppointmentDetailPage() {
                   variant="destructive"
                   className="rounded-full"
                   disabled={pending}
-                  onClick={handleCancel}
+                  onClick={() => setCancelDialogOpen(true)}
                 >
                   Cancel
                 </Button>
@@ -269,22 +284,16 @@ export default function AppointmentDetailPage() {
               </Button>
             </div>
           ) : null}
-
-          {canModify ? (
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">
-                Cancellation reason
-              </label>
-              <Textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                rows={2}
-                placeholder="Reason for cancellation"
-              />
-            </div>
-          ) : null}
         </CardContent>
       </Card>
+
+      <CancelAppointmentDialog
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+        onConfirm={handleConfirmCancel}
+        pending={pending}
+        patientName={patientName}
+      />
     </div>
   );
 }

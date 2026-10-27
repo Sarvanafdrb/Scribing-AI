@@ -5,12 +5,15 @@ import Link from "next/link";
 import { CalendarDays, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AppointmentTable } from "./components/AppointmentTable";
+import { AppointmentTable, getPatient } from "./components/AppointmentTable";
+import { CancelAppointmentDialog } from "./components/CancelAppointmentDialog";
 import { useAppointments } from "@/hooks/appointments/useAppointments";
 import { useAppointmentMutations } from "@/hooks/appointments/useAppointmentMutations";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { useTenantScope } from "@/hooks/useTenantScope";
+import type { Appointment } from "@/types/appointment.types";
 import { getAppointmentId } from "@/types/appointment.types";
+import { getPatientFullName } from "@/utils/patient.utils";
 
 type ScheduleView = "upcoming" | "range";
 
@@ -27,6 +30,7 @@ export default function AppointmentsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [actionId, setActionId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
 
   const { cancelAppointment } = useAppointmentMutations();
   const { organizationId, organizationName, isAllOrganizations } = useTenantScope();
@@ -46,14 +50,20 @@ export default function AppointmentsPage() {
     setPage(1);
   }, [view, dateFrom, dateTo]);
 
-  const handleCancel = async (appointment: { id?: string; _id?: string }) => {
-    const id = getAppointmentId(
-      appointment as Parameters<typeof getAppointmentId>[0],
-    );
-    if (!window.confirm("Cancel this appointment?")) return;
+  const handleCancelClick = (appointment: Appointment) => {
+    setCancelTarget(appointment);
+  };
+
+  const handleConfirmCancel = async (cancellationReason: string) => {
+    if (!cancelTarget) return;
+    const id = getAppointmentId(cancelTarget);
     setActionId(id);
     try {
-      await cancelAppointment.mutateAsync({ id });
+      await cancelAppointment.mutateAsync({
+        id,
+        data: { cancellationReason },
+      });
+      setCancelTarget(null);
     } finally {
       setActionId(null);
     }
@@ -194,10 +204,27 @@ export default function AppointmentsPage() {
           appointments={appointments}
           canCheckIn={false}
           canCancel={canEditAppointment()}
-          onCancel={handleCancel}
+          onCancel={handleCancelClick}
           cancelLoadingId={actionId}
         />
       )}
+
+      <CancelAppointmentDialog
+        open={Boolean(cancelTarget)}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null);
+        }}
+        onConfirm={handleConfirmCancel}
+        pending={Boolean(actionId)}
+        patientName={
+          cancelTarget
+            ? (() => {
+                const patient = getPatient(cancelTarget);
+                return patient ? getPatientFullName(patient) : undefined;
+              })()
+            : undefined
+        }
+      />
 
       {totalPages > 1 ? (
         <div className="flex items-center justify-end gap-2">

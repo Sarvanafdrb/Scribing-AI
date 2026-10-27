@@ -72,7 +72,7 @@ export interface UpdateAppointmentData {
 }
 
 export interface CancelAppointmentData {
-  cancellationReason?: string;
+  cancellationReason: string;
 }
 
 export interface RescheduleAppointmentData {

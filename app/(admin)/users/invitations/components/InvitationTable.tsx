@@ -21,7 +21,14 @@ import {
 import { Invitation } from "@/types/invitation.types";
 import { InvitationStatusBadge } from "./InvitationStatusBadge";
 import { useInvitationMutations } from "@/hooks/invitations/useInvitationMutations";
-import { Calendar, ChevronLeft, ChevronRight, Mail, RefreshCw, XCircle } from "lucide-react";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
 
 interface InvitationTableProps {
   invitations: Invitation[];
@@ -91,7 +98,7 @@ export function InvitationTable({
                 <TableHead className="font-bold">Status</TableHead>
                 <TableHead className="font-bold">Expires At</TableHead>
                 <TableHead className="font-bold">Created At</TableHead>
-                <TableHead className="text-right font-bold">Actions</TableHead>
+                {/* <TableHead className="text-right font-bold">Actions</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -138,7 +145,7 @@ export function InvitationTable({
                           {formatDate(invitation.createdAt)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      {/* <TableCell className="text-right">
                         {showActions ? (
                           <div className="flex justify-end gap-2">
                             <Button
@@ -166,7 +173,7 @@ export function InvitationTable({
                         ) : (
                           <span className="text-sm text-muted-foreground">—</span>
                         )}
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   );
                 })
@@ -207,14 +214,16 @@ export function InvitationTable({
         )}
       </div>
 
-      <Dialog open={Boolean(resendTarget)} onOpenChange={(open) => !open && setResendTarget(null)}>
+      <Dialog
+        open={Boolean(resendTarget)}
+        onOpenChange={(open) => !open && setResendTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Resend invitation?</DialogTitle>
             <DialogDescription>
-              The previous invitation link will no longer be valid. A new invitation
-              will be sent to{" "}
-              <strong>{resendTarget?.email}</strong>.
+              The previous invitation link will no longer be valid. A new
+              invitation will be sent to <strong>{resendTarget?.email}</strong>.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -231,7 +240,10 @@ export function InvitationTable({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(revokeTarget)} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+      <Dialog
+        open={Boolean(revokeTarget)}
+        onOpenChange={(open) => !open && setRevokeTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Revoke invitation?</DialogTitle>

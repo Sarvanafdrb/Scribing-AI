@@ -119,9 +119,7 @@ export default function AppointmentDetailPage() {
     !["cancelled", "completed", "rescheduled", "in_progress"].includes(
       appointment.status,
     );
-  const organizationId = refId(
-    (appointment as Appointment).organizationId,
-  );
+  const organizationId = refId((appointment as Appointment).organizationId);
   const doctorId = refId((appointment as Appointment).doctorId);
   const durationMinutes = Math.max(
     5,
@@ -256,7 +254,9 @@ export default function AppointmentDetailPage() {
               </div>
             ) : null}
             {isPastStart &&
-            ["scheduled", "confirmed", "no_show"].includes(appointment.status) ? (
+            ["scheduled", "confirmed", "no_show"].includes(
+              appointment.status,
+            ) ? (
               <div className="sm:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 This appointment date has passed. Please reschedule to continue.
               </div>
@@ -291,17 +291,6 @@ export default function AppointmentDetailPage() {
                 Reschedule
               </Button>
             ) : null}
-            {canCancel ? (
-              <Button
-                type="button"
-                variant="destructive"
-                className="rounded-full"
-                disabled={pending}
-                onClick={() => setCancelDialogOpen(true)}
-              >
-                Cancel
-              </Button>
-            ) : null}
           </div>
 
           {showReschedule && canReschedule && organizationId && doctorId ? (
@@ -320,27 +309,29 @@ export default function AppointmentDetailPage() {
             <div className="space-y-2 border-t border-border/50 pt-4">
               <p className="font-medium">Appointment history</p>
               <ul className="space-y-2 text-sm">
-                {auditMeta.events.map((event: {
-                  id?: string;
-                  eventType?: string;
-                  createdAt?: string;
-                  reason?: string;
-                }) => (
-                  <li
-                    key={event.id || event.createdAt}
-                    className="rounded-xl border border-border/50 px-3 py-2"
-                  >
-                    <p className="font-medium">{event.eventType}</p>
-                    {event.reason ? (
-                      <p className="text-muted-foreground">{event.reason}</p>
-                    ) : null}
-                    {event.createdAt ? (
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(event.createdAt).toLocaleString()}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
+                {auditMeta.events.map(
+                  (event: {
+                    id?: string;
+                    eventType?: string;
+                    createdAt?: string;
+                    reason?: string;
+                  }) => (
+                    <li
+                      key={event.id || event.createdAt}
+                      className="rounded-xl border border-border/50 px-3 py-2"
+                    >
+                      <p className="font-medium">{event.eventType}</p>
+                      {event.reason ? (
+                        <p className="text-muted-foreground">{event.reason}</p>
+                      ) : null}
+                      {event.createdAt ? (
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(event.createdAt).toLocaleString()}
+                        </p>
+                      ) : null}
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           ) : null}

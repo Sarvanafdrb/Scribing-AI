@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -29,16 +29,26 @@ import {
 } from "../components/AppointmentTable";
 import { CancelAppointmentDialog } from "../components/CancelAppointmentDialog";
 import { RescheduleAppointmentPanel } from "../components/RescheduleAppointmentPanel";
+import { RescheduleLimitNotice } from "../components/RescheduleLimitNotice";
+import {
+  APPOINTMENT_FREE_RESCHEDULE_LIMIT,
+  isAtRescheduleLimit,
+} from "@/constants/appointment.constants";
 import { getPatientFullName } from "@/utils/patient.utils";
 import { appointmentService } from "@/services/appointment.service";
 import type { Appointment } from "@/types/appointment.types";
 
+let minuteClockMs = Date.now();
+
 const subscribeToMinuteClock = (onStoreChange: () => void) => {
-  const id = window.setInterval(onStoreChange, 60_000);
+  const id = window.setInterval(() => {
+    minuteClockMs = Date.now();
+    onStoreChange();
+  }, 60_000);
   return () => window.clearInterval(id);
 };
 
-const getMinuteClockSnapshot = () => Date.now();
+const getMinuteClockSnapshot = () => minuteClockMs;
 
 const refId = (value: unknown): string => {
   if (!value) return "";
@@ -56,7 +66,7 @@ export default function AppointmentDetailPage() {
   const rawId = params?.id;
   const appointmentId = Array.isArray(rawId) ? rawId[0] : rawId || "";
   const { data: appointment, isLoading, error } = useAppointment(appointmentId);
-  const { data: auditMeta } = useQuery({
+  const { data: auditMeta, isPending: auditPending } = useQuery({
     queryKey: ["appointment-audit", appointmentId],
     queryFn: () => appointmentService.getAudit(appointmentId),
     enabled: Boolean(appointmentId),
@@ -70,13 +80,19 @@ export default function AppointmentDetailPage() {
   const { cancelAppointment, checkInAppointment } = useAppointmentMutations();
 
   const [showReschedule, setShowReschedule] = useState(false);
+  const [rescheduleKey, setRescheduleKey] = useState(0);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const nowMs = useSyncExternalStore(
     subscribeToMinuteClock,
     getMinuteClockSnapshot,
-    getMinuteClockSnapshot,
+    () => minuteClockMs,
   );
+
+  useEffect(() => {
+    setShowReschedule(false);
+    setRescheduleKey(0);
+  }, [appointmentId]);
 
   if (!canViewAppointments()) {
     return (
@@ -109,8 +125,13 @@ export default function AppointmentDetailPage() {
   const id = getAppointmentId(appointment);
   const patient = getPatient(appointment);
   const patientName = patient ? getPatientFullName(patient) : undefined;
+  const rescheduleDepth = auditMeta?.rescheduleCount ?? 0;
+  const atRescheduleLimit =
+    auditMeta != null && isAtRescheduleLimit(rescheduleDepth);
   const canReschedule =
     canCreateAppointment() &&
+    !auditPending &&
+    !atRescheduleLimit &&
     !["cancelled", "completed", "rescheduled", "in_progress"].includes(
       appointment.status,
     );
@@ -247,18 +268,35 @@ export default function AppointmentDetailPage() {
             ) : null}
             {auditMeta?.rescheduleCount !== undefined ? (
               <div className="sm:col-span-2 text-sm text-muted-foreground">
-                Reschedules in chain: {auditMeta.rescheduleCount}
-                {auditMeta.requiresApprovalForNextReschedule
-                  ? " · Additional approval required for next reschedule"
-                  : null}
+                Reschedules used: {auditMeta.rescheduleCount} of{" "}
+                {APPOINTMENT_FREE_RESCHEDULE_LIMIT}
+              </div>
+            ) : null}
+            {atRescheduleLimit &&
+            !["cancelled", "completed", "rescheduled"].includes(
+              appointment.status,
+            ) ? (
+              <div className="sm:col-span-2">
+                <RescheduleLimitNotice />
               </div>
             ) : null}
             {isPastStart &&
+            !atRescheduleLimit &&
             ["scheduled", "confirmed", "no_show"].includes(
               appointment.status,
             ) ? (
               <div className="sm:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 This appointment date has passed. Please reschedule to continue.
+              </div>
+            ) : null}
+            {isPastStart &&
+            atRescheduleLimit &&
+            ["scheduled", "confirmed", "no_show"].includes(
+              appointment.status,
+            ) ? (
+              <div className="sm:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                This appointment date has passed and the reschedule limit has
+                been used. Book a new consultation for this patient.
               </div>
             ) : null}
           </div>
@@ -286,7 +324,13 @@ export default function AppointmentDetailPage() {
                 variant="outline"
                 className="rounded-full"
                 disabled={pending}
-                onClick={() => setShowReschedule((v) => !v)}
+                onClick={() => {
+                  setShowReschedule((open) => {
+                    if (open) return false;
+                    setRescheduleKey((k) => k + 1);
+                    return true;
+                  });
+                }}
               >
                 Reschedule
               </Button>
@@ -295,7 +339,7 @@ export default function AppointmentDetailPage() {
 
           {showReschedule && canReschedule && organizationId && doctorId ? (
             <RescheduleAppointmentPanel
-              key={id}
+              key={`${id}-${rescheduleKey}`}
               appointmentId={id}
               organizationId={organizationId}
               initialDoctorId={doctorId}

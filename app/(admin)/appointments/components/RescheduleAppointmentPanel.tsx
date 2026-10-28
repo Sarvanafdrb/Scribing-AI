@@ -8,13 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
@@ -31,6 +24,15 @@ import {
   type SelectedSlot,
 } from "./AppointmentSlotPicker";
 import type { RescheduleAppointmentData } from "@/types/appointment.types";
+import {
+  APPOINTMENT_FREE_RESCHEDULE_LIMIT,
+  isAtRescheduleLimit,
+} from "@/constants/appointment.constants";
+import { RescheduleLimitNotice } from "./RescheduleLimitNotice";
+import { cn } from "@/lib/utils";
+
+const getDoctorOptionId = (doc: { id?: string; _id?: string }) =>
+  String(doc.id || doc._id || "");
 
 const tomorrowDateKey = () => {
   const d = new Date();
@@ -69,7 +71,25 @@ interface RescheduleAppointmentPanelProps {
   onRescheduled: (newAppointmentId: string) => void;
 }
 
-export function RescheduleAppointmentPanel({
+export function RescheduleAppointmentPanel(props: RescheduleAppointmentPanelProps) {
+  const pendingRequest = props.auditMeta?.pendingRescheduleApproval;
+  const pendingRequestId = String(
+    pendingRequest?._id || pendingRequest?.id || "",
+  );
+  const atLimit = isAtRescheduleLimit(props.auditMeta?.rescheduleCount);
+
+  if (atLimit && !pendingRequestId) {
+    return (
+      <div className="rounded-2xl border border-border/60 p-4">
+        <RescheduleLimitNotice />
+      </div>
+    );
+  }
+
+  return <RescheduleAppointmentPanelForm {...props} />;
+}
+
+function RescheduleAppointmentPanelForm({
   appointmentId,
   organizationId,
   initialDoctorId,
@@ -79,11 +99,8 @@ export function RescheduleAppointmentPanel({
 }: RescheduleAppointmentPanelProps) {
   const queryClient = useQueryClient();
   const { canReviewRescheduleApprovals } = useAccessControl();
-  const {
-    rescheduleAppointment,
-    requestRescheduleApproval,
-    reviewRescheduleApproval,
-  } = useAppointmentMutations();
+  const { rescheduleAppointment, reviewRescheduleApproval } =
+    useAppointmentMutations();
 
   const [appointmentDate, setAppointmentDate] = useState(tomorrowDateKey());
   const [doctorId, setDoctorId] = useState(initialDoctorId);
@@ -94,7 +111,6 @@ export function RescheduleAppointmentPanel({
   const [pending, setPending] = useState(false);
   const [reviewNote, setReviewNote] = useState("");
 
-  const requiresApproval = Boolean(auditMeta?.requiresApprovalForNextReschedule);
   const pendingRequest = auditMeta?.pendingRescheduleApproval;
   const pendingRequestId = String(
     pendingRequest?._id || pendingRequest?.id || "",
@@ -112,42 +128,27 @@ export function RescheduleAppointmentPanel({
     enabled: Boolean(organizationId && appointmentDate),
   });
 
-  const availableDoctorIds = useMemo(
-    () =>
-      new Set(
-        (availableDoctorsData?.doctors || []).map((d) => String(d.id)),
-      ),
-    [availableDoctorsData],
+  const doctorsForSelect = useMemo(
+    () => availableDoctorsData?.doctors ?? [],
+    [availableDoctorsData?.doctors],
   );
 
-  const doctorsForSelect = useMemo(() => {
-    const list = availableDoctorsData?.doctors || [];
-    if (
-      initialDoctorId &&
-      !list.some((d) => String(d.id) === initialDoctorId)
-    ) {
-      return list;
-    }
-    return list;
-  }, [availableDoctorsData, initialDoctorId]);
+  const doctorIdsKey = useMemo(
+    () => doctorsForSelect.map(getDoctorOptionId).join(","),
+    [doctorsForSelect],
+  );
 
-  const effectiveDoctorId = useMemo(() => {
-    if (!availableDoctorsData?.configured) {
-      return doctorId || initialDoctorId;
-    }
-    if (doctorId && availableDoctorIds.has(doctorId)) return doctorId;
-    if (initialDoctorId && availableDoctorIds.has(initialDoctorId)) {
+  const doctorIdInList = (id: string) =>
+    Boolean(id) && doctorsForSelect.some((d) => getDoctorOptionId(d) === id);
+
+  const activeDoctorId = useMemo(() => {
+    if (doctorId && doctorIdInList(doctorId)) return doctorId;
+    if (initialDoctorId && doctorIdInList(initialDoctorId)) {
       return initialDoctorId;
     }
-    const first = doctorsForSelect[0]?.id;
-    return first ? String(first) : doctorId || initialDoctorId;
-  }, [
-    availableDoctorsData?.configured,
-    availableDoctorIds,
-    doctorId,
-    doctorsForSelect,
-    initialDoctorId,
-  ]);
+    const first = doctorsForSelect[0];
+    return first ? getDoctorOptionId(first) : "";
+  }, [doctorId, initialDoctorId, doctorIdsKey, doctorsForSelect]);
 
   const buildPayload = (): RescheduleAppointmentData | null => {
     if (!appointmentDate || !selectedSlot) return null;
@@ -178,14 +179,6 @@ export function RescheduleAppointmentPanel({
       setSubmitError("Select an available time slot.");
       return;
     }
-    if (requiresApproval && !pendingRequestId) {
-      if (!reason.trim()) {
-        setSubmitError(
-          "A reason is required when requesting reschedule approval.",
-        );
-        return;
-      }
-    }
     setConfirmOpen(true);
   };
 
@@ -196,16 +189,6 @@ export function RescheduleAppointmentPanel({
     setPending(true);
     setSubmitError("");
     try {
-      if (requiresApproval && !pendingRequestId) {
-        await requestRescheduleApproval.mutateAsync({
-          id: appointmentId,
-          data: payload,
-        });
-        setConfirmOpen(false);
-        invalidateAudit();
-        return;
-      }
-
       const updated = await rescheduleAppointment.mutateAsync({
         id: appointmentId,
         data: payload,
@@ -267,12 +250,8 @@ export function RescheduleAppointmentPanel({
         <p className="font-medium">Reschedule appointment</p>
         {auditMeta?.rescheduleCount !== undefined ? (
           <p className="text-sm text-muted-foreground">
-            Reschedules in chain: {auditMeta.rescheduleCount}
-          </p>
-        ) : null}
-        {requiresApproval ? (
-          <p className="mt-1 text-sm font-medium text-amber-800">
-            Reschedule limit reached. Additional approval is required.
+            Reschedules used: {auditMeta.rescheduleCount} of{" "}
+            {APPOINTMENT_FREE_RESCHEDULE_LIMIT}
           </p>
         ) : null}
       </div>
@@ -343,40 +322,41 @@ export function RescheduleAppointmentPanel({
                 onChange={(e) => {
                   setAppointmentDate(e.target.value);
                   setSelectedSlot(null);
+                  setDoctorId(initialDoctorId);
                 }}
               />
             </div>
             <div className="space-y-2">
-              <Label>Doctor</Label>
+              <Label htmlFor="reschedule-doctor">Doctor</Label>
               {loadingDoctors ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading doctors…
                 </div>
-              ) : (
-                <Select
-                  value={effectiveDoctorId}
-                  onValueChange={(value) => {
-                    setDoctorId(value);
+              ) : doctorsForSelect.length > 0 && activeDoctorId ? (
+                <select
+                  id="reschedule-doctor"
+                  className={cn(
+                    "flex h-10 w-full rounded-full border border-border bg-white/85 px-3.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 dark:bg-white/10",
+                  )}
+                  value={activeDoctorId}
+                  onChange={(e) => {
+                    setDoctorId(e.target.value);
                     setSelectedSlot(null);
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select doctor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctorsForSelect.map((doc) => (
-                      <SelectItem key={doc.id} value={String(doc.id)}>
+                  {doctorsForSelect.map((doc) => {
+                    const docId = getDoctorOptionId(doc);
+                    return (
+                      <option key={docId} value={docId}>
                         {[doc.firstName, doc.lastName].filter(Boolean).join(" ") ||
                           doc.email ||
                           "Doctor"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              {availableDoctorsData?.configured &&
-              doctorsForSelect.length === 0 ? (
+                      </option>
+                    );
+                  })}
+                </select>
+              ) : availableDoctorsData?.configured ? (
                 <p className="text-xs text-muted-foreground">
                   No doctors available on this date.
                 </p>
@@ -384,36 +364,24 @@ export function RescheduleAppointmentPanel({
             </div>
           </div>
 
-          {effectiveDoctorId && appointmentDate ? (
+          {activeDoctorId && appointmentDate ? (
             <AppointmentSlotPicker
               organizationId={organizationId}
-              doctorId={effectiveDoctorId}
+              doctorId={activeDoctorId}
               appointmentDate={appointmentDate}
               value={selectedSlot}
               onChange={setSelectedSlot}
             />
           ) : null}
 
-          {requiresApproval ? (
-            <div className="space-y-2">
-              <Label>Reason for approval request</Label>
-              <Textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Why does this appointment need another reschedule?"
-                rows={3}
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label>Reason (optional)</Label>
-              <Textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={2}
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>Reason (optional)</Label>
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={2}
+            />
+          </div>
 
           {submitError ? (
             <p className="text-sm text-destructive" role="alert">
@@ -424,15 +392,10 @@ export function RescheduleAppointmentPanel({
           <Button
             type="button"
             className="rounded-full bg-blue-600 hover:bg-blue-700"
-            disabled={
-              pending ||
-              !selectedSlot ||
-              !effectiveDoctorId ||
-              (requiresApproval && !reason.trim())
-            }
+            disabled={pending || !selectedSlot || !activeDoctorId}
             onClick={handleOpenConfirm}
           >
-            {requiresApproval ? "Request approval" : "Continue"}
+            Continue
           </Button>
         </>
       )}
@@ -462,25 +425,13 @@ export function RescheduleAppointmentPanel({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {requiresApproval
-                ? "Submit reschedule approval request?"
-                : "Confirm reschedule"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Confirm reschedule</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
-                {requiresApproval ? (
-                  <p>
-                    This will send the proposed slot to an administrator. The
-                    current appointment stays active until approval and
-                    rescheduling succeed.
-                  </p>
-                ) : (
-                  <p>
-                    The current appointment will be marked rescheduled and a new
-                    appointment will be created for the selected slot.
-                  </p>
-                )}
+                <p>
+                  The current appointment will be marked rescheduled and a new
+                  appointment will be created for the selected slot.
+                </p>
                 {selectedSlot ? (
                   <p className="font-medium text-foreground">
                     {appointmentDate} · {selectedSlot.startTime} –{" "}
@@ -503,8 +454,6 @@ export function RescheduleAppointmentPanel({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Working…
                 </>
-              ) : requiresApproval ? (
-                "Submit request"
               ) : (
                 "Confirm reschedule"
               )}

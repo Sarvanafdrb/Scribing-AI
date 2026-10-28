@@ -33,7 +33,10 @@ import {
 import { getNormalizedAllergies, getPatientAge } from "@/utils/patient.utils";
 import { isConsultationCompleted } from "@/utils/session-status.utils";
 import { getSmsStatusLabel } from "@/utils/sms.utils";
-import { isValidIndianPhoneNumber, normalizeIndianPhoneNumber } from "@/utils/patient.utils";
+import {
+  isValidIndianPhoneNumber,
+  normalizeIndianPhoneNumber,
+} from "@/utils/patient.utils";
 import { cn } from "@/lib/utils";
 
 interface PrescriptionPreviewViewProps {
@@ -153,7 +156,9 @@ export function PrescriptionPreviewView({
       0,
     );
 
-  const medicineCount = medications.filter((med) => med.medicine?.trim()).length;
+  const medicineCount = medications.filter((med) =>
+    med.medicine?.trim(),
+  ).length;
   const blockingIssues = medicineCount === 0 ? 1 : 0;
 
   const patientAgeSex = useMemo(() => {
@@ -561,8 +566,10 @@ export function PrescriptionPreviewView({
                 <button
                   type="button"
                   onClick={handleSmsClick}
-                  disabled={isSending || !isConsultationCompleted(session?.status)}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-60"
+                  disabled={
+                    isSending || !isConsultationCompleted(session?.status)
+                  }
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted/50 disabled:opacity-60 cursor-not-allowed"
                 >
                   {isSending ? (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -576,14 +583,14 @@ export function PrescriptionPreviewView({
                     SMS status: {getSmsStatusLabel(latestSms.status)}
                   </p>
                 ) : null}
-                <button
+                {/* <button
                   type="button"
                   onClick={handleAbha}
                   className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted/50"
                 >
                   <UserRound className="h-4 w-4 text-muted-foreground" />
                   Push to ABHA account
-                </button>
+                </button> */}
                 <button
                   type="button"
                   onClick={() => void handleFinishVisit()}

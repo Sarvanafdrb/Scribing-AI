@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -16,7 +16,30 @@ import { useSession } from "@/hooks/sessions/useSession";
 import { useAuthStore } from "@/store/auth.store";
 import { encounterService } from "@/services/encounter.service";
 import { sessionKeys } from "@/services/session.queries";
-import { api } from "@/services/api";
+import { userService } from "@/services/user.service";
+import { roleService } from "@/services/role.service";
+import type { Session, SessionUser } from "@/types/session.types";
+import type { AuthUser } from "@/types/auth.types";
+
+const resolveEntityId = (value: unknown): string => {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "object") {
+    const obj = value as { id?: string; _id?: string };
+    return String(obj.id || obj._id || "");
+  }
+  return String(value);
+};
+
+/** Doctor who owns / conducted this consultation (session.userId). */
+const getSessionAttendingDoctorId = (
+  session?: Session | null,
+  authUser?: AuthUser | null,
+): string => {
+  const fromSession = resolveEntityId(session?.userId);
+  if (fromSession) return fromSession;
+  return resolveEntityId(authUser);
+};
 
 interface AdmitPatientModalProps {
   sessionId: string;
@@ -46,26 +69,66 @@ export function AdmitPatientModal({
     new Date().toISOString().slice(0, 16),
   );
 
-  const doctorsQuery = useQuery({
-    queryKey: ["doctors-for-admit", organizationId],
+  const preferredDoctorId = useMemo(
+    () => getSessionAttendingDoctorId(session, user),
+    [session, user],
+  );
+
+  const { data: rolesData } = useQuery({
+    queryKey: ["roles", "admit-modal", organizationId],
+    queryFn: () => roleService.getAll(String(organizationId)),
     enabled: open && Boolean(organizationId),
-    queryFn: async () => {
-      const response = await api.get("/users", {
-        params: {
-          organizationId,
-          isActive: true,
-          limit: 100,
-          page: 1,
-        },
-      });
-      return (response.data.data || []) as Array<{
-        _id?: string;
-        id?: string;
-        firstName?: string;
-        lastName?: string;
-      }>;
-    },
   });
+
+  const doctorRoleId = useMemo(() => {
+    const doctorRole = (rolesData || []).find(
+      (role) => role.name?.toLowerCase() === "doctor",
+    );
+    return doctorRole?.id || doctorRole?._id || "";
+  }, [rolesData]);
+
+  const doctorsQuery = useQuery({
+    queryKey: ["doctors-for-admit", organizationId, doctorRoleId],
+    enabled: open && Boolean(organizationId) && Boolean(doctorRoleId),
+    queryFn: () =>
+      userService.getAll({
+        organizationId: String(organizationId),
+        roleId: doctorRoleId,
+        isActive: "true",
+        limit: 100,
+        page: 1,
+      }),
+  });
+
+  const doctorOptions = useMemo(() => {
+    const fromApi = doctorsQuery.data?.users || [];
+    if (!preferredDoctorId) return fromApi;
+
+    const alreadyListed = fromApi.some(
+      (doctor) => resolveEntityId(doctor) === preferredDoctorId,
+    );
+    if (alreadyListed) return fromApi;
+
+    const sessionDoctor =
+      typeof session?.userId === "object" ? session.userId : null;
+    if (sessionDoctor?.firstName || sessionDoctor?.lastName) {
+      return [sessionDoctor as SessionUser & { _id?: string; id?: string }, ...fromApi];
+    }
+
+    if (user && resolveEntityId(user) === preferredDoctorId) {
+      return [
+        {
+          id: user.id,
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+        ...fromApi,
+      ];
+    }
+
+    return fromApi;
+  }, [doctorsQuery.data?.users, preferredDoctorId, session?.userId, user]);
 
   useEffect(() => {
     if (!open) {
@@ -74,12 +137,16 @@ export function AdmitPatientModal({
       document.body.style.removeProperty("overflow");
       return;
     }
-    const defaultDoctor =
-      (typeof session?.userId === "object"
-        ? session.userId._id || session.userId.id
-        : session?.userId) || user?.id;
-    if (defaultDoctor) setAttendingDoctorId(String(defaultDoctor));
-  }, [open, session?.userId, user?.id]);
+
+    if (!preferredDoctorId) return;
+
+    const matched = doctorOptions.find(
+      (doctor) => resolveEntityId(doctor) === preferredDoctorId,
+    );
+    setAttendingDoctorId(
+      matched ? resolveEntityId(matched) : preferredDoctorId,
+    );
+  }, [open, preferredDoctorId, doctorOptions]);
 
   const admitMutation = useMutation({
     mutationFn: () =>
@@ -165,8 +232,8 @@ export function AdmitPatientModal({
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-teal-400"
             >
               <option value="">Select doctor</option>
-              {(doctorsQuery.data || []).map((doctor) => {
-                const id = doctor._id || doctor.id || "";
+              {doctorOptions.map((doctor) => {
+                const id = resolveEntityId(doctor);
                 return (
                   <option key={id} value={id}>
                     Dr. {doctor.firstName} {doctor.lastName}

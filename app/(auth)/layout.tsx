@@ -32,7 +32,7 @@ export default function AuthLayout({
     router.push(resolveAuthenticatedHomePath(user, token));
   }, [isAuthenticated, shouldRedirectAuthenticated, router, user, token]);
 
-  if (isLoginPage || pathname.startsWith("/accept-invitation/")) {
+  if (isLoginPage) {
     return <>{children}</>;
   }
 

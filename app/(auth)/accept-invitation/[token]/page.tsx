@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AxiosError } from "axios";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,8 @@ export default function AcceptInvitationPage() {
   const token = typeof params?.token === "string" ? params.token : "";
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -76,7 +79,7 @@ export default function AcceptInvitationPage() {
 
   if (!token) {
     return (
-      <Card>
+      <Card className="w-full shadow-lg">
         <CardContent className="py-8 text-center">
           <p className="text-destructive font-medium">
             Invalid or missing invitation link.
@@ -88,7 +91,7 @@ export default function AcceptInvitationPage() {
 
   if (previewQuery.isLoading) {
     return (
-      <Card>
+      <Card className="w-full shadow-lg">
         <CardContent className="py-10 text-center text-muted-foreground">
           Loading invitation...
         </CardContent>
@@ -98,7 +101,7 @@ export default function AcceptInvitationPage() {
 
   if (previewQuery.isError) {
     return (
-      <Card>
+      <Card className="w-full shadow-lg">
         <CardHeader>
           <CardTitle>Invitation unavailable</CardTitle>
         </CardHeader>
@@ -119,7 +122,7 @@ export default function AcceptInvitationPage() {
 
   if (success) {
     return (
-      <Card>
+      <Card className="w-full shadow-lg">
         <CardHeader>
           <CardTitle>Account created successfully</CardTitle>
         </CardHeader>
@@ -150,7 +153,7 @@ export default function AcceptInvitationPage() {
     };
 
     return (
-      <Card>
+      <Card className="w-full shadow-lg">
         <CardHeader>
           <CardTitle>Invitation unavailable</CardTitle>
         </CardHeader>
@@ -168,7 +171,7 @@ export default function AcceptInvitationPage() {
   }
 
   return (
-    <Card>
+    <Card className="w-full shadow-lg">
       <CardHeader>
         <CardTitle>Accept Invitation</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -202,33 +205,71 @@ export default function AcceptInvitationPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setFormError("");
-              }}
-              required
-              minLength={6}
-            />
+            <Label htmlFor="password">New Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setFormError("");
+                }}
+                className="pr-12"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                disabled={acceptMutation.isPending}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-800 transition hover:bg-slate-100 hover:text-[#1e3a8a]"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} strokeWidth={2.25} />
+                ) : (
+                  <Eye size={18} strokeWidth={2.25} />
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                setFormError("");
-              }}
-              required
-              minLength={6}
-            />
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setFormError("");
+                }}
+                className="pr-12"
+                required
+                minLength={6}
+                autoComplete="new-password"
+                disabled={acceptMutation.isPending}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-800 transition hover:bg-slate-100 hover:text-[#1e3a8a]"
+                aria-label={
+                  showConfirmPassword ? "Hide password" : "Show password"
+                }
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff size={18} strokeWidth={2.25} />
+                ) : (
+                  <Eye size={18} strokeWidth={2.25} />
+                )}
+              </button>
+            </div>
           </div>
 
           {formError && (

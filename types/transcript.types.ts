@@ -31,7 +31,12 @@ export interface TranscriptMetadata {
   isMixedLanguage: boolean;
   averageConfidence: number;
   model: string;
+  /** ISO timestamp when STT processing started. */
+  startedAt?: string;
+  /** ISO timestamp when STT processing finished. */
+  completedAt?: string;
   processedAt?: string;
+  processingDurationSeconds?: number;
   translationLanguage?: string;
   status: TranscriptProcessingStatus;
   error?: string;

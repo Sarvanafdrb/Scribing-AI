@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 /**
  * Long consultation audio through /api/backend needs elevated duration.
  * Vercel Hobby max is 300s; Pro can raise to 800 via maxDuration.
@@ -44,6 +45,7 @@ const STRIP_RESPONSE_HEADERS = new Set([
   ...STRIP_REQUEST_HEADERS,
   "content-encoding",
   "set-cookie",
+  "etag",
 ]);
 
 const buildTargetUrl = (request: NextRequest, path: string[]) => {
@@ -77,6 +79,12 @@ const buildResponseHeaders = (response: Response) => {
     if (STRIP_RESPONSE_HEADERS.has(key.toLowerCase())) return;
     headers.set(key, value);
   });
+
+  headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, private",
+  );
+  headers.set("Pragma", "no-cache");
 
   return headers;
 };

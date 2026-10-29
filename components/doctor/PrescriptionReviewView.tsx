@@ -67,6 +67,19 @@ import {
   medicationHasResolvedCatalogPrice,
 } from "@/utils/prescription-catalog.utils";
 
+import type { AiNotes } from "@/types/ai-notes.types";
+
+const EMPTY_AI_NOTES: AiNotes = {
+  status: "completed",
+  summary: "",
+  subjective: "",
+  objective: "",
+  assessment: "",
+  plan: "",
+  remarks: "",
+  medications: [],
+};
+
 interface PrescriptionReviewViewProps {
   sessionId: string;
 }
@@ -387,7 +400,14 @@ export function PrescriptionReviewView({ sessionId }: PrescriptionReviewViewProp
   };
 
   const handleSignAndPrint = async () => {
-    if (!session || !aiNotes || isSaving || isSigning) return;
+    if (!session || isSaving || isSigning) {
+      if (!session) {
+        toast.error("Session is still loading. Try again in a moment.");
+      }
+      return;
+    }
+
+    const notesForExport = aiNotes ?? EMPTY_AI_NOTES;
 
     const hasMedications = acceptedMedications.some((med) =>
       med.medicine.trim(),
@@ -402,7 +422,7 @@ export function PrescriptionReviewView({ sessionId }: PrescriptionReviewViewProp
 
     try {
       setIsSaving(true);
-      const baseContent = buildAiNotesExportContent(aiNotes, session);
+      const baseContent = buildAiNotesExportContent(notesForExport, session);
       const content = {
         ...baseContent,
         medications: acceptedMedications,

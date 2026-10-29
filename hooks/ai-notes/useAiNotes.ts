@@ -12,17 +12,10 @@ import {
   type AiNotesExportUpdateOptions,
 } from "@/utils/ai-notes-export.utils";
 
-const hasTranscript = (session?: {
-  transcript?: string;
-  transcriptData?: { fullText?: string; metadata?: { status?: string } };
-}) => {
-  if (!session) return false;
-  const status = session.transcriptData?.metadata?.status;
-  if (status && status !== "completed") return false;
-  return Boolean(
-    session.transcriptData?.fullText?.trim() || session.transcript?.trim(),
-  );
-};
+import {
+  canAccessAiNotesWorkflow,
+  hasTranscriptContent,
+} from "@/utils/session-status.utils";
 
 export const useAiNotes = (sessionId: string) => {
   const queryClient = useQueryClient();
@@ -30,12 +23,13 @@ export const useAiNotes = (sessionId: string) => {
   const autoGenerateAttempted = useRef(false);
   const { data: session, isLoading: isSessionLoading } = useSession(sessionId);
 
-  const transcriptReady = hasTranscript(session);
+  const transcriptReady = hasTranscriptContent(session);
+  const aiNotesWorkflowEnabled = canAccessAiNotesWorkflow(session);
 
   const aiNotesQuery = useQuery({
     queryKey: aiNotesKeys.detail(sessionId),
     queryFn: () => aiNotesService.get(sessionId),
-    enabled: Boolean(sessionId) && transcriptReady,
+    enabled: Boolean(sessionId) && aiNotesWorkflowEnabled,
     refetchInterval: (query) => {
       const status =
         query.state.data?.status || session?.aiNotes?.status;
@@ -134,7 +128,9 @@ export const useAiNotes = (sessionId: string) => {
   return {
     session,
     aiNotes,
-    isLoading: isSessionLoading || (transcriptReady && aiNotesQuery.isLoading),
+    isLoading:
+      isSessionLoading ||
+      (aiNotesWorkflowEnabled && aiNotesQuery.isLoading),
     isGenerating: generateMutation.isPending || isProcessing,
     isFailed,
     isCompleted,

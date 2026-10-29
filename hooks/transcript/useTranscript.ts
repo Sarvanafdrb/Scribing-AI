@@ -6,7 +6,7 @@ import { useSession } from "@/hooks/sessions/useSession";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
 
 /** If UI polls "processing" too long, re-hit generate so the API can recover orphaned jobs. */
-const STUCK_REKICK_MS = 10 * 60 * 1000;
+const STUCK_REKICK_MS = 3 * 60 * 1000;
 
 export const useTranscript = (sessionId: string) => {
   const sessionQuery = useSession(sessionId);

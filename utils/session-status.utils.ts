@@ -154,13 +154,36 @@ export const getTranscriptAiError = (session?: {
 } | null) => session?.transcriptData?.metadata?.aiError ?? null;
 
 export const hasTranscriptContent = (session?: {
+  status?: string;
   transcript?: string;
   transcriptData?: { fullText?: string; metadata?: { status?: string } };
 } | null) => {
   if (isTranscriptPipelineFailed(session)) return false;
+  const fullText =
+    session?.transcript?.trim() || session?.transcriptData?.fullText?.trim();
+  if (fullText && isTranscriptAvailable(session?.status)) {
+    return true;
+  }
   const status = session?.transcriptData?.metadata?.status;
   if (status && status !== "completed") return false;
-  return Boolean(
-    session?.transcript?.trim() || session?.transcriptData?.fullText?.trim(),
-  );
+  return Boolean(fullText);
+};
+
+/** Doctor can open notes / prescription / sign flow (manual or AI). */
+export const canAccessAiNotesWorkflow = (session?: {
+  status?: string;
+  transcript?: string;
+  transcriptData?: { fullText?: string; metadata?: { status?: string } };
+} | null) => {
+  if (!session) return false;
+  if (hasTranscriptContent(session)) return true;
+  if (isTranscriptAvailable(session.status)) return true;
+  if (isTranscriptAiUnavailable(session)) return true;
+  if (
+    session.status === "ready_for_review" ||
+    session.status === "ai_notes_generated"
+  ) {
+    return true;
+  }
+  return false;
 };

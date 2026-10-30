@@ -20,6 +20,7 @@ import { userService } from "@/services/user.service";
 import { roleService } from "@/services/role.service";
 import type { Session, SessionUser } from "@/types/session.types";
 import type { AuthUser } from "@/types/auth.types";
+import { formatDateTimeLocalInput } from "@/utils/datetime.utils";
 
 const resolveEntityId = (value: unknown): string => {
   if (!value) return "";
@@ -66,7 +67,7 @@ export function AdmitPatientModal({
   const [isEmergency, setIsEmergency] = useState(false);
   const [attendingDoctorId, setAttendingDoctorId] = useState("");
   const [admittedAt, setAdmittedAt] = useState(() =>
-    new Date().toISOString().slice(0, 16),
+    formatDateTimeLocalInput(),
   );
 
   const preferredDoctorId = useMemo(
@@ -137,6 +138,12 @@ export function AdmitPatientModal({
       document.body.style.removeProperty("overflow");
       return;
     }
+
+    setAdmittedAt(formatDateTimeLocalInput());
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
 
     if (!preferredDoctorId) return;
 
@@ -242,7 +249,7 @@ export function AdmitPatientModal({
               })}
             </select>
           </Field>
-          <Field label="Admission Date">
+          <Field label="Admission date & time">
             <input
               type="datetime-local"
               value={admittedAt}

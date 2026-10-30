@@ -393,8 +393,6 @@ export const PRESCRIPTION_DOCUMENT_STYLES = `
     margin: 0 0 8px;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 4px;
   }
   .note-section p,
   .note-section li {

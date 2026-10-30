@@ -72,8 +72,10 @@ export interface LastVisit {
 
 export interface PreviousHistoryAiNotes {
   summary?: string;
+  subjective?: string;
   assessment?: string;
   plan?: string;
+  remarks?: string;
   medications?: AiNotes["medications"];
 }
 

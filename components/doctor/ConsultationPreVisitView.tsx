@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -13,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/hooks/sessions/useSession";
 import { usePatient } from "@/hooks/patients/usePatients";
+import { patientService } from "@/services/patient.service";
 import {
   formatPatientDateOfBirth,
   getPatientAge,
@@ -23,6 +26,15 @@ import { getDoctorWorkspaceHref } from "@/lib/doctor-consultation-navigation";
 import { SessionVitalsSection } from "@/components/doctor/SessionVitalsSection";
 import type { Patient } from "@/types/patient.types";
 import type { PreviousHistoryItem } from "@/types/session.types";
+import {
+  briefVisitAsList,
+  buildBriefVisitHistory,
+  buildPriorVisitHighlights,
+  extractMedicationLinesFromHistory,
+  formatHistoryMedicationLine,
+  resolveActiveBriefVisit,
+} from "@/utils/previous-history.utils";
+import { cn } from "@/lib/utils";
 
 interface ConsultationPreVisitViewProps {
   sessionId?: string;
@@ -50,26 +62,19 @@ const splitBullets = (text?: string) =>
     .filter(Boolean);
 
 const buildWhatChanged = (
-  history: PreviousHistoryItem[],
+  activeVisit: PreviousHistoryItem | null,
   patient: Patient | null,
+  totalVisits: number,
 ) => {
-  const bullets: string[] = [];
-  const latest = history[0];
-
-  if (latest?.aiNotes?.assessment?.trim()) {
-    bullets.push(...splitBullets(latest.aiNotes.assessment).slice(0, 2));
-  }
-  if (latest?.aiNotes?.summary?.trim()) {
-    bullets.push(latest.aiNotes.summary.trim());
-  }
+  const bullets = buildPriorVisitHighlights(briefVisitAsList(activeVisit));
   if (patient?.allergies?.length) {
     bullets.push(
       `Allergies documented: ${patient.allergies.slice(0, 3).join(", ")}`,
     );
   }
-  if (history.length > 0) {
+  if (totalVisits > 0) {
     bullets.push(
-      `${history.length} prior completed visit${history.length === 1 ? "" : "s"} on record`,
+      `${totalVisits} completed visit${totalVisits === 1 ? "" : "s"} on record`,
     );
   }
   if (!bullets.length) {
@@ -91,7 +96,8 @@ const buildSuggestedAgenda = (history: PreviousHistoryItem[]) => {
 
 const buildActiveProblems = (history: PreviousHistoryItem[]) => {
   const assessment = history[0]?.aiNotes?.assessment;
-  const items = splitBullets(assessment);
+  const subjective = history[0]?.aiNotes?.subjective;
+  const items = splitBullets(assessment || subjective);
   if (items.length) return items.slice(0, 4);
   return ["No active problems documented from prior visits."];
 };
@@ -119,19 +125,81 @@ export function ConsultationPreVisitView({
   );
 
   const patient = sessionPatient || fetchedPatient || null;
-  const history = session?.previousHistory || [];
+
+  const needsPatientHistoryFetch = Boolean(resolvedPatientId) && !sessionId;
+  const { data: patientOnlyHistory, isLoading: patientHistoryLoading } =
+    useQuery({
+      queryKey: [
+        "patient-previous-history",
+        resolvedPatientId,
+        sessionId || "",
+      ],
+      queryFn: () =>
+        patientService.getPreviousHistory(resolvedPatientId, {
+          excludeSessionId: sessionId || undefined,
+          limit: 3,
+        }),
+      enabled: needsPatientHistoryFetch,
+      staleTime: 30_000,
+    });
+
+  const apiPriorHistory = sessionId
+    ? session?.previousHistory
+    : patientOnlyHistory;
+
+  const { displayVisits, highlightVisits } = useMemo(
+    () => buildBriefVisitHistory(session ?? null, apiPriorHistory),
+    [apiPriorHistory, session],
+  );
+
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedVisitId(null);
+  }, [sessionId, resolvedPatientId, displayVisits.length]);
+
+  const { activeVisit, defaultVisitId, isLatestPriorVisit } = useMemo(
+    () =>
+      resolveActiveBriefVisit(
+        displayVisits,
+        highlightVisits,
+        selectedVisitId,
+      ),
+    [displayVisits, highlightVisits, selectedVisitId],
+  );
+
+  const activeVisitList = useMemo(
+    () => briefVisitAsList(activeVisit),
+    [activeVisit],
+  );
+
+  const summarySectionTitle = isLatestPriorVisit
+    ? "What changed since last visit"
+    : activeVisit
+      ? `Visit summary · ${formatVisitDate(activeVisit.completedAt)}`
+      : "What changed since last visit";
+
   const isLoading =
     (sessionId && sessionLoading) ||
-    (!sessionPatient && patientIdProp && patientLoading);
+    (!sessionPatient && patientIdProp && patientLoading) ||
+    (needsPatientHistoryFetch && patientHistoryLoading);
 
   const workspaceHref = sessionId ? getDoctorWorkspaceHref(sessionId) : null;
   const fullName = getPatientFullName(patient) || "Patient";
   const age = getPatientAge(patient);
-  const medications = getHomeMedications(patient);
+  const medications = useMemo(() => {
+    const profileMeds = getHomeMedications(patient);
+    if (profileMeds.length) return profileMeds;
+    return extractMedicationLinesFromHistory(activeVisitList);
+  }, [activeVisitList, patient]);
   const allergies = patient?.allergies?.filter(Boolean) || [];
-  const whatChanged = buildWhatChanged(history, patient);
-  const suggestedAgenda = buildSuggestedAgenda(history);
-  const activeProblems = buildActiveProblems(history);
+  const whatChanged = buildWhatChanged(
+    activeVisit,
+    patient,
+    displayVisits.length,
+  );
+  const suggestedAgenda = buildSuggestedAgenda(activeVisitList);
+  const activeProblems = buildActiveProblems(activeVisitList);
 
   const metaParts = [
     age !== null ? `${age} y` : null,
@@ -191,8 +259,11 @@ export function ConsultationPreVisitView({
               <h2 className="font-semibold text-foreground">Pre-visit brief</h2>
             </div>
             <p className="text-xs text-muted-foreground">
-              Built from {history.length} past visit
-              {history.length === 1 ? "" : "s"}
+              Built from {displayVisits.length} past visit
+              {displayVisits.length === 1 ? "" : "s"}
+              {activeVisit && !isLatestPriorVisit
+                ? ` · Reviewing ${formatVisitDate(activeVisit.completedAt)}`
+                : ""}
               {appointmentReason ? ` · ${appointmentReason}` : ""}
             </p>
           </div>
@@ -200,7 +271,7 @@ export function ConsultationPreVisitView({
         <div className="grid gap-5 p-5 lg:grid-cols-2">
           <div>
             <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              What changed since last visit
+              {summarySectionTitle}
             </h3>
             <ul className="space-y-2 text-sm text-foreground">
               {whatChanged.map((item) => (
@@ -319,20 +390,43 @@ export function ConsultationPreVisitView({
               Visit history
             </h3>
             <Badge variant="secondary" className="rounded-full">
-              {history.length} visit{history.length === 1 ? "" : "s"}
+              {displayVisits.length} visit{displayVisits.length === 1 ? "" : "s"}
             </Badge>
           </div>
-          {history.length === 0 ? (
+          {displayVisits.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No completed visit history yet.
             </p>
           ) : (
+            <>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Tap a visit to load its summary, medications, and problems in
+                this brief. Default is your most recent visit.
+              </p>
             <ul className="space-y-3">
-              {history.map((visit) => (
-                <li
-                  key={visit.sessionId}
-                  className="rounded-2xl border border-border/60 px-4 py-3"
-                >
+              {displayVisits.map((visit) => {
+                const visitMeds = (visit.aiNotes?.medications || [])
+                  .map(formatHistoryMedicationLine)
+                  .filter(Boolean);
+                const detail =
+                  visit.aiNotes?.assessment?.trim() ||
+                  visit.aiNotes?.subjective?.trim() ||
+                  visit.aiNotes?.summary?.trim() ||
+                  "";
+                const isSelected =
+                  (selectedVisitId ?? defaultVisitId) === visit.sessionId;
+                return (
+                <li key={visit.sessionId}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVisitId(visit.sessionId)}
+                    className={cn(
+                      "w-full rounded-2xl border px-4 py-3 text-left transition-colors",
+                      isSelected
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                        : "border-border/60 hover:border-primary/30 hover:bg-muted/30",
+                    )}
+                  >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground">
@@ -341,19 +435,34 @@ export function ConsultationPreVisitView({
                       <p className="truncate text-sm text-muted-foreground">
                         {visit.title || "Consultation"}
                       </p>
-                      {visit.aiNotes?.summary ? (
+                      {detail ? (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                          {visit.aiNotes.summary}
+                          {detail}
+                        </p>
+                      ) : null}
+                      {visitMeds.length ? (
+                        <p className="mt-1 line-clamp-3 text-xs text-foreground">
+                          Rx: {visitMeds.join(" · ")}
                         </p>
                       ) : null}
                     </div>
-                    <Badge className="shrink-0 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-                      Signed
+                    <Badge
+                      className={cn(
+                        "shrink-0 rounded-full",
+                        isSelected
+                          ? "bg-primary/15 text-primary"
+                          : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                      )}
+                    >
+                      {isSelected ? "Selected" : "Signed"}
                     </Badge>
                   </div>
+                  </button>
                 </li>
-              ))}
+              );
+              })}
             </ul>
+            </>
           )}
         </section>
 

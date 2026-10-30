@@ -24,6 +24,7 @@ import {
 } from "@/utils/ai-notes-export.utils";
 import type { DischargeDisposition } from "@/types/encounter.types";
 import type { AiNotes } from "@/types/ai-notes.types";
+import { formatDateTimeLocalInput } from "@/utils/datetime.utils";
 
 interface DischargePatientModalProps {
   sessionId: string;
@@ -61,7 +62,7 @@ export function DischargePatientModal({
   const { aiNotes, saveExportContent } = useAiNotes(sessionId);
 
   const [dischargedAt, setDischargedAt] = useState(() =>
-    new Date().toISOString().slice(0, 16),
+    formatDateTimeLocalInput(),
   );
   const [notes, setNotes] = useState("");
   const [disposition, setDisposition] =
@@ -75,7 +76,7 @@ export function DischargePatientModal({
       document.body.style.removeProperty("overflow");
       return;
     }
-    setDischargedAt(new Date().toISOString().slice(0, 16));
+    setDischargedAt(formatDateTimeLocalInput());
     setNotes("");
     setDisposition("home");
     setFollowUpDate("");
@@ -156,7 +157,7 @@ export function DischargePatientModal({
         </DialogHeader>
 
         <div className="space-y-3 py-2">
-          <Field label="Discharge Date">
+          <Field label="Discharge date & time">
             <input
               type="datetime-local"
               value={dischargedAt}

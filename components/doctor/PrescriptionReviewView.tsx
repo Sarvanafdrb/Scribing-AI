@@ -39,9 +39,10 @@ import {
 } from "@/utils/prescriptionPrice.utils";
 import { MedicationCostBreakdown } from "@/components/shared/prescription/MedicationCostBreakdown";
 import {
-  wouldDuplicateMedication,
+  wouldBlockPrescriptionMedicationAdd,
   formatMedicationDuplicateLabel,
   validatePrescriptionMedications,
+  prepareExternalSupplyMedication,
 } from "@/utils/prescriptionMedication.utils";
 import {
   signedBillingMatchesMedications,
@@ -236,6 +237,10 @@ export function PrescriptionReviewView({ sessionId }: PrescriptionReviewViewProp
 
   const resolveMedicationWithCatalog = useCallback(
     async (medication: AiNotesMedication): Promise<AiNotesMedication> => {
+      if (medication.isExternalSupply) {
+        return medication;
+      }
+
       if (medicationHasResolvedCatalogPrice(medication)) {
         return medication;
       }
@@ -275,12 +280,18 @@ export function PrescriptionReviewView({ sessionId }: PrescriptionReviewViewProp
   );
 
   const addMedication = useCallback(
-    async (medication: AiNotesMedication) => {
-      const enriched = await resolveMedicationWithCatalog(medication);
+    async (
+      medication: AiNotesMedication,
+      options?: { skipCatalogResolve?: boolean },
+    ) => {
+      const isOutOfStoreAdd = Boolean(options?.skipCatalogResolve);
+      const enriched = isOutOfStoreAdd
+        ? prepareExternalSupplyMedication(medication)
+        : await resolveMedicationWithCatalog(medication);
       let added = false;
 
       setAcceptedMedications((current) => {
-        if (wouldDuplicateMedication(enriched, current)) {
+        if (wouldBlockPrescriptionMedicationAdd(enriched, current)) {
           return current;
         }
         added = true;
@@ -699,7 +710,7 @@ export function PrescriptionReviewView({ sessionId }: PrescriptionReviewViewProp
                 void addMedication(medicationFromFormulary(medicine));
               }}
               onAddManualMedication={async (medication) => {
-                await addMedication(medication);
+                await addMedication(medication, { skipCatalogResolve: true });
               }}
             />
           </section>

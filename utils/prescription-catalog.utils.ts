@@ -145,6 +145,10 @@ export const enrichMedicationWithCatalogMatch = (
   medication: AiNotesMedication,
   catalog: MedicineSearchResult,
 ): AiNotesMedication => {
+  if (medication.isExternalSupply) {
+    return medication;
+  }
+
   const catalogBase = medicationFromFormulary(catalog);
   const hasDosage = Boolean(
     medication.morning?.trim() ||
@@ -185,6 +189,10 @@ export const enrichMedicationFromCatalogCandidates = (
   medication: AiNotesMedication,
   candidates: MedicineSearchResult[],
 ): AiNotesMedication => {
+  if (medication.isExternalSupply) {
+    return medication;
+  }
+
   if (medicationHasResolvedCatalogPrice(medication)) {
     return medication;
   }

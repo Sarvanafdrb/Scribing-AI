@@ -4,6 +4,23 @@ import type { MedicineSearchResult } from "@/types/medicine.types";
 export const normalizeCatalogToken = (value: string) =>
   value.trim().toLowerCase().replace(/\s+/g, " ");
 
+/** Free-text / out-of-store row: never link to formulary or catalog pricing. */
+export const prepareExternalSupplyMedication = (
+  medication: AiNotesMedication,
+): AiNotesMedication => {
+  const line = medication.medicine?.trim() || "";
+  return {
+    ...medication,
+    medicine: line,
+    isExternalSupply: true,
+    medicineId: undefined,
+    medicineNameSnapshot: undefined,
+    brandNameSnapshot: undefined,
+    catalogCostPreview: undefined,
+    priceAtPrescription: undefined,
+  };
+};
+
 export type CatalogMedicationIdentity = {
   medicineId: string;
   name: string;
@@ -37,8 +54,14 @@ export const getMedicationDuplicateKeys = (
     | "medicineNameSnapshot"
     | "medicine"
     | "strengthSnapshot"
+    | "isExternalSupply"
   >,
 ): Set<string> => {
+  if (med.isExternalSupply) {
+    const line = normalizeCatalogToken(med.medicine || "");
+    return line ? new Set([`ext:${line}`]) : new Set();
+  }
+
   const keys = new Set<string>();
   const identity = getCatalogMedicationIdentity(med);
 
@@ -70,6 +93,7 @@ export const medicationsAreDuplicates = (
     | "medicineNameSnapshot"
     | "medicine"
     | "strengthSnapshot"
+    | "isExternalSupply"
   >,
   right: Pick<
     AiNotesMedication,
@@ -77,8 +101,21 @@ export const medicationsAreDuplicates = (
     | "medicineNameSnapshot"
     | "medicine"
     | "strengthSnapshot"
+    | "isExternalSupply"
   >,
 ): boolean => {
+  const leftExternal = Boolean(left.isExternalSupply);
+  const rightExternal = Boolean(right.isExternalSupply);
+  if (leftExternal !== rightExternal) {
+    return false;
+  }
+  if (leftExternal && rightExternal) {
+    return (
+      normalizeCatalogToken(left.medicine || "") ===
+      normalizeCatalogToken(right.medicine || "")
+    );
+  }
+
   const leftKeys = getMedicationDuplicateKeys(left);
   const rightKeys = getMedicationDuplicateKeys(right);
   for (const key of leftKeys) {
@@ -347,6 +384,25 @@ export const wouldDuplicateMedication = (
   existing: AiNotesMedication[],
 ): boolean =>
   existing.some((row) => medicationsAreDuplicates(candidate, row));
+
+/**
+ * Used when adding a row on Prescription Review.
+ * Out-of-store free-text lines are always allowed (patient-supplied meds are not deduped against formulary or each other on add).
+ */
+export const wouldBlockPrescriptionMedicationAdd = (
+  candidate: AiNotesMedication,
+  existing: AiNotesMedication[],
+): boolean => {
+  if (!candidate.medicine?.trim()) {
+    return true;
+  }
+
+  if (candidate.isExternalSupply) {
+    return false;
+  }
+
+  return wouldDuplicateMedication(candidate, existing);
+};
 
 export const COMPLETED_PRESCRIPTION_MEDICATION_MESSAGE =
   "Cannot modify prescription medications on a completed consultation";

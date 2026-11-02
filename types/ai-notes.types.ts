@@ -16,6 +16,8 @@ export interface AiNotesMedication {
   night?: string;
   days?: string;
   instructions?: string;
+  /** Patient-supplied / out-of-store line from free-text entry; not linked to formulary. */
+  isExternalSupply?: boolean;
 }
 
 export interface AiNotes {

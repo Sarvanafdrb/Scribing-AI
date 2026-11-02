@@ -4,7 +4,11 @@ import type { AiNotesMedication } from "../types/ai-notes.types";
 import {
   findPrescriptionCompletionIssues,
   hasPrescriptionCompletionWarnings,
+  medicationsAreDuplicates,
+  prepareExternalSupplyMedication,
   validatePrescriptionMedications,
+  wouldBlockPrescriptionMedicationAdd,
+  wouldDuplicateMedication,
 } from "./prescriptionMedication.utils";
 
 const med = (
@@ -16,6 +20,86 @@ const med = (
   days: "",
   instructions: "",
   ...overrides,
+});
+
+describe("external supply duplicate rules", () => {
+  it("does not treat external free-text as duplicate of formulary row with same name", () => {
+    const formulary = med({
+      medicine: "Montelukast",
+      medicineId: "abc123",
+      medicineNameSnapshot: "Montelukast",
+      morning: "1",
+      days: "5",
+    });
+    const external = med({
+      medicine: "montelukast 10 od 5d",
+      isExternalSupply: true,
+      morning: "1",
+      days: "5",
+    });
+
+    assert.equal(medicationsAreDuplicates(formulary, external), false);
+    assert.equal(wouldDuplicateMedication(external, [formulary]), false);
+  });
+
+  it("detects duplicate external lines with the same text", () => {
+    const first = med({
+      medicine: "Custom tonic tds 7d",
+      isExternalSupply: true,
+      morning: "1",
+      days: "7",
+    });
+    const second = med({
+      medicine: "custom tonic tds 7d",
+      isExternalSupply: true,
+      morning: "1",
+      days: "7",
+    });
+
+    assert.equal(medicationsAreDuplicates(first, second), true);
+    assert.equal(wouldBlockPrescriptionMedicationAdd(second, [first]), false);
+  });
+
+  it("prepareExternalSupplyMedication strips formulary linkage", () => {
+    const prepared = prepareExternalSupplyMedication(
+      med({
+        medicine: "montelukast 10 od 5d",
+        medicineId: "should-drop",
+        medicineNameSnapshot: "Montelukast",
+        catalogCostPreview: 12,
+        morning: "1",
+        days: "5",
+      }),
+    );
+
+    assert.equal(prepared.isExternalSupply, true);
+    assert.equal(prepared.medicineId, undefined);
+    assert.equal(prepared.catalogCostPreview, undefined);
+    assert.equal(
+      wouldDuplicateMedication(prepared, [
+        med({
+          medicine: "Montelukast",
+          medicineId: "catalog-id",
+          medicineNameSnapshot: "Montelukast",
+          morning: "1",
+          days: "5",
+        }),
+      ]),
+      false,
+    );
+    assert.equal(
+      wouldBlockPrescriptionMedicationAdd(prepared, [
+        med({
+          medicine: "Montelukast",
+          medicineId: "catalog-id",
+          medicineNameSnapshot: "Montelukast",
+          morning: "1",
+          days: "5",
+        }),
+      ]),
+      false,
+    );
+  });
 });
 
 describe("findPrescriptionCompletionIssues", () => {

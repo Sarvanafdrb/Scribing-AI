@@ -182,4 +182,19 @@ describe("prescription-catalog.utils", () => {
     const summary = getPrescriptionCostSummary(meds);
     assert.equal(summary.grandTotal, 66);
   });
+
+  it("does not enrich external supply medications from catalog candidates", () => {
+    const candidates = [catalog({ id: "mont", name: "Montelukast", strength: "" })];
+    const external = med({
+      medicine: "montelukast 10 od 5d",
+      isExternalSupply: true,
+      morning: "1",
+      days: "5",
+    });
+
+    const enriched = enrichMedicationFromCatalogCandidates(external, candidates);
+    assert.equal(enriched.medicineId, undefined);
+    assert.equal(enriched.isExternalSupply, true);
+    assert.equal(enriched.medicine, "montelukast 10 od 5d");
+  });
 });

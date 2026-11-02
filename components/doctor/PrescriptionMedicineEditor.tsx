@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Sparkles, X } from "lucide-react";
 import { MedicationConditionSearch } from "@/components/ai-notes/MedicationConditionSearch";
 import { MedicationCostBreakdown } from "@/components/shared/prescription/MedicationCostBreakdown";
@@ -59,6 +60,8 @@ export function PrescriptionMedicineEditor({
   onAddFromCatalog,
   onAddManualMedication,
 }: PrescriptionMedicineEditorProps) {
+  const manualAddInFlightRef = useRef(false);
+
   const excludedMedicineIds = medications
     .map((med) => med.medicineId || "")
     .filter(Boolean);
@@ -107,8 +110,11 @@ export function PrescriptionMedicineEditor({
 
           <ul className="space-y-3">
             {medications.map((med, index) => {
-              const genericName =
-                med.medicineNameSnapshot || med.medicine.split(" ")[0] || med.medicine;
+              const genericName = med.isExternalSupply
+                ? med.medicine
+                : med.medicineNameSnapshot ||
+                  med.medicine.split(" ")[0] ||
+                  med.medicine;
               const brandName = med.brandNameSnapshot?.trim();
               const form = med.formSnapshot?.trim() || "Tablet";
 
@@ -217,13 +223,14 @@ export function PrescriptionMedicineEditor({
             className="mt-2 w-full rounded-2xl border border-border/60 bg-background px-4 py-2.5 text-sm outline-none focus:border-primary/40"
             onKeyDown={(event) => {
               if (event.key !== "Enter") return;
+              event.preventDefault();
               const value = event.currentTarget.value.trim();
-              if (!value) return;
+              if (!value || manualAddInFlightRef.current) return;
               const manualMedication: AiNotesMedication = {
                 medicine: value,
-                medicineNameSnapshot: value,
                 strengthSnapshot: "",
                 formSnapshot: "Tablet",
+                isExternalSupply: true,
                 morning: "1",
                 afternoon: "0",
                 night: "0",
@@ -231,7 +238,12 @@ export function PrescriptionMedicineEditor({
                 instructions: "After food",
               };
               if (onAddManualMedication) {
-                void onAddManualMedication(manualMedication);
+                manualAddInFlightRef.current = true;
+                void Promise.resolve(onAddManualMedication(manualMedication)).finally(
+                  () => {
+                    manualAddInFlightRef.current = false;
+                  },
+                );
               } else {
                 onChange([...medications, manualMedication]);
               }

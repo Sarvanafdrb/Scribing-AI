@@ -43,6 +43,9 @@ import type { Patient } from "@/types/patient.types";
 import { cn } from "@/lib/utils";
 import { useActiveRecordingStore } from "@/store/active-recording.store";
 
+const EM_DASH = "\u2014";
+const MIDDLE_DOT = " \u00B7 ";
+
 const AVATAR_COLORS = [
   "bg-primary/15 text-primary",
   "bg-violet-500/15 text-violet-700 dark:text-violet-300",
@@ -63,10 +66,18 @@ const getInitials = (firstName?: string, lastName?: string) => {
   return (first + last).toUpperCase() || "?";
 };
 
-const formatSessionTime = (session?: Session | null) => {
-  const value = session?.startedAt || session?.createdAt;
-  if (!value) return "â€”";
-  return new Date(value).toLocaleTimeString(undefined, {
+const formatQueueItemTime = (item: DoctorQueueItem) => {
+  const session = item.session;
+  const timestamp =
+    session?.startedAt ||
+    session?.createdAt ||
+    (item.encounterType === "IP"
+      ? item.encounter?.admission?.admittedAt
+      : undefined);
+
+  if (!timestamp) return EM_DASH;
+
+  return new Date(timestamp).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -87,7 +98,7 @@ const getQueueReason = (item: DoctorQueueItem) => {
   if (subjective) return subjective.split("\n")[0]?.trim() || "Consultation";
   if (session?.title?.trim()) return session.title.trim();
   if (item.encounterType === "IP") {
-    return `Inpatient Â· Day ${item.admissionDay || 1}`;
+    return `Inpatient${MIDDLE_DOT}Day ${item.admissionDay || 1}`;
   }
   return "Consultation";
 };
@@ -112,7 +123,7 @@ const getPatientMeta = (patient: Patient | null | undefined) => {
       patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1),
     );
   }
-  return parts.join(" Â· ");
+  return parts.join(MIDDLE_DOT);
 };
 
 export function DoctorConsultationsView() {
@@ -336,7 +347,7 @@ export function DoctorConsultationsView() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {clinicDateLabel}
-            {organizationName ? ` Â· ${organizationName}` : ""}
+            {organizationName ? `${MIDDLE_DOT}${organizationName}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -628,7 +639,7 @@ function QueueTableRow({
     >
       <td className="px-4 py-4 sm:px-6">
         <span className="font-medium text-foreground">
-          {formatSessionTime(item.session)}
+          {formatQueueItemTime(item)}
         </span>
       </td>
       <td className="px-4 py-4">
@@ -642,7 +653,7 @@ function QueueTableRow({
               {getPatientMeta(patient)}
               {allergies.length > 0 ? (
                 <>
-                  <span>Â·</span>
+                  <span>{MIDDLE_DOT.trim()}</span>
                   <AlertTriangle className="h-3 w-3 text-amber-600" />
                   <span>{allergies.slice(0, 2).join(", ")}</span>
                 </>
@@ -669,8 +680,25 @@ function QueueTableRow({
           >
             {statusStyle.label}
           </Badge>
+        ) : item.encounterType === "IP" ? (
+          item.allRoundsCompletedToday ? (
+            <Badge variant="outline" className="rounded-full">
+              Rounds completed
+            </Badge>
+          ) : item.nextRoundLabel ? (
+            <Badge
+              variant="outline"
+              className="rounded-full border-violet-200 text-violet-700 dark:text-violet-300"
+            >
+              {item.nextRoundLabel}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="rounded-full">
+              Inpatient
+            </Badge>
+          )
         ) : (
-          <span className="text-muted-foreground">â€”</span>
+          <span className="text-muted-foreground">{EM_DASH}</span>
         )}
       </td>
       <td className="px-4 py-4 sm:px-6 text-right">

@@ -15,10 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreatePatientDialog } from "@/components/doctor/CreatePatientDialog";
-import {
-  getQueueItemKey,
-  useDoctorQueue,
-} from "@/hooks/doctor/useDoctorQueue";
+import { getQueueItemKey, useDoctorQueue } from "@/hooks/doctor/useDoctorQueue";
 import { useAppointments } from "@/hooks/appointments/useAppointments";
 import { useAppointmentMutations } from "@/hooks/appointments/useAppointmentMutations";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -26,10 +23,7 @@ import { useTenantScope } from "@/hooks/useTenantScope";
 import { encounterService } from "@/services/encounter.service";
 import { sessionKeys } from "@/services/session.queries";
 import { invalidateDoctorWorkspaceQueries } from "@/lib/invalidate-doctor-workspace";
-import {
-  getPatientAge,
-  getPatientFullName,
-} from "@/utils/patient.utils";
+import { getPatientAge, getPatientFullName } from "@/utils/patient.utils";
 import { QUEUE_STATUS_STYLES } from "@/utils/doctor-queue.utils";
 import {
   getConsultationPreVisitHref,
@@ -108,9 +102,9 @@ const isBriefReady = (item: DoctorQueueItem) => {
   const session = item.session;
   return Boolean(
     session?.previousHistory?.length ||
-      session?.aiNotes?.summary?.trim() ||
-      session?.aiNotes?.subjective?.trim() ||
-      item.patient?.medications?.length,
+    session?.aiNotes?.summary?.trim() ||
+    session?.aiNotes?.subjective?.trim() ||
+    item.patient?.medications?.length,
   );
 };
 
@@ -171,7 +165,9 @@ export function DoctorConsultationsView() {
     const patientId = String(patient?._id || patient?.id || "");
     if (!patientId) return true;
     return !items.some((item) => {
-      const queuePatientId = String(item.patient?._id || item.patient?.id || "");
+      const queuePatientId = String(
+        item.patient?._id || item.patient?.id || "",
+      );
       return queuePatientId === patientId;
     });
   });
@@ -195,8 +191,7 @@ export function DoctorConsultationsView() {
     ).length;
     const totalDuration = items.reduce(
       (sum, item) =>
-        sum +
-        (item.session?.totalDuration || item.session?.duration || 0),
+        sum + (item.session?.totalDuration || item.session?.duration || 0),
       0,
     );
     return {
@@ -421,7 +416,10 @@ export function DoctorConsultationsView() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Scheduled today" value={String(stats.scheduledCount)} />
+        <StatCard
+          label="Scheduled today"
+          value={String(stats.scheduledCount)}
+        />
         <StatCard
           label="Seen"
           value={String(stats.seenCount)}
@@ -452,7 +450,10 @@ export function DoctorConsultationsView() {
             Check in a patient or add a walk-in to start recording.
           </p>
           {canCreatePatient() ? (
-            <Button className="mt-4" onClick={() => setIsCreatePatientOpen(true)}>
+            <Button
+              className="mt-4"
+              onClick={() => setIsCreatePatientOpen(true)}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add patient
             </Button>
@@ -462,7 +463,9 @@ export function DoctorConsultationsView() {
         <section className="glass overflow-hidden rounded-3xl">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 px-4 py-4 sm:px-6">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-foreground">Appointment queue</h3>
+              <h3 className="font-semibold text-foreground">
+                Today's Appointment queue
+              </h3>
               <Badge variant="secondary" className="rounded-full">
                 OPD {opCount || items.length}
               </Badge>
@@ -535,7 +538,9 @@ export function DoctorConsultationsView() {
                           />
                           <div>
                             <p className="font-semibold text-foreground">
-                              {patient ? getPatientFullName(patient) : "Patient"}
+                              {patient
+                                ? getPatientFullName(patient)
+                                : "Patient"}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {getPatientMeta(patient)}
@@ -549,7 +554,10 @@ export function DoctorConsultationsView() {
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        <Badge variant="outline" className="rounded-full text-xs">
+                        <Badge
+                          variant="outline"
+                          className="rounded-full text-xs"
+                        >
                           Awaiting check-in
                         </Badge>
                       </td>

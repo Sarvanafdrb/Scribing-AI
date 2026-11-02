@@ -31,7 +31,11 @@ import {
   getMedicationDoseLabel,
 } from "@/utils/prescriptionPrice.utils";
 import { getNormalizedAllergies, getPatientAge } from "@/utils/patient.utils";
-import { isConsultationCompleted } from "@/utils/session-status.utils";
+import {
+  isConsultationCompleted,
+  sessionHasConsultationRecording,
+  CONSULTATION_RECORDING_REQUIRED_MESSAGE,
+} from "@/utils/session-status.utils";
 import { getSmsStatusLabel } from "@/utils/sms.utils";
 import {
   isValidIndianPhoneNumber,
@@ -232,6 +236,11 @@ export function PrescriptionPreviewView({
 
     if (isConsultationCompleted(session.status)) {
       setSaveDialogOpen(true);
+      return;
+    }
+
+    if (!sessionHasConsultationRecording(session)) {
+      toast.error(CONSULTATION_RECORDING_REQUIRED_MESSAGE);
       return;
     }
 

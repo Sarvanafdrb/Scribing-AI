@@ -25,6 +25,7 @@ import { useAccessControl } from "@/hooks/useAccessControl";
 import { useTenantScope } from "@/hooks/useTenantScope";
 import { encounterService } from "@/services/encounter.service";
 import { sessionKeys } from "@/services/session.queries";
+import { invalidateDoctorWorkspaceQueries } from "@/lib/invalidate-doctor-workspace";
 import {
   getPatientAge,
   getPatientFullName,
@@ -140,19 +141,28 @@ export function DoctorConsultationsView() {
     isScopeReady,
     isError,
     error,
-    refetch,
+    refetch: refetchQueue,
+    isFetching: isQueueFetching,
   } = useDoctorQueue();
   const { checkInAppointment } = useAppointmentMutations();
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [openingKey, setOpeningKey] = useState<string | null>(null);
   const [isCreatePatientOpen, setIsCreatePatientOpen] = useState(false);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
-  const { appointments: todayAppointments } = useAppointments({
+  const appointmentsEnabled =
+    canViewAppointments() && Boolean(doctorId) && Boolean(scopedOrgId);
+
+  const {
+    appointments: todayAppointments,
+    refetch: refetchAppointments,
+    isFetching: isAppointmentsFetching,
+  } = useAppointments({
     doctorId,
     organizationId: scopedOrgId,
     today: true,
     limit: 50,
-    enabled: canViewAppointments() && Boolean(doctorId) && Boolean(scopedOrgId),
+    enabled: appointmentsEnabled,
   });
 
   const scheduledToday = todayAppointments.filter((apt) => {
@@ -196,6 +206,32 @@ export function DoctorConsultationsView() {
       timeSavedLabel: formatCompactDuration(Math.round(totalDuration * 0.15)),
     };
   }, [items, scheduledToday.length]);
+
+  const isRefreshingConsultations =
+    isManualRefreshing || isQueueFetching || isAppointmentsFetching;
+
+  const handleRefreshConsultations = async () => {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    try {
+      invalidateDoctorWorkspaceQueries(queryClient);
+      const [queueResult, appointmentsResult] = await Promise.all([
+        refetchQueue({ cancelRefetch: false, throwOnError: false }),
+        appointmentsEnabled
+          ? refetchAppointments({ cancelRefetch: false, throwOnError: false })
+          : Promise.resolve({ isError: false as const }),
+      ]);
+      if (queueResult.isError || appointmentsResult.isError) {
+        toast.error("Could not refresh consultations. Try again.");
+        return;
+      }
+      toast.success("Consultations updated");
+    } catch {
+      toast.error("Could not refresh consultations. Try again.");
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   const navigateToWorkspace = (sessionId: string) => {
     if (!sessionId) return;
@@ -327,8 +363,18 @@ export function DoctorConsultationsView() {
         <p className="text-sm text-muted-foreground">
           {(error as Error)?.message || "Failed to load today's consultations."}
         </p>
-        <Button className="mt-4" variant="outline" onClick={() => refetch()}>
-          <RefreshCw className="mr-2 h-4 w-4" />
+        <Button
+          className="mt-4"
+          type="button"
+          variant="outline"
+          disabled={isRefreshingConsultations}
+          onClick={() => void handleRefreshConsultations()}
+        >
+          {isRefreshingConsultations ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
           Retry
         </Button>
       </div>
@@ -351,8 +397,18 @@ export function DoctorConsultationsView() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isRefreshingConsultations}
+            onClick={() => void handleRefreshConsultations()}
+          >
+            {isRefreshingConsultations ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
             Refresh
           </Button>
           {canCreatePatient() ? (

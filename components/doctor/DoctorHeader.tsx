@@ -35,9 +35,12 @@ import {
 } from "@/utils/ai-notes-export.utils";
 import {
   isConsultationCompleted,
-  isReviewReady,
   isResumableRecording,
+  isReviewReady,
   isTranscriptAvailable,
+  sessionHasConsultationRecording,
+  CONSULTATION_RECORDING_REQUIRED_MESSAGE,
+  canMarkConsultationCompleted,
 } from "@/utils/session-status.utils";
 import type { Patient } from "@/types/patient.types";
 import type { AiNotes } from "@/types/ai-notes.types";
@@ -123,12 +126,14 @@ export function DoctorHeader({
   const canExport = Boolean(session && hasExportableAiNotes(aiNotes));
   const canOpenNotes = Boolean(session) && (canExport || transcriptReady);
   const isCompleted = isConsultationCompleted(session?.status);
+  const canMarkCompleted = canMarkConsultationCompleted(session, {
+    exportableNotes: canExport,
+    transcriptReady,
+  });
   const canSave =
     Boolean(session) &&
     !isCompleted &&
-    (canExport ||
-      isReviewReady(session?.status) ||
-      transcriptReady ||
+    (canMarkCompleted ||
       (isResumableRecording(session?.status) && hasRecording));
   const exportContent = session
     ? buildAiNotesExportContent(
@@ -202,6 +207,11 @@ export function DoctorHeader({
 
   const completeConsultation = async (allowIncompletePrescription = false) => {
     if (!sessionId || !session) return;
+
+    if (!sessionHasConsultationRecording(session)) {
+      toast.error(CONSULTATION_RECORDING_REQUIRED_MESSAGE);
+      return;
+    }
 
     setIsSaving(true);
     try {

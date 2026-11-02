@@ -71,6 +71,54 @@ export const isConsultationCompleted = (
   status?: SessionStatus | string | null,
 ) => status === "completed";
 
+export type SessionRecordingFields = {
+  audioUrl?: string | null;
+  recordingSegments?: Array<{ duration?: number }> | null;
+  totalDuration?: number | null;
+  duration?: number | null;
+};
+
+export const CONSULTATION_RECORDING_REQUIRED_MESSAGE =
+  "Record this consultation before marking it completed. Start recording and save the audio first.";
+
+export const sessionHasConsultationRecording = (
+  session?: SessionRecordingFields | null,
+): boolean => {
+  if (!session) return false;
+  if (typeof session.audioUrl === "string" && session.audioUrl.trim()) {
+    return true;
+  }
+  if ((session.recordingSegments?.length || 0) > 0) {
+    return true;
+  }
+  const seconds = Math.max(
+    0,
+    Number(session.totalDuration ?? session.duration ?? 0),
+  );
+  return Number.isFinite(seconds) && seconds > 0;
+};
+
+/** True when Save / complete is allowed (recording captured + notes path ready). */
+export const canMarkConsultationCompleted = (
+  session?: (SessionRecordingFields & { status?: SessionStatus | string }) | null,
+  options?: {
+    transcriptReady?: boolean;
+    exportableNotes?: boolean;
+  },
+): boolean => {
+  if (!session || isConsultationCompleted(session.status)) {
+    return false;
+  }
+  if (!sessionHasConsultationRecording(session)) {
+    return false;
+  }
+  return Boolean(
+    options?.exportableNotes ||
+      options?.transcriptReady ||
+      isReviewReady(session.status),
+  );
+};
+
 /** Manual status edits (admin UI / PATCH) are blocked once completed. */
 export const canManuallyUpdateSessionStatus = (
   status?: SessionStatus | string | null,

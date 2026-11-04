@@ -76,6 +76,7 @@ export interface Encounter {
   discharge?: DischargeInfo;
   /** Always computed dynamically — never rely on a stored day. */
   admissionDay?: number;
+  workflowStatusLabel?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -190,6 +191,7 @@ export interface DoctorQueueItem {
   nextRoundStatus?: RoundScheduleStatus | null;
   nextRoundScheduleId?: string | null;
   allRoundsCompletedToday?: boolean;
+  readyForDischargeWorkflow?: boolean;
   todaySchedule?: RoundSchedule[];
   hasTodaySession?: boolean;
   isEmergency?: boolean;

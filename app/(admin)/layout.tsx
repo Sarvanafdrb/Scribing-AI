@@ -22,6 +22,8 @@ import {
   Mail,
   Pill,
   CalendarDays,
+  Receipt,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/types/auth.types";
@@ -109,6 +111,18 @@ const menuItems = [
     permission: "APPOINTMENT_VIEW",
   },
   {
+    path: "/ip-billing",
+    label: "IP Billing",
+    icon: Receipt,
+    permission: "IP_ADMISSION_VIEW",
+  },
+  {
+    path: "/ip-pharmacy",
+    label: "IP Pharmacy",
+    icon: Package,
+    permission: "IP_MEDICINE_VIEW",
+  },
+  {
     path: "/settings",
     label: "Settings",
     icon: Settings,
@@ -173,7 +187,8 @@ export default function AdminLayout({
     }
 
     const home = resolveAuthenticatedHomePath(user, token);
-    if (home === "/doctor/workspace") {
+    const isIpBillingRoute = pathname.startsWith("/ip-billing");
+    if (!isIpBillingRoute && home === "/doctor") {
       router.replace(home);
       return;
     }
@@ -207,11 +222,12 @@ export default function AdminLayout({
     return null;
   }
 
-  if (resolveAuthenticatedHomePath(user, token) === "/doctor/workspace") {
+  const home = resolveAuthenticatedHomePath(user, token);
+  const isIpBillingRoute = pathname.startsWith("/ip-billing");
+  if (!isIpBillingRoute && home === "/doctor") {
     return null;
   }
 
-  const home = resolveAuthenticatedHomePath(user, token);
   if (pathname === "/dashboard" && home !== "/dashboard") {
     return null;
   }

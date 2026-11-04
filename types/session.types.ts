@@ -146,6 +146,8 @@ export interface Session {
   hasNextRoundToday?: boolean;
   allRoundsCompletedToday?: boolean;
   admissionTimeline?: AdmissionTimelineItem[];
+  roundHistory?: AdmissionTimelineItem[];
+  readyForDischargeWorkflow?: boolean;
 }
 
 export interface CreateSessionData {

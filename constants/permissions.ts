@@ -21,6 +21,18 @@ export const PERMISSION_MODULES = [
   { id: "transcript", label: "Transcript", prefix: "TRANSCRIPT", legacySlug: "transcript" },
   { id: "ai_notes", label: "AI Notes", prefix: "AI_NOTES", legacySlug: "ai_notes" },
   { id: "history", label: "History", prefix: "HISTORY", legacySlug: "history" },
+  {
+    id: "ip_medicine",
+    label: "IP Medicine Billing",
+    prefix: "IP_MEDICINE",
+    legacySlug: "ip_medicine",
+  },
+  {
+    id: "ip_admission",
+    label: "IP Admission Billing",
+    prefix: "IP_ADMISSION",
+    legacySlug: "ip_admission",
+  },
 ] as const;
 
 const buildLegacyCode = (legacySlug: string, legacyAction: string) =>
@@ -86,6 +98,61 @@ export const APPOINTMENT_VIEW = "APPOINTMENT_VIEW";
 export const APPOINTMENT_CREATE = "APPOINTMENT_CREATE";
 export const APPOINTMENT_EDIT = "APPOINTMENT_EDIT";
 export const APPOINTMENT_DELETE = "APPOINTMENT_DELETE";
+
+export const IP_ADMISSION_VIEW = "IP_ADMISSION_VIEW";
+export const IP_ADMISSION_EDIT = "IP_ADMISSION_EDIT";
+export const IP_ADMISSION_CREATE = "IP_ADMISSION_CREATE";
+export const IP_MEDICINE_VIEW = "IP_MEDICINE_VIEW";
+export const IP_MEDICINE_EDIT = "IP_MEDICINE_EDIT";
+export const IP_MEDICINE_CREATE = "IP_MEDICINE_CREATE";
+
+export function canViewIpAdmissionBilling(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return hasPermissionCode(permissions, IP_ADMISSION_VIEW);
+}
+
+export function canEditIpAdmissionBilling(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return hasPermissionCode(permissions, IP_ADMISSION_EDIT);
+}
+
+export function canRecordIpAdmissionPayment(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return hasPermissionCode(permissions, IP_ADMISSION_CREATE);
+}
+
+export function canViewIpMedicineBillingSummary(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return hasPermissionCode(permissions, IP_MEDICINE_VIEW);
+}
+
+export function canDispenseIpMedicineFromPermissions(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return hasPermissionCode(permissions, IP_MEDICINE_EDIT);
+}
+
+export function canRecordIpMedicinePaymentFromPermissions(
+  permissions: string[],
+  isSuperAdmin = false,
+): boolean {
+  if (isSuperAdmin) return true;
+  return hasPermissionCode(permissions, IP_MEDICINE_CREATE);
+}
 
 export function canManageAllUsersFromPermissions(
   permissions: string[],

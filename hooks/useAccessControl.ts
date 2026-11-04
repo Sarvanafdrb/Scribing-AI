@@ -38,6 +38,16 @@ import {
   APPOINTMENT_CREATE,
   APPOINTMENT_EDIT,
   APPOINTMENT_DELETE,
+  IP_ADMISSION_VIEW,
+  IP_ADMISSION_EDIT,
+  IP_ADMISSION_CREATE,
+  IP_MEDICINE_VIEW,
+  canViewIpAdmissionBilling,
+  canEditIpAdmissionBilling,
+  canRecordIpAdmissionPayment,
+  canViewIpMedicineBillingSummary,
+  canDispenseIpMedicineFromPermissions,
+  canRecordIpMedicinePaymentFromPermissions,
 } from "@/constants/permissions";
 
 const getCurrentUserId = (user?: AuthUser | null): string =>
@@ -246,5 +256,20 @@ export const useAccessControl = () => {
         .toLowerCase();
       return role !== "doctor";
     },
+    canViewIpAdmissionBilling: () =>
+      canViewIpAdmissionBilling(user?.permissions || [], isSuperAdmin),
+    canEditIpAdmissionBilling: () =>
+      canEditIpAdmissionBilling(user?.permissions || [], isSuperAdmin),
+    canRecordIpAdmissionPayment: () =>
+      canRecordIpAdmissionPayment(user?.permissions || [], isSuperAdmin),
+    canViewIpMedicineBillingSummary: () =>
+      canViewIpMedicineBillingSummary(user?.permissions || [], isSuperAdmin),
+    canDispenseIpMedicine: () =>
+      canDispenseIpMedicineFromPermissions(user?.permissions || [], isSuperAdmin),
+    canRecordIpMedicinePayment: () =>
+      canRecordIpMedicinePaymentFromPermissions(
+        user?.permissions || [],
+        isSuperAdmin,
+      ),
   };
 };

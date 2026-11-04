@@ -163,6 +163,16 @@ const ROUTE_PERMISSION_RULES: RoutePermissionRule[] = [
     permission: "SETTINGS_VIEW",
     message: "You do not have permission to view settings.",
   },
+  {
+    pattern: /^\/ip-billing(\/|$)/,
+    permission: "IP_ADMISSION_VIEW",
+    message: "You do not have permission to view IP admission billing.",
+  },
+  {
+    pattern: /^\/ip-pharmacy(\/|$)/,
+    permission: "IP_MEDICINE_VIEW",
+    message: "You do not have permission to access IP pharmacy.",
+  },
 ];
 
 const PUBLIC_ADMIN_PATHS = new Set(["/access-not-assigned"]);

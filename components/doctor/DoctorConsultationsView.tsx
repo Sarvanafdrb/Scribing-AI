@@ -745,7 +745,14 @@ function QueueTableRow({
             {statusStyle.label}
           </Badge>
         ) : item.encounterType === "IP" ? (
-          item.allRoundsCompletedToday ? (
+          item.readyForDischargeWorkflow || item.encounter?.status === "ready_for_discharge" ? (
+            <Badge
+              variant="outline"
+              className="rounded-full border-amber-200 text-amber-800 dark:text-amber-200"
+            >
+              Ready for discharge
+            </Badge>
+          ) : item.allRoundsCompletedToday ? (
             <Badge variant="outline" className="rounded-full">
               Rounds completed
             </Badge>

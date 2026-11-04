@@ -13,7 +13,7 @@ import {
 import { useSession } from "@/hooks/sessions/useSession";
 import { encounterService } from "@/services/encounter.service";
 import { sessionKeys } from "@/services/session.queries";
-import { getEncounterType } from "@/utils/encounter.utils";
+import { getEncounterType, getIpWorkflowStatusLabel } from "@/utils/encounter.utils";
 import type { RoundSchedule } from "@/types/encounter.types";
 import { cn } from "@/lib/utils";
 
@@ -39,8 +39,7 @@ export function RoundsDrawer({
       : [];
 
   const hasPending = schedule.some((r) => r.status === "pending");
-  const allDone =
-    schedule.length > 0 && schedule.every((r) => r.status === "completed");
+  const allDone = Boolean(session?.allRoundsCompletedToday);
 
   const openRound = useMutation({
     mutationFn: async (round: RoundSchedule) => {
@@ -160,7 +159,12 @@ export function RoundsDrawer({
 
           {isIp && allDone && (
             <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              ✔ All rounds for today are completed.
+              ✔ All three rounds for today are completed.
+              {getIpWorkflowStatusLabel(session) ? (
+                <span className="mt-1 block text-amber-800">
+                  {getIpWorkflowStatusLabel(session)}
+                </span>
+              ) : null}
             </p>
           )}
 

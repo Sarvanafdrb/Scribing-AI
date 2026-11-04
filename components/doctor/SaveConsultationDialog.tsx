@@ -64,7 +64,9 @@ export function SaveConsultationDialog({
 
   const invalidate = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: sessionKeys.detail(sessionId) }),
+      queryClient.invalidateQueries({
+        queryKey: sessionKeys.detail(sessionId),
+      }),
       queryClient.invalidateQueries({ queryKey: sessionKeys.lists() }),
     ]);
   };
@@ -72,7 +74,8 @@ export function SaveConsultationDialog({
   const dispositionMutation = useMutation({
     mutationFn: () =>
       encounterService.setDisposition(sessionId, opAction, {
-        followUpDate: opAction === "follow_up" ? followUpDate || undefined : undefined,
+        followUpDate:
+          opAction === "follow_up" ? followUpDate || undefined : undefined,
       }),
     onSuccess: async () => {
       await invalidate();
@@ -84,7 +87,9 @@ export function SaveConsultationDialog({
       }
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error?.response?.data?.message || "Failed to save disposition");
+      toast.error(
+        error?.response?.data?.message || "Failed to save disposition",
+      );
     },
   });
 
@@ -112,7 +117,9 @@ export function SaveConsultationDialog({
       toast.success("Next round ready — recording reset");
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error?.response?.data?.message || "Failed to start next round");
+      toast.error(
+        error?.response?.data?.message || "Failed to start next round",
+      );
     },
   });
 
@@ -146,7 +153,9 @@ export function SaveConsultationDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isIp ? "Round Saved Successfully" : "Consultation Saved Successfully"}
+            {isIp
+              ? "Round Saved Successfully"
+              : "Consultation Saved Successfully"}
           </DialogTitle>
           <DialogDescription>
             {isIp && allDone
@@ -159,7 +168,7 @@ export function SaveConsultationDialog({
           <div className="space-y-2 py-2">
             {(
               [
-                { value: "home" as const, label: "Home" },
+                { value: "home" as const, label: "OP Discharge" },
                 { value: "follow_up" as const, label: "Follow-up" },
                 { value: "admit" as const, label: "Admit as Inpatient" },
               ] as const

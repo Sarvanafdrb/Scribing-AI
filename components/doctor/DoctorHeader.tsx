@@ -8,10 +8,12 @@ import {
   FileDown,
   Loader2,
   Printer,
+  Receipt,
   Save,
   Stethoscope,
   Wifi,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useAiNotes } from "@/hooks/ai-notes/useAiNotes";
 import { useSession } from "@/hooks/sessions/useSession";
@@ -48,6 +50,8 @@ import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import { getSessionDepartmentName } from "@/types/session.types";
 import { DoctorWorkspacePatientIdentity } from "@/components/doctor/DoctorWorkspacePatientIdentity";
 import { cn } from "@/lib/utils";
+import { useAccessControl } from "@/hooks/useAccessControl";
+import { getEncounterType } from "@/utils/encounter.utils";
 import {
   findPrescriptionCompletionIssues,
   type PrescriptionCompletionIssue,
@@ -84,6 +88,7 @@ export function DoctorHeader({
   isRecording = false,
 }: DoctorHeaderProps) {
   const queryClient = useQueryClient();
+  const { canViewIpAdmissionBilling } = useAccessControl();
   const { data: session, refetch } = useSession(sessionId);
   const { aiNotes, saveExportContent } = useAiNotes(sessionId);
   const [saved, setSaved] = useState(true);
@@ -348,6 +353,14 @@ export function DoctorHeader({
     }
   };
 
+  const isIp = getEncounterType(session) === "IP";
+  const billingEncounterId = String(
+    session?.encounter?.id ||
+      session?.encounter?._id ||
+      session?.encounterId ||
+      "",
+  );
+
   return (
     <>
       <header className="glass flex flex-wrap items-center justify-between gap-3 border-b border-border/50 px-4 py-3 sm:px-6">
@@ -368,6 +381,18 @@ export function DoctorHeader({
               label="Rounds"
               onClick={() => setRoundsOpen(true)}
             />
+          ) : null}
+
+          {isIp &&
+          canViewIpAdmissionBilling() &&
+          billingEncounterId ? (
+            <Link
+              href={`/ip-billing/encounters/${billingEncounterId}`}
+              className="flex items-center gap-2 rounded-full border border-border px-3 py-2 text-sm font-medium hover:bg-muted/60"
+            >
+              <Receipt className="h-4 w-4" />
+              <span className="hidden sm:inline">IP Billing</span>
+            </Link>
           ) : null}
 
           <HeaderActionButton

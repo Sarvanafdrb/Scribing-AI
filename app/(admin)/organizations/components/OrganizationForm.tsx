@@ -34,6 +34,7 @@ import {
   organizationNameSchema,
   strictEmailSchema,
 } from "@/lib/validation";
+import { Eye, EyeOff } from "lucide-react";
 
 const baseFormSchema = z.object({
   name: organizationNameSchema,
@@ -41,7 +42,10 @@ const baseFormSchema = z.object({
   parentOrganizationId: z.string().optional(),
   description: z.string().optional(),
   website: z.string().url("Invalid website URL").optional().or(z.literal("")),
-  contactNumber: z.string().trim().min(10, "Enter valid contact number"),
+  contactNumber: z
+    .string()
+    .trim()
+    .regex(/^\d{10}$/, "Contact number must be exactly 10 digits"),
   address: z.string().trim().min(5, "Address is required"),
   speciality: z.string().optional(),
   providerCount: z.string().optional(),
@@ -57,7 +61,9 @@ const getDefaultValues = (data?: Organization): FormData => ({
   organizationType: data?.organizationType || "",
   description: data?.description || "",
   website: data?.website || "",
-  contactNumber: (data?.contactNumber || data?.phone || "").trim(),
+  contactNumber: (data?.contactNumber || data?.phone || "")
+    .replace(/\D/g, "")
+    .slice(0, 10),
   address: data?.address?.trim() || "",
   speciality: data?.speciality || "",
   providerCount: data?.providerCount || "",
@@ -105,6 +111,7 @@ export function OrganizationForm({
 }: OrganizationFormProps) {
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const { isSuperAdmin, organizationId: scopedOrgId } = useTenantScope();
   const { organizations, isLoading: parentOrgsLoading } = useOrganizations({
     page: 1,
@@ -397,11 +404,29 @@ export function OrganizationForm({
                 <FormItem>
                   <FormLabel>Admin Password *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Enter your Password"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showAdminPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        className="pr-10"
+                        placeholder="Enter your Password"
+                        {...field}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminPassword((visible) => !visible)}
+                        className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                        aria-label={
+                          showAdminPassword ? "Hide password" : "Show password"
+                        }
+                      >
+                        {showAdminPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -420,7 +445,18 @@ export function OrganizationForm({
               <FormLabel>Contact Number *</FormLabel>
 
               <FormControl>
-                <Input placeholder="Enter your Contact Number" {...field} />
+                <Input
+                  placeholder="10-digit mobile number"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  maxLength={10}
+                  {...field}
+                  value={field.value}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    field.onChange(digits);
+                  }}
+                />
               </FormControl>
 
               <FormMessage />

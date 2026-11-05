@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pause, Play, Square } from "lucide-react";
 import { useMediaRecorder } from "@/hooks/recording/useMediaRecorder";
 import { mrDiag } from "@/hooks/recording/mediaRecorderDiagnostics";
 import {
@@ -995,12 +995,13 @@ export function DoctorRecordingPanel({
   const handleResumeMicClick = async () => {
     resumeRecorder();
     try {
+      await recordingService.resume(sessionId);
       await recordingService.autosave(sessionId, {
         recordingStatus: "recording",
         elapsedSeconds: totalElapsedSeconds,
       });
     } catch {
-      // ignore
+      // local resume still applies
     }
   };
 
@@ -1032,6 +1033,7 @@ export function DoctorRecordingPanel({
   }, [session?.aiNotes]);
 
   const statusLabel = (): string => {
+    if (recorderState === "paused") return "PAUSED";
     if (isMicActive) return "RECORDING";
     if (session?.status === "interrupted") return "INTERRUPTED";
     if (session?.status === "paused") return "PAUSED";
@@ -1130,34 +1132,73 @@ export function DoctorRecordingPanel({
                 </span>
                 <RecordingWaveform active={false} />
                 <p className="max-w-md text-center text-sm text-primary-foreground/75">
-                  Tap to start recording. Tap again to stop.
+                  Tap to start recording. Pause or stop anytime while recording.
                 </p>
               </button>
             )}
 
             {isMicActive && !controlsLocked && (
-              <button
-                type="button"
-                onClick={() => void handleStopClick()}
-                disabled={isStopping || isUploading}
-                className="group flex w-full flex-col items-center gap-3 disabled:opacity-60"
-              >
-                <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-destructive shadow-lg shadow-black/20 transition-transform group-hover:scale-105 group-active:scale-95">
-                  <span className="h-5 w-5 rounded-sm bg-white" />
+              <div className="flex w-full flex-col items-center gap-4">
+                <div
+                  className={cn(
+                    "relative flex h-24 w-24 items-center justify-center rounded-full bg-destructive shadow-lg shadow-black/20",
+                    recorderState === "recording" && "ring-4 ring-destructive/40",
+                  )}
+                  aria-hidden
+                >
                   {recorderState === "recording" ? (
-                    <span className="absolute inset-0 animate-ping rounded-full bg-destructive/30" />
-                  ) : null}
+                    <>
+                      <span className="h-4 w-4 rounded-full bg-white" />
+                      <span className="absolute inset-0 animate-ping rounded-full bg-destructive/30" />
+                    </>
+                  ) : (
+                    <Pause className="h-10 w-10 text-white" />
+                  )}
                 </div>
                 <span className="font-mono text-4xl font-semibold tracking-tight">
                   {formatTime(totalElapsedSeconds)}
                 </span>
                 <RecordingWaveform active={recorderState === "recording"} />
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  {recorderState === "recording" ? (
+                    <button
+                      type="button"
+                      onClick={() => void handlePauseClick()}
+                      disabled={isStopping || isUploading}
+                      className="inline-flex h-11 items-center gap-2 rounded-xl border border-primary-foreground/30 bg-primary-foreground/10 px-5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-foreground/20 disabled:opacity-60"
+                    >
+                      <Pause className="h-4 w-4" />
+                      Pause
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void handleResumeMicClick()}
+                      disabled={isStopping || isUploading}
+                      className="inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow transition hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      <Play className="h-4 w-4" />
+                      Resume
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void handleStopClick()}
+                    disabled={isStopping || isUploading}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-foreground px-5 text-sm font-semibold text-primary transition hover:bg-primary-foreground/90 disabled:opacity-60"
+                  >
+                    <Square className="h-4 w-4 fill-current" />
+                    Stop
+                  </button>
+                </div>
                 <p className="max-w-md text-center text-sm text-primary-foreground/75">
                   {isStopping || isUploading
                     ? "Saving recording…"
-                    : "Tap again to stop. Transcript will appear below when processing finishes."}
+                    : recorderState === "paused"
+                      ? "Recording paused. Resume or stop when ready."
+                      : "Transcript will appear below when you stop and processing finishes."}
                 </p>
-              </button>
+              </div>
             )}
 
             {!showStart &&

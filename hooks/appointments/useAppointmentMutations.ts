@@ -9,6 +9,7 @@ import type {
   UpdateAppointmentData,
 } from "@/types/appointment.types";
 import { toast } from "sonner";
+import { isCheckInNotTodayMessage } from "@/utils/appointment-check-in.utils";
 
 export const useAppointmentMutations = () => {
   const queryClient = useQueryClient();
@@ -158,9 +159,15 @@ export const useAppointmentMutations = () => {
       toast.success("Consultation started");
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(
-        error?.response?.data?.message || "Failed to check in appointment",
-      );
+      const message = error?.response?.data?.message || "";
+      if (isCheckInNotTodayMessage(message)) {
+        toast.info(
+          "Check-in is only available on the appointment day. Open this appointment again on that date.",
+          { duration: 6000 },
+        );
+        return;
+      }
+      toast.error(message || "Failed to check in appointment");
     },
   });
 

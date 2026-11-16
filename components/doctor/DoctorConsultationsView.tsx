@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { isCheckInNotTodayMessage } from "@/utils/appointment-check-in.utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreatePatientDialog } from "@/components/doctor/CreatePatientDialog";
@@ -338,7 +339,10 @@ export function DoctorConsultationsView() {
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err?.response?.data?.message || "Failed to check in");
+      const message = err?.response?.data?.message || "";
+      if (!isCheckInNotTodayMessage(message)) {
+        toast.error(message || "Failed to check in");
+      }
     } finally {
       setCheckingInId(null);
     }

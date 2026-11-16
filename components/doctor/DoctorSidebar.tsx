@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { History, Home, Loader2, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
+import { isCheckInNotTodayMessage } from "@/utils/appointment-check-in.utils";
 import { useAuthStore } from "@/store/auth.store";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { useSession } from "@/hooks/sessions/useSession";
@@ -270,7 +271,10 @@ export function DoctorSidebar({ activeSessionId }: DoctorSidebarProps) {
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err?.response?.data?.message || "Failed to check in");
+      const message = err?.response?.data?.message || "";
+      if (!isCheckInNotTodayMessage(message)) {
+        toast.error(message || "Failed to check in");
+      }
     } finally {
       setCheckingInId(null);
     }

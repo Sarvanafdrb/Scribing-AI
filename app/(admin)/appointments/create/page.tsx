@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,10 @@ import { cn } from "@/lib/utils";
 
 export default function CreateAppointmentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const presetOrganizationId = searchParams.get("organizationId") || "";
+  const presetPatientId = searchParams.get("patientId") || "";
+  const presetDoctorId = searchParams.get("doctorId") || "";
   const { createAppointment } = useAppointmentMutations();
   const { canCreateAppointment } = useAccessControl();
 
@@ -65,6 +69,9 @@ export default function CreateAppointmentPage() {
         </CardHeader>
         <CardContent>
           <AppointmentForm
+            defaultOrganizationId={presetOrganizationId || undefined}
+            defaultPatientId={presetPatientId || undefined}
+            defaultDoctorId={presetDoctorId || undefined}
             onSubmit={async (data) => {
               await createAppointment.mutateAsync(data);
               router.push("/appointments");

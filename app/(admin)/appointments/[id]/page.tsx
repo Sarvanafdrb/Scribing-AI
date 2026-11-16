@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,6 +38,12 @@ import {
 import { getPatientFullName } from "@/utils/patient.utils";
 import { appointmentService } from "@/services/appointment.service";
 import type { Appointment } from "@/types/appointment.types";
+import {
+  buildCreateAppointmentHref,
+  canShowAppointmentReschedule,
+  canShowCreateNewAfterNoShow,
+} from "@/utils/appointment-detail-actions.utils";
+import { isAppointmentScheduledForLocalDay } from "@/utils/appointment-check-in.utils";
 
 let minuteClockMs = Date.now();
 
@@ -73,7 +80,6 @@ export default function AppointmentDetailPage() {
   });
   const {
     canViewAppointments,
-    canEditAppointment,
     canCheckInAppointment,
     canCreateAppointment,
   } = useAccessControl();
@@ -125,21 +131,21 @@ export default function AppointmentDetailPage() {
   const id = getAppointmentId(appointment);
   const patient = getPatient(appointment);
   const patientName = patient ? getPatientFullName(patient) : undefined;
+  const patientId = patient
+    ? String((patient as { id?: string; _id?: string }).id || patient._id || "")
+    : "";
   const rescheduleDepth = auditMeta?.rescheduleCount ?? 0;
   const atRescheduleLimit =
     auditMeta != null && isAtRescheduleLimit(rescheduleDepth);
-  const canReschedule =
-    canCreateAppointment() &&
-    !auditPending &&
-    !atRescheduleLimit &&
-    !["cancelled", "completed", "rescheduled", "in_progress"].includes(
-      appointment.status,
-    );
-  const canCancel =
-    canEditAppointment() &&
-    !["cancelled", "completed", "rescheduled", "in_progress"].includes(
-      appointment.status,
-    );
+  const canReschedule = canShowAppointmentReschedule(appointment.status, {
+    canCreate: canCreateAppointment(),
+    auditPending,
+    atRescheduleLimit,
+  });
+  const canCreateNewAfterNoShow = canShowCreateNewAfterNoShow(
+    appointment.status,
+    canCreateAppointment(),
+  );
   const organizationId = refId((appointment as Appointment).organizationId);
   const doctorId = refId((appointment as Appointment).doctorId);
   const durationMinutes = Math.max(
@@ -152,12 +158,32 @@ export default function AppointmentDetailPage() {
   );
   const scheduledStartMs = new Date(appointment.scheduledStart).getTime();
   const isPastStart = scheduledStartMs < nowMs;
-  const canCheckIn =
+  const isVisitDay = isAppointmentScheduledForLocalDay(
+    appointment.scheduledStart,
+    new Date(nowMs),
+  );
+  const canShowCheckIn =
     canCheckInAppointment() &&
-    ["scheduled", "confirmed"].includes(appointment.status) &&
-    !isPastStart;
+    ["scheduled", "confirmed"].includes(appointment.status);
 
   const handleCheckIn = async () => {
+    if (!isVisitDay) {
+      const start = new Date(appointment.scheduledStart);
+      const dateLabel = start.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+      const timeLabel = start.toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      toast.info(
+        `${patientName || "This patient"} is scheduled for ${dateLabel} at ${timeLabel}. Check-in is available on the appointment day.`,
+        { duration: 6000 },
+      );
+      return;
+    }
     setPending(true);
     try {
       const result = await checkInAppointment.mutateAsync(id);
@@ -272,8 +298,17 @@ export default function AppointmentDetailPage() {
                 {APPOINTMENT_FREE_RESCHEDULE_LIMIT}
               </div>
             ) : null}
+            {appointment.status === "no_show" ? (
+              <div className="sm:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                <p className="font-medium">No Show</p>
+                <p className="mt-2 text-amber-900/90">
+                  This visit was marked as a no-show. It cannot be rescheduled.
+                  Schedule a new appointment if the patient should be seen again.
+                </p>
+              </div>
+            ) : null}
             {atRescheduleLimit &&
-            !["cancelled", "completed", "rescheduled"].includes(
+            !["cancelled", "completed", "rescheduled", "no_show"].includes(
               appointment.status,
             ) ? (
               <div className="sm:col-span-2">
@@ -282,18 +317,14 @@ export default function AppointmentDetailPage() {
             ) : null}
             {isPastStart &&
             !atRescheduleLimit &&
-            ["scheduled", "confirmed", "no_show"].includes(
-              appointment.status,
-            ) ? (
+            ["scheduled", "confirmed"].includes(appointment.status) ? (
               <div className="sm:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 This appointment date has passed. Please reschedule to continue.
               </div>
             ) : null}
             {isPastStart &&
             atRescheduleLimit &&
-            ["scheduled", "confirmed", "no_show"].includes(
-              appointment.status,
-            ) ? (
+            ["scheduled", "confirmed"].includes(appointment.status) ? (
               <div className="sm:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 This appointment date has passed and the reschedule limit has
                 been used. Book a new consultation for this patient.
@@ -308,7 +339,7 @@ export default function AppointmentDetailPage() {
           ) : null}
 
           <div className="flex flex-wrap gap-2 border-t border-border/50 pt-4">
-            {canCheckIn ? (
+            {canShowCheckIn ? (
               <Button
                 type="button"
                 className="rounded-full bg-blue-600 hover:bg-blue-700"
@@ -333,6 +364,22 @@ export default function AppointmentDetailPage() {
                 }}
               >
                 Reschedule
+              </Button>
+            ) : null}
+            {canCreateNewAfterNoShow && organizationId && patientId ? (
+              <Button
+                asChild
+                className="rounded-full bg-blue-600 hover:bg-blue-700"
+              >
+                <Link
+                  href={buildCreateAppointmentHref({
+                    organizationId,
+                    patientId,
+                    doctorId: doctorId || undefined,
+                  })}
+                >
+                  Create New Appointment
+                </Link>
               </Button>
             ) : null}
           </div>

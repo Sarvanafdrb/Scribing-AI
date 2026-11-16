@@ -12,6 +12,7 @@ import {
   parseMedicineCost,
   type MedicineFormState,
 } from "@/components/shared/medicine/medicineForm.utils";
+import { findMedicineFormularyDuplicateMessage } from "@/utils/medicineDuplicateCheck.utils";
 
 export const useMedicineForm = (organizationId: string) => {
   const [conditionDraft, setConditionDraft] = useState("");
@@ -108,6 +109,16 @@ export const useMedicineForm = (organizationId: string) => {
       conditionDraft,
       parsedCost,
     );
+
+    const duplicateMessage = await findMedicineFormularyDuplicateMessage(
+      organizationId,
+      payload,
+      editingId || undefined,
+    );
+    if (duplicateMessage) {
+      toast.error(duplicateMessage);
+      return;
+    }
 
     try {
       if (editingId) {

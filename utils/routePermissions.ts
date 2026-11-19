@@ -154,6 +154,11 @@ const ROUTE_PERMISSION_RULES: RoutePermissionRule[] = [
     message: "You do not have permission to schedule appointments.",
   },
   {
+    pattern: /^\/sos-emergency\/?$/,
+    permission: "SOS_VIEW",
+    message: "You do not have permission to view SOS emergencies.",
+  },
+  {
     pattern: /^\/appointments(\/|$)/,
     permission: "APPOINTMENT_VIEW",
     message: "You do not have permission to view appointments.",

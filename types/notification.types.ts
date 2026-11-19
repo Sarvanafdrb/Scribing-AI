@@ -5,7 +5,8 @@ export type NotificationType =
   | "AI_NOTES_GENERATED"
   | "USER_INVITED"
   | "ORGANIZATION_CREATED"
-  | "PASSWORD_CHANGED";
+  | "PASSWORD_CHANGED"
+  | "SOS_ALERT";
 
 export interface Notification {
   id: string;

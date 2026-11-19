@@ -26,6 +26,8 @@ interface PatientComboboxProps {
   organizationId: string;
   value: string;
   onChange: (patientId: string) => void;
+  /** After creating a patient, navigate back here and pre-select the new patient. */
+  returnTo?: string;
   disabled?: boolean;
   className?: string;
 }
@@ -35,8 +37,12 @@ export function PatientCombobox({
   value,
   onChange,
   disabled = false,
+  returnTo,
   className,
 }: PatientComboboxProps) {
+  const createPatientHref = returnTo
+    ? `/patients/create?returnTo=${encodeURIComponent(returnTo)}&organizationId=${encodeURIComponent(organizationId)}`
+    : "/patients/create";
   const { canCreatePatient } = useAccessControl();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -137,7 +143,7 @@ export function PatientCombobox({
               size="sm"
               className="mt-2 h-auto p-0 text-blue-600"
             >
-              <Link href="/patients/create">
+              <Link href={createPatientHref}>
                 <Plus className="mr-1 size-3.5" />
                 Add New Patient
               </Link>

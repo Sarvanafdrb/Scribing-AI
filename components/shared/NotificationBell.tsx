@@ -159,7 +159,9 @@ export function NotificationBell() {
                     "group relative border-b border-gray-100 transition-all duration-200 ease-out",
                     isExiting &&
                       "pointer-events-none -translate-x-2 opacity-0",
-                    !notification.isRead && "bg-blue-50/60",
+                    notification.type === "SOS_ALERT"
+                      ? "border-l-4 border-l-red-600 bg-red-50/90"
+                      : !notification.isRead && "bg-blue-50/60",
                   )}
                 >
                   <button
@@ -170,7 +172,14 @@ export function NotificationBell() {
                     className="w-full px-4 py-3 pr-10 text-left transition-colors hover:bg-gray-50"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p
+                        className={cn(
+                          "text-sm font-medium",
+                          notification.type === "SOS_ALERT"
+                            ? "text-red-800"
+                            : "text-gray-900",
+                        )}
+                      >
                         {notification.title}
                       </p>
                       <p className="mt-1 text-sm text-gray-600">

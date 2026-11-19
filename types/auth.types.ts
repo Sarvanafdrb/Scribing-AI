@@ -197,14 +197,13 @@ export const toPersistedAuthUser = (user: AuthUser | null): AuthUser | null => {
   };
 };
 
+/** Platform super admin only — not hospital org Admins with ORGANIZATION_CREATE. */
 export const isSuperAdminUser = (
   user?: AuthUser | null,
   token?: string | null,
 ): boolean => {
   if (user?.isSuperAdmin) return true;
   if (user?.roleName === "super_admin") return true;
-  if (user?.permissions?.includes("org:create")) return true;
-  if (hasPermissionCode(user?.permissions || [], "ORGANIZATION_CREATE")) return true;
 
   const tokenPayload = decodeAccessToken(token);
   return Boolean(tokenPayload?.isSuperAdmin);

@@ -13,11 +13,24 @@ export const usePatientMutations = () => {
   const queryClient = useQueryClient();
 
   const createPatient = useMutation({
-    mutationFn: (data: CreatePatientData) => patientService.create(data),
-    onSuccess: () => {
+    mutationFn: (
+      input: CreatePatientData | { data: CreatePatientData; silent?: boolean },
+    ) =>
+      patientService.create(
+        "data" in input && input.data ? input.data : (input as CreatePatientData),
+      ),
+    onSuccess: (
+      _patient,
+      variables:
+        | CreatePatientData
+        | { data: CreatePatientData; silent?: boolean },
+    ) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       invalidateDoctorWorkspaceQueries(queryClient);
-      toast.success("Patient created successfully");
+      const silent = typeof variables === "object" && "silent" in variables && variables.silent;
+      if (!silent) {
+        toast.success("Patient created successfully");
+      }
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to create patient");

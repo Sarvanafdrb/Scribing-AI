@@ -12,6 +12,8 @@ import { isAllOrganizationsWorkspace } from "@/utils/workspace.utils";
 export const useTenantScope = () => {
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
+  const authHydrated = useAuthStore((state) => state._hasHydrated);
+  const workspaceHydrated = useWorkspaceStore((state) => state._hasHydrated);
   const selectedWorkspace = useWorkspaceStore((state) => state.selectedWorkspace);
   const isSuperAdmin = isSuperAdminUser(user, token);
   const isSingleOrgStaff = isSingleOrganizationStaffUser(user);
@@ -39,6 +41,13 @@ export const useTenantScope = () => {
           : ""
         : getUserOrganizationName(user);
 
+  const isScopeReady =
+    authHydrated &&
+    workspaceHydrated &&
+    (Boolean(organizationId) ||
+      Boolean(selectedWorkspace) ||
+      Boolean(userOrganizationId));
+
   return {
     user,
     token,
@@ -49,5 +58,8 @@ export const useTenantScope = () => {
     isAllOrganizations,
     isSingleOrgStaff,
     canManageAllOrganizations: canManageAllOrganizations(user, token),
+    isScopeReady,
+    authHydrated,
+    workspaceHydrated,
   };
 };

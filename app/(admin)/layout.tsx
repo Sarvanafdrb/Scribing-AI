@@ -24,6 +24,7 @@ import {
   CalendarDays,
   Receipt,
   Package,
+  TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasPermission } from "@/types/auth.types";
@@ -109,6 +110,12 @@ const menuItems = [
     label: "Appointments",
     icon: CalendarDays,
     permission: "APPOINTMENT_VIEW",
+  },
+  {
+    path: "/sos-emergency",
+    label: "SOS Emergency",
+    icon: TriangleAlert,
+    permission: "SOS_VIEW",
   },
   {
     path: "/ip-billing",
@@ -300,8 +307,12 @@ export default function AdminLayout({
                     onClick={() => setSidebarOpen(false)}
                     className={`glass-row flex items-center gap-3 px-3 py-2 transition-colors ${
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
-                        : "text-sidebar-foreground"
+                        ? item.path === "/sos-emergency"
+                          ? "bg-red-600 text-white shadow-glow"
+                          : "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
+                        : item.path === "/sos-emergency"
+                          ? "text-red-700 hover:bg-red-50"
+                          : "text-sidebar-foreground"
                     }`}
                     data-active={isActive ? "true" : undefined}
                   >

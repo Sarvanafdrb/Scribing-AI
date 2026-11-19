@@ -49,6 +49,8 @@ import type { AiNotes } from "@/types/ai-notes.types";
 import type { AiNotesExportContent } from "@/utils/ai-notes-export.utils";
 import { getSessionDepartmentName } from "@/types/session.types";
 import { DoctorWorkspacePatientIdentity } from "@/components/doctor/DoctorWorkspacePatientIdentity";
+import { DoctorSosTrigger } from "@/components/doctor/DoctorSosTrigger";
+import { getPatientFullName } from "@/utils/patient.utils";
 import { cn } from "@/lib/utils";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { getEncounterType } from "@/utils/encounter.utils";
@@ -123,6 +125,23 @@ export function DoctorHeader({
     session && typeof session.patientId === "object"
       ? (session.patientId as Patient)
       : null;
+  const patientId =
+    patient?.id || patient?._id
+      ? String(patient.id || patient._id)
+      : typeof session?.patientId === "string"
+        ? session.patientId
+        : "";
+  const organizationId =
+    typeof session?.organizationId === "object" && session.organizationId
+      ? String(
+          (session.organizationId as { id?: string; _id?: string }).id ||
+            (session.organizationId as { _id?: string })._id ||
+            "",
+        )
+      : typeof session?.organizationId === "string"
+        ? session.organizationId
+        : "";
+  const patientDisplayName = patient ? getPatientFullName(patient) : undefined;
 
   const hasRecording =
     (session?.recordingSegments?.length || 0) > 0 || Boolean(session?.audioUrl);
@@ -374,6 +393,13 @@ export function DoctorHeader({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {organizationId ? (
+            <DoctorSosTrigger
+              organizationId={organizationId}
+              patientId={patientId || undefined}
+              patientName={patientDisplayName}
+            />
+          ) : null}
           {session?.visitType === "inpatient" ||
           session?.encounter?.encounterType === "IP" ? (
             <HeaderActionButton

@@ -33,6 +33,12 @@ export const PERMISSION_MODULES = [
     prefix: "IP_ADMISSION",
     legacySlug: "ip_admission",
   },
+  {
+    id: "sos",
+    label: "SOS Emergency",
+    prefix: "SOS",
+    legacySlug: "sos",
+  },
 ] as const;
 
 const buildLegacyCode = (legacySlug: string, legacyAction: string) =>
@@ -98,6 +104,10 @@ export const APPOINTMENT_VIEW = "APPOINTMENT_VIEW";
 export const APPOINTMENT_CREATE = "APPOINTMENT_CREATE";
 export const APPOINTMENT_EDIT = "APPOINTMENT_EDIT";
 export const APPOINTMENT_DELETE = "APPOINTMENT_DELETE";
+
+export const SOS_VIEW = "SOS_VIEW";
+export const SOS_CREATE = "SOS_CREATE";
+export const SOS_EDIT = "SOS_EDIT";
 
 export const IP_ADMISSION_VIEW = "IP_ADMISSION_VIEW";
 export const IP_ADMISSION_EDIT = "IP_ADMISSION_EDIT";

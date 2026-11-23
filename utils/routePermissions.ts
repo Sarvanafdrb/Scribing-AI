@@ -169,6 +169,16 @@ const ROUTE_PERMISSION_RULES: RoutePermissionRule[] = [
     message: "You do not have permission to view settings.",
   },
   {
+    pattern: /^\/my-availability\/?$/,
+    permission: "AVAILABILITY_EDIT",
+    message: "You do not have permission to manage your availability.",
+  },
+  {
+    pattern: /^\/availability-management(\/|$)/,
+    permission: "AVAILABILITY_VIEW",
+    message: "You do not have permission to view availability management.",
+  },
+  {
     pattern: /^\/ip-billing(\/|$)/,
     permission: "IP_ADMISSION_VIEW",
     message: "You do not have permission to view IP admission billing.",

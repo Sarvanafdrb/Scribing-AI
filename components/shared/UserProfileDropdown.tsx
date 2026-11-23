@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { KeyRound, LogOut, Pill, User } from "lucide-react";
+import { CalendarClock, KeyRound, LogOut, Pill, User } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import type { AuthUser } from "@/types/auth.types";
 import { useAccessControl } from "@/hooks/useAccessControl";
@@ -40,6 +40,7 @@ interface UserProfileDropdownProps {
   profileHref?: string;
   changePasswordHref?: string;
   medicinesHref?: string;
+  availabilityHref?: string;
   className?: string;
   avatarClassName?: string;
 }
@@ -48,12 +49,13 @@ export function UserProfileDropdown({
   profileHref = "/doctor/profile",
   changePasswordHref = "/doctor/change-password",
   medicinesHref = "/doctor/medicines",
+  availabilityHref = "/doctor/availability",
   className,
   avatarClassName,
 }: UserProfileDropdownProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { canViewMedicines } = useAccessControl();
+  const { canViewMedicines, canEditAvailability } = useAccessControl();
 
   if (!user) return null;
 
@@ -127,6 +129,15 @@ export function UserProfileDropdown({
             <Link href={medicinesHref}>
               <Pill className="h-4 w-4" />
               Medicines
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+
+        {canEditAvailability() ? (
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href={availabilityHref}>
+              <CalendarClock className="h-4 w-4" />
+              My Availability
             </Link>
           </DropdownMenuItem>
         ) : null}

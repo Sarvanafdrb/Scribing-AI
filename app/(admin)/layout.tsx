@@ -22,6 +22,7 @@ import {
   Mail,
   Pill,
   CalendarDays,
+  CalendarClock,
   Receipt,
   Package,
   TriangleAlert,
@@ -35,6 +36,7 @@ import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { useWorkspaceGuard } from "@/hooks/useWorkspaceGuard";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { NotificationBell } from "@/components/shared/NotificationBell";
+import { StaffWorkspaceProfileDropdown } from "@/components/shared/StaffWorkspaceProfileDropdown";
 import { AccessDenied } from "@/components/shared/AccessDenied";
 import { resolveRouteAccess } from "@/utils/routePermissions";
 
@@ -112,6 +114,18 @@ const menuItems = [
     permission: "APPOINTMENT_VIEW",
   },
   {
+    path: "/availability-management",
+    label: "Availability Management",
+    icon: CalendarClock,
+    permission: "AVAILABILITY_VIEW",
+  },
+  {
+    path: "/my-availability",
+    label: "My Availability",
+    icon: CalendarClock,
+    permission: "AVAILABILITY_EDIT",
+  },
+  {
     path: "/sos-emergency",
     label: "SOS Emergency",
     icon: TriangleAlert,
@@ -155,9 +169,9 @@ export default function AdminLayout({
     !_hasHydrated || isLoading || isValidating || workspaceGuardLoading;
   useAutoLogin();
   useSessionExpiry();
-  // Add detailed logging
+
   useEffect(() => {
-    console.log("🔐 AdminLayout Debug:", {
+    console.log("AdminLayout debug:", {
       _hasHydrated,
       isLoading,
       isValidating,
@@ -180,15 +194,12 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!_hasHydrated) {
-      console.log("⏳ Waiting for hydration...");
       return;
     }
     if (isValidating) {
-      console.log("⏳ Validating session...");
       return;
     }
     if (!isAuthenticated) {
-      console.log("🔐 No token, redirecting to login");
       router.replace("/login");
       return;
     }
@@ -204,6 +215,7 @@ export default function AdminLayout({
       router.replace(home);
     }
   }, [isAuthenticated, _hasHydrated, isValidating, pathname, router, user, token]);
+
   const handleLogout = () => {
     logout();
     router.push("/login");
@@ -252,7 +264,6 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-transparent">
-      {/* Mobile Menu Button */}
       <div className="fixed top-4 left-4 z-50 lg:hidden">
         <Button
           variant="outline"
@@ -267,14 +278,12 @@ export default function AdminLayout({
         </Button>
       </div>
 
-      {/* Sidebar */}
       <aside
         className={`glass fixed top-0 left-0 z-40 h-screen w-64 overflow-hidden border-r border-sidebar-border transform transition-transform duration-200 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         <div className="flex h-full min-h-0 flex-col">
-          {/* Logo */}
           <div className="shrink-0 border-b border-sidebar-border p-4">
             <h1 className="bg-gradient-to-r from-primary to-[var(--glow)] bg-clip-text text-xl font-bold text-transparent">
               Scribble AI
@@ -282,7 +291,6 @@ export default function AdminLayout({
             <p className="mt-1 text-xs text-muted-foreground">Admin Panel</p>
           </div>
 
-          {/* User Info */}
           <div className="glass-tint mx-3 mt-3 shrink-0 rounded-2xl border-0 p-4">
             <p className="font-medium text-foreground">
               {user?.isSuperAdmin
@@ -295,37 +303,36 @@ export default function AdminLayout({
             <p className="mt-1 text-xs text-muted-foreground">{user?.email}</p>
           </div>
 
-          {/* Navigation */}
           <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
             {filteredMenuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = item.path === activeMenuPath;
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`glass-row flex items-center gap-3 px-3 py-2 transition-colors ${
-                      isActive
-                        ? item.path === "/sos-emergency"
-                          ? "bg-red-600 text-white shadow-glow"
-                          : "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
-                        : item.path === "/sos-emergency"
-                          ? "text-red-700 hover:bg-red-50"
-                          : "text-sidebar-foreground"
-                    }`}
-                    data-active={isActive ? "true" : undefined}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+              const Icon = item.icon;
+              const isActive = item.path === activeMenuPath;
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`glass-row flex items-center gap-3 px-3 py-2 transition-colors ${
+                    isActive
+                      ? item.path === "/sos-emergency"
+                        ? "bg-red-600 text-white shadow-glow"
+                        : "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
+                      : item.path === "/sos-emergency"
+                        ? "text-red-700 hover:bg-red-50"
+                        : "text-sidebar-foreground"
+                  }`}
+                  data-active={isActive ? "true" : undefined}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
 
-          {/* Logout Button */}
           <div className="shrink-0 border-t border-sidebar-border bg-sidebar/80 p-4 backdrop-blur-sm">
             <button
+              type="button"
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-full px-3 py-2 text-destructive transition-colors hover:bg-destructive/10"
             >
@@ -336,11 +343,11 @@ export default function AdminLayout({
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="lg:ml-64 min-h-screen">
         {!isPreviewPage && pathname !== "/access-not-assigned" && (
           <AppHeader subtitle="Admin Panel">
             <NotificationBell />
+            <StaffWorkspaceProfileDropdown />
           </AppHeader>
         )}
         <div className={isPreviewPage ? "" : "p-6"}>

@@ -41,6 +41,8 @@ import {
   SOS_VIEW,
   SOS_CREATE,
   SOS_EDIT,
+  AVAILABILITY_VIEW,
+  AVAILABILITY_EDIT,
   IP_ADMISSION_VIEW,
   IP_ADMISSION_EDIT,
   IP_ADMISSION_CREATE,
@@ -255,6 +257,13 @@ export const useAccessControl = () => {
       isSuperAdmin ||
       hasPermission(user, SOS_EDIT, token) ||
       hasPermission(user, "sos:update", token),
+    canViewAvailability: () =>
+      isSuperAdmin ||
+      hasPermission(user, AVAILABILITY_VIEW, token) ||
+      hasPermission(user, AVAILABILITY_EDIT, token),
+    canEditAvailability: () =>
+      isSuperAdmin ||
+      hasPermission(user, AVAILABILITY_EDIT, token),
     canReviewRescheduleApprovals: () => {
       const canEdit =
         hasPermission(user, APPOINTMENT_EDIT, token) ||

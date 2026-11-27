@@ -34,18 +34,26 @@ export default function AppointmentsPage() {
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
 
   const { cancelAppointment } = useAppointmentMutations();
-  const { organizationId, organizationName, isAllOrganizations } = useTenantScope();
+  const { organizationId, organizationName, isAllOrganizations } =
+    useTenantScope();
 
-  const { appointments, total, totalPages, isLoading, isError, error, refetch } =
-    useAppointments({
-      organizationId: organizationId || undefined,
-      page,
-      limit: PAGE_SIZE,
-      upcoming: view === "upcoming",
-      dateFrom: view === "range" ? dateFrom || undefined : undefined,
-      dateTo: view === "range" ? dateTo || undefined : undefined,
-      enabled: canViewAppointments(),
-    });
+  const {
+    appointments,
+    total,
+    totalPages,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useAppointments({
+    organizationId: organizationId || undefined,
+    page,
+    limit: PAGE_SIZE,
+    upcoming: view === "upcoming",
+    dateFrom: view === "range" ? dateFrom || undefined : undefined,
+    dateTo: view === "range" ? dateTo || undefined : undefined,
+    enabled: canViewAppointments(),
+  });
 
   const handleCancelClick = (appointment: Appointment) => {
     setCancelTarget(appointment);
@@ -105,7 +113,10 @@ export default function AppointmentsPage() {
           <p className="max-w-xl text-muted-foreground">
             Book future visits here. For today&apos;s walk-in or immediate
             consultation, use{" "}
-            <Link href="/sessions/create" className="text-primary hover:underline">
+            <Link
+              href="/sessions/create"
+              className="text-primary hover:underline"
+            >
               New Consultation
             </Link>{" "}
             — those patients appear directly in the Doctor Workspace.
@@ -114,9 +125,9 @@ export default function AppointmentsPage() {
         <div className="flex flex-wrap gap-2">
           {canReviewRescheduleApprovals() ? (
             <Link href="/appointments/reschedule-approvals">
-              <Button variant="outline" className="rounded-full">
+              {/* <Button variant="outline" className="rounded-full">
                 Reschedule approvals
-              </Button>
+              </Button> */}
             </Link>
           ) : null}
           {canCreateAppointment() ? (
@@ -133,7 +144,9 @@ export default function AppointmentsPage() {
       {organizationName ? (
         <p className="text-sm text-muted-foreground">
           Showing appointments for{" "}
-          <span className="font-medium text-foreground">{organizationName}</span>
+          <span className="font-medium text-foreground">
+            {organizationName}
+          </span>
         </p>
       ) : null}
 
